@@ -1,10 +1,13 @@
 // Load the configuration from the .env file.
 import 'dotenv/config';
 // Load the hardhat plugins.
+import 'hardhat-deploy';
 import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-etherscan';
+import 'hardhat-gas-reporter';
 import '@nomiclabs/hardhat-solhint';
 import '@nomiclabs/hardhat-waffle';
+import '@typechain/ethers-v5';
 import '@typechain/hardhat';
 import 'solidity-coverage';
 
@@ -21,6 +24,9 @@ const config: HardhatUserConfig = {
   },
   mocha: {
     timeout: 60000,
+  },
+  namedAccounts: {
+    deployer: 0,
   },
   networks: {
     hardhat: {
