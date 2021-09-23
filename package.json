@@ -20,7 +20,9 @@
     "format:solhint": "yarn lint:solhint --fix"
   },
   "devDependencies": {
+    "@balancer-labs/balancer-js": "^1.0.1",
     "@balancer-labs/v2-deployments": "^2.2.0",
+    "@balancer-labs/v2-vault": "^2.0.0",
     "@enzymefinance/contracts": "^3.0.1",
     "@enzymefinance/eslint-config": "^1.0.11",
     "@enzymefinance/prettier-config-solidity": "^1.0.0",

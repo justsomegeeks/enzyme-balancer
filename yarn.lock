@@ -319,10 +319,35 @@
     "@babel/helper-validator-identifier" "^7.14.9"
     to-fast-properties "^2.0.0"
 
+"@balancer-labs/balancer-js@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@balancer-labs/balancer-js/-/balancer-js-1.0.1.tgz#7b5607f01eb825cf79576a517029e06437655dbe"
+  integrity sha512-7vH1dWzPHkT5rVwj4NZd6sQhvaCZXuqDs/S2bTM4jfTJHu7Q16iUCgdtShHChiTTLDb/pejvLAEKZ4GhjZcGMw==
+  dependencies:
+    "@ethersproject/abi" "^5.4.0"
+    "@ethersproject/abstract-signer" "^5.4.0"
+    "@ethersproject/address" "^5.4.0"
+    "@ethersproject/bignumber" "^5.4.0"
+    "@ethersproject/bytes" "^5.4.0"
+    "@ethersproject/constants" "^5.4.0"
+    "@ethersproject/contracts" "^5.4.0"
+
 "@balancer-labs/v2-deployments@^2.2.0":
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/@balancer-labs/v2-deployments/-/v2-deployments-2.2.0.tgz#2374c81c10413f49c3cac94bad5e70c5b9a3efd2"
   integrity sha512-BiS52xKqgKYfsdZVxFtxjjQswFTvc75d+4ObT7cnphWqFAQzw/7Z6NE3lH5pNIUisvME5MHFTdAQqlm70cMJfg==
+
+"@balancer-labs/v2-solidity-utils@2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@balancer-labs/v2-solidity-utils/-/v2-solidity-utils-2.0.0.tgz#a3d8942873b4adc216c8276d150743ede5c459ca"
+  integrity sha512-OB+05vJqrs35B1d40y7tnSm6oYWnsmfRa/wpI2owJXhwx/8qr2buE+RDmT0x6Upr/c7wBdUh8v4UVk9l0+CNiA==
+
+"@balancer-labs/v2-vault@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@balancer-labs/v2-vault/-/v2-vault-2.0.0.tgz#def6f8d4b777f421224118e473b5115f09819768"
+  integrity sha512-GwPY84j6g7OY1z13wRYYGQeupb6DI3U+s22Ebg2v32djS9CnPzM04GJapURRbKZkpraUOYIcqhEF3Cm1AafAKg==
+  dependencies:
+    "@balancer-labs/v2-solidity-utils" "2.0.0"
 
 "@cspotcode/source-map-consumer@0.8.0":
   version "0.8.0"
@@ -704,7 +729,7 @@
   dependencies:
     "@ethersproject/bignumber" "^5.4.0"
 
-"@ethersproject/contracts@5.4.1", "@ethersproject/contracts@^5.4.1":
+"@ethersproject/contracts@5.4.1", "@ethersproject/contracts@^5.4.0", "@ethersproject/contracts@^5.4.1":
   version "5.4.1"
   resolved "https://registry.yarnpkg.com/@ethersproject/contracts/-/contracts-5.4.1.tgz#3eb4f35b7fe60a962a75804ada2746494df3e470"
   integrity sha512-m+z2ZgPy4pyR15Je//dUaymRUZq5MtDajF6GwFbGAVmKz/RF+DNIPwF0k5qEcL3wPGVqUjFg2/krlCRVTU4T5w==

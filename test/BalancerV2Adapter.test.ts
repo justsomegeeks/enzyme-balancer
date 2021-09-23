@@ -6,6 +6,7 @@ import hre from 'hardhat';
 import type { BalancerV2Adapter } from '../typechain';
 
 const addresses = {
+  // TODO: change addresses to Balancer addresses when we know which addresses/pools we'll be using
   AugustusSwapper: '0x1bD435F3C054b6e901B7b108a0ab7617C808677b',
   EnzymeCouncil: '0xb270fe91e8e4b80452fbf1b4704208792a350f53',
   IntegrationManager: '0x965ca477106476B4600562a2eBe13536581883A6',

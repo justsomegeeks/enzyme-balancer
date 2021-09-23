@@ -8,12 +8,13 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "@enzymefinance/contracts/release/extensions/integration-manager/integrations/utils/AdapterBase2.sol";
+import "./BalancerV2ActionsMixin.sol";
 
 /// @title BalancerV2Adapter Contract
 /// @author JustSomeGeeks Hackathon Team <https://github.com/justsomegeeks>
 /// @notice Adapter for interacting with Balancer (v2)
 /// @dev Does not allow any protocol that collects protocol fees in ETH, e.g., 0x v3
-contract BalancerV2Adapter is AdapterBase2 {
+contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
     using SafeMath for uint256;
 
     constructor(

@@ -10,6 +10,8 @@ import '@nomiclabs/hardhat-waffle';
 import '@typechain/ethers-v5';
 import '@typechain/hardhat';
 import 'solidity-coverage';
+import '@balancer-labs/v2-deployments';
+import './scripts/toolbelt';
 
 import type { HardhatUserConfig } from 'hardhat/types';
 
