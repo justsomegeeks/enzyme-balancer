@@ -17,11 +17,11 @@ import "./BalancerV2ActionsMixin.sol";
 contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
     using SafeMath for uint256;
 
-    constructor(
-        address _integrationManager,
-        address _balancerSwapper,
-        address _tokenTransferProxy
-    ) public AdapterBase2(_integrationManager) {}
+    constructor(address _integrationManager, address _balancerV2Vault)
+        public
+        AdapterBase2(_integrationManager)
+        BalancerV2ActionsMixin(_balancerV2Vault)
+    {}
 
     // EXTERNAL FUNCTIONS
 
@@ -54,37 +54,41 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
     {
         require(_selector == TAKE_ORDER_SELECTOR, "parseAssetsForMethod: _selector invalid");
 
+        return __parseAssetsForSwap(_encodedCallArgs);
+    }
+
+    /// @dev Helper function to parse spend and incoming assets from encoded call args
+    /// during redeem() calls
+    function __parseAssetsForSwap(bytes calldata _encodedCallArgs)
+        private
+        view
+        returns (
+            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
+            address[] memory spendAssets_,
+            uint256[] memory spendAssetAmounts_,
+            address[] memory incomingAssets_,
+            uint256[] memory minIncomingAssetAmounts_
+        )
+    {
+        // TODO: wire up the call below: __decodeCallArgs(_encodedCallArgs);
+        // for now just 'use' the variable ` _encodedCallArgs` below to keep
+        // lint happy
+        _encodedCallArgs;
         // (
-        //     uint256 minIncomingAssetAmount,
-        //     ,
-        //     address outgoingAsset,
-        //     uint256 outgoingAssetAmount,
-        //     IParaSwapV4AugustusSwapper.Path[] memory paths
+        //     address balancerPoolToken,
+        //     uint256[] memory outgoingAssetAmounts,
+        //     uint256[] memory minIncomingAssetAmounts
         // ) = __decodeCallArgs(_encodedCallArgs);
-
-        // spendAssets_ = new address[](1);
-        // spendAssets_[0] = outgoingAsset;
-
-        // spendAssetAmounts_ = new uint256[](1);
-        // spendAssetAmounts_[0] = outgoingAssetAmount;
-
-        // incomingAssets_ = new address[](1);
-        // incomingAssets_[0] = paths[paths.length - 1].to;
-
-        // minIncomingAssetAmounts_ = new uint256[](1);
-        // minIncomingAssetAmounts_[0] = minIncomingAssetAmount;
 
         spendAssets_ = new address[](1);
         spendAssets_[0] = address(0x0);
-
         spendAssetAmounts_ = new uint256[](1);
-        spendAssetAmounts_[0] = 0;
 
-        incomingAssets_ = new address[](1);
+        incomingAssets_ = new address[](2);
         incomingAssets_[0] = address(0x0);
+        incomingAssets_[1] = address(0x0);
 
         minIncomingAssetAmounts_ = new uint256[](1);
-        minIncomingAssetAmounts_[0] = 0;
 
         return (
             IIntegrationManager.SpendAssetsHandleType.Transfer,
@@ -93,33 +97,6 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             incomingAssets_,
             minIncomingAssetAmounts_
         );
-    }
-
-    /// @notice Trades assets on Balancer V2
-    /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedCallArgs Encoded order parameters
-    /// @dev Balancer V2
-    function takeOrder(
-        address _vaultProxy,
-        bytes calldata _encodedCallArgs,
-        bytes calldata
-    ) external {
-        // ) external onlyIntegrationManager {
-        //     (
-        //         uint256 minIncomingAssetAmount,
-        //         uint256 expectedIncomingAssetAmount,
-        //         address outgoingAsset,
-        //         uint256 outgoingAssetAmount,
-        //         IParaSwapV4AugustusSwapper.Path[] memory paths
-        //     ) = __decodeCallArgs(_encodedCallArgs);
-        // __paraSwapV4MultiSwap(
-        //     outgoingAsset,
-        //     outgoingAssetAmount,
-        //     minIncomingAssetAmount,
-        //     expectedIncomingAssetAmount,
-        //     payable(_vaultProxy),
-        //     paths
-        // );
     }
 
     /// @dev Helper to decode the encoded callOnIntegration call arguments

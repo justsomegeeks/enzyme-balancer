@@ -1,33 +1,43 @@
 // SPDX-License-Identifier: GPL-3.0
 
 /*
-    A Balancer V2 adapter for the Enzyme Protocol.
+    Balancer V2 mixins for the Enzyme Protocol.
 */
 
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "@enzymefinance/contracts/release/utils/AssetHelpers.sol";
-import "@balancer-labs/v2-vault/contracts/interfaces/IVault.sol";
+import "./interfaces/IBalancerV2Vault.sol";
+import "./interfaces/IBalancerV2Asset.sol";
 
 /// @title BalancerV2ActionsMixin Contract
-/// @author Enzyme Council <security@enzyme.finance>
+/// @author JustSomeGeeks Hackathon Team <https://github.com/justsomegeeks>
 /// @notice Mixin contract for interacting with BalancerV2
 abstract contract BalancerV2ActionsMixin is AssetHelpers {
-    address private immutable BALANCER_VAULT;
+    address private immutable BALANCER_V2_VAULT;
 
-    constructor(address _balancerVault) public {
-        BALANCER_VAULT = _balancerVault;
+    constructor(address _balancerV2Vault) public {
+        BALANCER_V2_VAULT = _balancerV2Vault;
     }
 
-    /// @dev Helper to do single pool swap
-    function __balancerV2Swap(
-        IVault.SingleSwap _singleSwap,
-        IVault.FundManagement _funds,
-        uint256 _limit,
-        uint256 _deadline
+    /// @dev Helper to do batch swap using batch steps provided by off-chain Balancer SOR
+    function __balancerV2BatchSwap(
+        IBalancerV2Vault.SwapKind _swapKind,
+        IBalancerV2Vault.BatchSwapStep[] memory _swaps,
+        IBalancerV2Asset[] memory _assets,
+        IBalancerV2Vault.FundManagement memory _funds,
+        int256[] memory _limits,
+        uint256 _deadline // IVault.FundManagement _funds,
     ) internal {
-        IVault(BALANCER_VAULT).swap(_singleSwap, _funds, _limit, _deadline);
+        IBalancerV2Vault(BALANCER_V2_VAULT).batchSwap(
+            _swapKind,
+            _swaps,
+            _assets,
+            _funds,
+            _limits,
+            _deadline
+        );
     }
 
     /// @dev Helper to add liquidity
@@ -35,9 +45,9 @@ abstract contract BalancerV2ActionsMixin is AssetHelpers {
         bytes32 _poolId,
         address _sender,
         address _recipient,
-        IVault.JoinPoolRequest memory _request
+        IBalancerV2Vault.JoinPoolRequest memory _request
     ) internal {
-        IVault(BALANCER_VAULT).joinPool(_poolId, _sender, _recipient, _request);
+        IBalancerV2Vault(BALANCER_V2_VAULT).joinPool(_poolId, _sender, _recipient, _request);
     }
 
     /// @dev Helper to remove liquidity
@@ -45,8 +55,18 @@ abstract contract BalancerV2ActionsMixin is AssetHelpers {
         bytes32 _poolId,
         address _sender,
         address payable _recipient,
-        IVault.ExitPoolRequest memory _request
+        IBalancerV2Vault.ExitPoolRequest memory _request
     ) internal {
-        IVault(BALANCER_VAULT).exitPool(_poolId, _sender, _recipient, _request);
+        IBalancerV2Vault(BALANCER_V2_VAULT).exitPool(_poolId, _sender, _recipient, _request);
+    }
+
+    ///////////////////
+    // STATE GETTERS //
+    ///////////////////
+
+    /// @notice Gets the `BALANCER_V2_VAULT` variable
+    /// @return balancerV2Vault_ The `BALANCER_V2_VAULT` variable value
+    function getBalancerV2Vault() public view returns (address balancerV2Vault_) {
+        return BALANCER_V2_VAULT;
     }
 }
