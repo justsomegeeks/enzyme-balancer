@@ -34,7 +34,7 @@ const config: HardhatUserConfig = {
         mnemonic: 'test test test test test test test test test test test junk',
       },
       forking: {
-        blockNumber: 13230834,
+        blockNumber: 13282780,
         enabled: !!process.env.ETHEREUM_NODE_MAINNET,
         url: process.env.ETHEREUM_NODE_MAINNET ?? '',
       },
