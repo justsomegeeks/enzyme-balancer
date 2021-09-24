@@ -10,6 +10,9 @@ import '@nomiclabs/hardhat-waffle';
 import '@typechain/ethers-v5';
 import '@typechain/hardhat';
 import 'solidity-coverage';
+import '@balancer-labs/v2-deployments';
+import './scripts/bal_getPoolAddress';
+import './scripts/enz_withdrawFunds';
 
 import type { HardhatUserConfig } from 'hardhat/types';
 
@@ -27,6 +30,7 @@ const config: HardhatUserConfig = {
   },
   namedAccounts: {
     deployer: 0,
+    whale: 1,
   },
   networks: {
     hardhat: {
