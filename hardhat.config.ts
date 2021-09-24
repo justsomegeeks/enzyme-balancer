@@ -11,7 +11,8 @@ import '@typechain/ethers-v5';
 import '@typechain/hardhat';
 import 'solidity-coverage';
 import '@balancer-labs/v2-deployments';
-import './scripts/toolbelt';
+import './scripts/bal_getPoolAddress';
+import './scripts/enz_withdrawFunds';
 
 import type { HardhatUserConfig } from 'hardhat/types';
 
@@ -29,6 +30,7 @@ const config: HardhatUserConfig = {
   },
   namedAccounts: {
     deployer: 0,
+    whale: 1,
   },
   networks: {
     hardhat: {
@@ -36,7 +38,7 @@ const config: HardhatUserConfig = {
         mnemonic: 'test test test test test test test test test test test junk',
       },
       forking: {
-        blockNumber: 13282780,
+        blockNumber: 13230834,
         enabled: !!process.env.ETHEREUM_NODE_MAINNET,
         url: process.env.ETHEREUM_NODE_MAINNET ?? '',
       },

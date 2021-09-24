@@ -5,7 +5,7 @@ import { task } from 'hardhat/config';
 //   .addPositionalParam("receiver", "The address that will receive them")
 //   .setAction(async ({ receiver }) => {
 
-task('balwbtcwethaddr', 'Gets Balancer WBTC/WETH pool address', async () => {
+task('bal_getPoolAddress', 'Gets Balancer WBTC/WETH pool address', async () => {
   const v2WBTCWETHPoolId = '0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014';
   const v2WBTCWETHPoolAddress = getPoolAddress(v2WBTCWETHPoolId);
 
