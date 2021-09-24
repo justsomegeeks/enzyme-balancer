@@ -2,23 +2,20 @@
     This code is heavily inspired by: https://github.com/balancer-labs/balancer-sor/blob/master/test/testScripts/swapExample.ts
 */
 
-import type { SwapInfo, SwapV2 } from '@balancer-labs/sor';
+import type { SwapInfo } from '@balancer-labs/sor';
 import { scale, SOR, SwapTypes } from '@balancer-labs/sor';
+import { getBalancerContract } from '@balancer-labs/v2-deployments';
+import type { BaseProvider } from '@ethersproject/providers';
 import { BigNumber } from 'bignumber.js';
 import { task } from 'hardhat/config';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-// import { SOR, SwapInfo, SwapTypes, scale, bnum, SubgraphPoolBase } from '../../src';
-// import vaultArtifact from '../../src/abi/Vault.json';
-// import relayerAbi from '../abi/BatchRelayer.json';
-// import erc20abi from '../abi/ERC20.json';
-
-enum Network {
+enum Networks {
   MAINNET = 1,
 }
 
 const SUBGRAPH_URLS = {
-  [Network.MAINNET]: 'https://api.thegraph.com/subgraphs/name/balancer-labs/balancer-v2',
+  [Networks.MAINNET]: 'https://api.thegraph.com/subgraphs/name/balancer-labs/balancer-v2',
 };
 
 interface ERC20Info {
@@ -27,64 +24,55 @@ interface ERC20Info {
   symbol: string;
 }
 
-interface ERC20Descriptor {
+interface ERC20Descriptors {
   [key: string]: ERC20Info;
 }
 
 type NetworkERC20s = {
-  [key in Network]: ERC20Descriptor[];
+  [key in Networks]: ERC20Descriptors;
 };
 
-// This is the same across networks
-const vaultAddr = '0xBA12222222228d8Ba445958a75a0704d566BF2C8';
+interface FundManagement {
+  sender: string;
+  recipient: string;
+  fromInternalBalance: boolean;
+  toInternalBalance: boolean;
+}
 
-const mainnetBatchRelayerAddress = '0xdcdbf71A870cc60C6F9B621E28a7D3Ffd6Dd4965';
-
-function getAddresses(hre: HardhatRuntimeEnvironment): NetworkERC20s {
+function getNetworkERC20s(hre: HardhatRuntimeEnvironment): NetworkERC20s {
   return {
-    [Network.MAINNET]: [
-      {
-        BAL: {
-          address: '0xba100000625a3754423978a60c9317c58a424e3d',
-          decimals: new BigNumber(18),
-          symbol: 'BAL',
-        },
+    [Networks.MAINNET]: {
+      BAL: {
+        address: '0xba100000625a3754423978a60c9317c58a424e3d',
+        decimals: new BigNumber(18),
+        symbol: 'BAL',
       },
-      {
-        ETH: {
-          address: hre.ethers.constants.AddressZero,
-          decimals: new BigNumber(18),
-          symbol: 'ETH',
-        },
+      ETH: {
+        address: hre.ethers.constants.AddressZero,
+        decimals: new BigNumber(18),
+        symbol: 'ETH',
       },
-      {
-        USDC: {
-          address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-          decimals: new BigNumber(6),
-          symbol: 'USDC',
-        },
+      USDC: {
+        address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+        decimals: new BigNumber(6),
+        symbol: 'USDC',
       },
-    ],
+    },
   };
 }
 
 async function getSwap(
-  hre: HardhatRuntimeEnvironment,
+  provider: BaseProvider,
+  networkInfo: Networks,
   queryOnChain: boolean,
   swapType: SwapTypes,
   tokenIn: ERC20Info,
   tokenOut: ERC20Info,
   swapAmount: BigNumber,
 ): Promise<SwapInfo> {
-  const provider = hre.ethers.getDefaultProvider();
   const chainId = (await provider.getNetwork()).chainId;
-  const network: Network | undefined = Network[Network[chainId] as keyof typeof Network];
 
-  if (typeof network === 'undefined') {
-    throw `Invalid chain id: ${chainId}`;
-  }
-
-  const sor = new SOR(provider, chainId, SUBGRAPH_URLS[network]);
+  const sor = new SOR(provider, chainId, SUBGRAPH_URLS[networkInfo]);
 
   // Will get onChain data for pools list
   await sor.fetchPools(sor.getPools(), queryOnChain);
@@ -119,13 +107,141 @@ async function getSwap(
   console.log(`Token In: ${tokenIn.symbol}, Amt: ${amtInScaled}`);
   console.log(`Token Out: ${tokenOut.symbol}, Amt: ${amtOutScaled.toString()}`);
   console.log(`Cost to swap: ${cost.toString()}`);
-  console.log(`Swaps:`);
-  console.log(swapInfo.swaps);
-  console.log(swapInfo.tokenAddresses);
 
   return swapInfo;
 }
 
-task('bal_sorswap', 'Gets Balancer WBTC/WETH pool address', async (args, hre: HardhatRuntimeEnvironment) => {
-  const ADDRESSES = getAddresses(hre);
+task('bal_sorswap', 'Swap 2 tokens via Balancer SOR', async (args, hre: HardhatRuntimeEnvironment) => {
+  const provider = hre.ethers.getDefaultProvider();
+  const chainId = (await provider.getNetwork()).chainId;
+  const networkInfo: Networks | undefined = Networks[Networks[chainId] as keyof typeof Networks];
+  const networkName = Networks[networkInfo];
+
+  if (typeof networkInfo === 'undefined') {
+    throw `Invalid chain id: ${chainId}`;
+  }
+
+  const networkERC20s = getNetworkERC20s(hre);
+
+  const queryOnChain = true;
+  const swapType = SwapTypes.SwapExactIn;
+  const ethDescriptor = networkERC20s[networkInfo]['ETH'];
+  const usdcDescriptor = networkERC20s[networkInfo]['USDC'];
+  const swapAmount = new BigNumber(1);
+
+  const swapInfo = await getSwap(
+    provider,
+    networkInfo,
+    queryOnChain,
+    swapType,
+    ethDescriptor,
+    usdcDescriptor,
+    swapAmount,
+  );
+
+  console.log(`SwapInfo = ${JSON.stringify(swapInfo, undefined, 2)}`);
+
+  if (!swapInfo.returnAmount.gt(0)) {
+    console.log(`Return amount is 0. No swaps to execute.`);
+    return;
+  }
+
+  if (swapInfo.tokenIn !== hre.ethers.constants.AddressZero) {
+    // TODO ERC20 allowance/approve
+    // // Vault needs approval for swapping non ETH
+    // console.log('Checking vault allowance...');
+    // const tokenInContract = new Contract(swapInfo.tokenIn, erc20abi, provider);
+    // let allowance = await tokenInContract.allowance(wallet.address, vaultAddr);
+    // if (bnum(allowance).lt(swapInfo.swapAmount)) {
+    //   console.log(`Not Enough Allowance: ${allowance.toString()}. Approving vault now...`);
+    //   const txApprove = await tokenInContract.connect(wallet).approve(vaultAddr, MaxUint256);
+    //   await txApprove.wait();
+    //   console.log(`Allowance updated: ${txApprove.hash}`);
+    //   allowance = await tokenInContract.allowance(wallet.address, vaultAddr);
+    // }
+    // console.log(`Allowance: ${allowance.toString()}`);
+  }
+
+  const [, whale] = await hre.ethers.getSigners();
+
+  const vaultContract = await getBalancerContract('20210418-vault', 'Vault', networkName);
+
+  const funds: FundManagement = {
+    fromInternalBalance: false,
+    recipient: whale.address,
+    sender: whale.address,
+    toInternalBalance: false,
+  };
+
+  // Limits:
+  // +ve means max to send
+  // -ve mean min to receive
+  // For a multihop the intermediate tokens should be 0
+  // This is where slippage tolerance would be added
+  const limits: string[] = [];
+  if (swapType === SwapTypes.SwapExactIn) {
+    swapInfo.tokenAddresses.forEach((token, i) => {
+      if (token.toLowerCase() === swapInfo.tokenIn.toLowerCase()) {
+        limits[i] = swapInfo.swapAmount.toString();
+      } else if (token.toLowerCase() === swapInfo.tokenOut.toLowerCase()) {
+        limits[i] = swapInfo.returnAmount.times(-0.99).toString().split('.')[0];
+      } else {
+        limits[i] = '0';
+      }
+    });
+  } else {
+    swapInfo.tokenAddresses.forEach((token, i) => {
+      if (token.toLowerCase() === swapInfo.tokenIn.toLowerCase()) {
+        limits[i] = swapInfo.returnAmount.toString();
+      } else if (token.toLowerCase() === swapInfo.tokenOut.toLowerCase()) {
+        limits[i] = swapInfo.swapAmount.times(-0.99).toString().split('.')[0];
+      } else {
+        limits[i] = '0';
+      }
+    });
+  }
+
+  const deadline = hre.ethers.constants.MaxUint256;
+
+  console.log(funds);
+  console.log(swapInfo.tokenAddresses);
+  console.log(limits);
+
+  const ierc20abi = ['function balanceOf(address) external view returns (uint256)'];
+  const usdcToken = await hre.ethers.getContractAt(ierc20abi, usdcDescriptor.address);
+
+  const ethBalanceBefore = await whale.getBalance();
+  const usdcBalanceBefore = await usdcToken.balanceOf(whale.address);
+
+  console.log('Swapping...');
+
+  // ETH in swaps must send ETH value
+  const overrides =
+    swapInfo.tokenIn === hre.ethers.constants.AddressZero ? { value: swapInfo.swapAmount.toString() } : {};
+
+  // overrides['gasLimit'] = '200000';
+  // overrides['gasPrice'] = '20000000000';
+
+  const swapTxn = await vaultContract
+    .connect(whale)
+    .batchSwap(swapType, swapInfo.swaps, swapInfo.tokenAddresses, funds, limits, deadline, overrides);
+
+  const swapTxnReceipt = await swapTxn.wait();
+
+  console.log(`swapTxnReceipt: ${JSON.stringify(swapTxnReceipt, undefined, 2)}`);
+
+  const ethBalanceAfter = await whale.getBalance();
+  const usdcBalanceAfter = await usdcToken.balanceOf(whale.address);
+
+  console.log(
+    `Balances before swap:\n  ETH: ${hre.ethers.utils.formatEther(
+      ethBalanceBefore,
+    )}\n  USDC: ${hre.ethers.utils.formatEther(usdcBalanceBefore)}`,
+  );
+
+  console.log(
+    `Balances after swap:\n  ETH: ${hre.ethers.utils.formatEther(
+      ethBalanceAfter,
+    )}\n  USDC: ${hre.ethers.utils.formatUnits(usdcBalanceAfter, 6)}`,
+  );
 });
