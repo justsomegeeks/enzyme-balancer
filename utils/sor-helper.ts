@@ -7,15 +7,17 @@ import { scale, SOR, SwapTypes } from '@balancer-labs/sor';
 import { encodeArgs } from '@enzymefinance/protocol';
 import { AddressZero } from '@ethersproject/constants';
 import type { BaseProvider } from '@ethersproject/providers';
+import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber } from 'bignumber.js';
 import { utils } from 'ethers';
+import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 export enum Networks {
-  MAINNET = 1,
+  mainnet = 1,
 }
 
 const SUBGRAPH_URLS = {
-  [Networks.MAINNET]: 'https://api.thegraph.com/subgraphs/name/balancer-labs/balancer-v2',
+  [Networks.mainnet]: 'https://api.thegraph.com/subgraphs/name/balancer-labs/balancer-v2',
 };
 
 interface ERC20Info {
@@ -23,6 +25,8 @@ interface ERC20Info {
   decimals: BigNumber;
   symbol: string;
 }
+
+type SupportedTokens = 'ETH' | 'BAL' | 'USDC' | 'AAVE';
 
 interface ERC20Descriptors {
   [key: string]: ERC20Info;
@@ -62,7 +66,12 @@ export interface Balances {
 
 export function getNetworkERC20s(): NetworkERC20s {
   return {
-    [Networks.MAINNET]: {
+    [Networks.mainnet]: {
+      AAVE: {
+        address: '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9',
+        decimals: new BigNumber(18),
+        symbol: 'AAVE',
+      },
       BAL: {
         address: '0xba100000625a3754423978a60c9317c58a424e3d',
         decimals: new BigNumber(18),
@@ -172,6 +181,31 @@ export function calculateLimits(swapType: SwapTypes, swapInfo: SwapInfo): string
   }
 
   return limits;
+}
+
+export async function getWhaleAddress(
+  hre: HardhatRuntimeEnvironment,
+  tokenIn: SupportedTokens,
+): Promise<SignerWithAddress> {
+  let whale: SignerWithAddress;
+  if (tokenIn === 'ETH') {
+    whale = (await hre.ethers.getSigners())[1];
+  } else {
+    const whaleAddress =
+      tokenIn === 'BAL'
+        ? '0x876EabF441B2EE5B5b0554Fd502a8E0600950cFa'
+        : tokenIn === 'AAVE'
+        ? '0xF977814e90dA44bFA03b6295A0616a897441aceC'
+        : // if its USDC
+          '0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8';
+
+    await hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: [whaleAddress],
+    });
+    whale = await hre.ethers.getSigner(whaleAddress);
+  }
+  return whale;
 }
 
 export function printSwapDetails(
