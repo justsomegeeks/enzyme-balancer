@@ -40,7 +40,3 @@ it('deploys correctly', async () => {
   // Check that the adapter is registered on the integration manager.
   expect(await integrationManager.getRegisteredAdapters()).to.include(paraSwapAdapter.address);
 });
-
-xit('... test functionality', async () => {
-  // TODO: Test functionality.
-});

@@ -9,6 +9,7 @@ pragma experimental ABIEncoderV2;
 
 import "@enzymefinance/contracts/release/extensions/integration-manager/integrations/utils/AdapterBase2.sol";
 import "./BalancerV2ActionsMixin.sol";
+import "./interfaces/IBalancerV2Vault.sol";
 
 /// @title BalancerV2Adapter Contract
 /// @author JustSomeGeeks Hackathon Team <https://github.com/justsomegeeks>
@@ -29,6 +30,32 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
     /// @return identifier_ An identifier string
     function identifier() external pure override returns (string memory identifier_) {
         return "BALANCER_V2";
+    }
+
+    /// @notice Trades assets on BalancerV2
+    /// @param _vaultProxy The VaultProxy of the calling fund
+    /// @param _encodedCallArgs Encoded order parameters
+    function takeOrder(
+        address _vaultProxy,
+        bytes calldata _encodedCallArgs,
+        bytes calldata
+    ) external onlyIntegrationManager {
+        (
+            IBalancerV2Vault.SwapKind swapKind,
+            IBalancerV2Vault.BatchSwapStep[] memory swaps,
+            address[] memory assets,
+            int256[] memory limits,
+            uint256 deadline
+        ) = __decodeCallArgs(_encodedCallArgs);
+
+        IBalancerV2Vault.FundManagement memory funds = IBalancerV2Vault.FundManagement(
+            msg.sender,
+            true, // fromInternalBalance   TODO: what should this be set to
+            payable(_vaultProxy),
+            true // toInternalBalance   TODO: what should this be set to
+        );
+
+        __balancerV2BatchSwap(swapKind, swaps, assets, funds, limits, deadline);
     }
 
     /// @notice Parses the expected assets to receive from a call on integration
@@ -58,7 +85,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
     }
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
-    /// during redeem() calls
+    /// during swap() calls
     function __parseAssetsForSwap(bytes calldata _encodedCallArgs)
         private
         view
@@ -70,25 +97,26 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        // TODO: wire up the call below: __decodeCallArgs(_encodedCallArgs);
-        // for now just 'use' the variable ` _encodedCallArgs` below to keep
-        // lint happy
-        _encodedCallArgs;
-        // (
-        //     address balancerPoolToken,
-        //     uint256[] memory outgoingAssetAmounts,
-        //     uint256[] memory minIncomingAssetAmounts
-        // ) = __decodeCallArgs(_encodedCallArgs);
+        (
+            ,
+            IBalancerV2Vault.BatchSwapStep[] memory swaps,
+            address[] memory assets,
+            int256[] memory limits,
+            uint256 deadline_
+        ) = __decodeCallArgs(_encodedCallArgs);
 
+        // TODO populate variables below with the info from the variables returned above in the __decodeCallArgs() call
         spendAssets_ = new address[](1);
         spendAssets_[0] = address(0x0);
-        spendAssetAmounts_ = new uint256[](1);
 
-        incomingAssets_ = new address[](2);
+        spendAssetAmounts_ = new uint256[](1);
+        spendAssetAmounts_[0] = 0;
+
+        incomingAssets_ = new address[](1);
         incomingAssets_[0] = address(0x0);
-        incomingAssets_[1] = address(0x0);
 
         minIncomingAssetAmounts_ = new uint256[](1);
+        minIncomingAssetAmounts_[0] = 0;
 
         return (
             IIntegrationManager.SpendAssetsHandleType.Transfer,
@@ -100,21 +128,27 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
     }
 
     /// @dev Helper to decode the encoded callOnIntegration call arguments
-    function __decodeCallArgs(
-        bytes memory _encodedCallArgs // returns ( //     uint256 minIncomingAssetAmount_,
-    )
+    function __decodeCallArgs(bytes memory _encodedCallArgs)
         private
         pure
-    //     uint256 expectedIncomingAssetAmount_, // Passed as a courtesy to ParaSwap for analytics
-    //     address outgoingAsset_,
-    //     uint256 outgoingAssetAmount_,
-    //     IParaSwapV4AugustusSwapper.Path[] memory paths_
-    // )
+        returns (
+            IBalancerV2Vault.SwapKind swapKind_,
+            IBalancerV2Vault.BatchSwapStep[] memory swaps_,
+            address[] memory assets_,
+            int256[] memory limits_,
+            uint256 deadline_
+        )
     {
-        // return
-        //     abi.decode(
-        //         _encodedCallArgs,
-        //         (uint256, uint256, address, uint256, IParaSwapV4AugustusSwapper.Path[])
-        //     );
+        return
+            abi.decode(
+                _encodedCallArgs,
+                (
+                    IBalancerV2Vault.SwapKind,
+                    IBalancerV2Vault.BatchSwapStep[],
+                    address[],
+                    int256[],
+                    uint256
+                )
+            );
     }
 }

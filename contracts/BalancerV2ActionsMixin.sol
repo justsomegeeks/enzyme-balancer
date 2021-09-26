@@ -9,7 +9,6 @@ pragma experimental ABIEncoderV2;
 
 import "@enzymefinance/contracts/release/utils/AssetHelpers.sol";
 import "./interfaces/IBalancerV2Vault.sol";
-import "./interfaces/IBalancerV2Asset.sol";
 
 /// @title BalancerV2ActionsMixin Contract
 /// @author JustSomeGeeks Hackathon Team <https://github.com/justsomegeeks>
@@ -25,10 +24,10 @@ abstract contract BalancerV2ActionsMixin is AssetHelpers {
     function __balancerV2BatchSwap(
         IBalancerV2Vault.SwapKind _swapKind,
         IBalancerV2Vault.BatchSwapStep[] memory _swaps,
-        IBalancerV2Asset[] memory _assets,
+        address[] memory _assets,
         IBalancerV2Vault.FundManagement memory _funds,
         int256[] memory _limits,
-        uint256 _deadline // IVault.FundManagement _funds,
+        uint256 _deadline
     ) internal {
         IBalancerV2Vault(BALANCER_V2_VAULT).batchSwap(
             _swapKind,
