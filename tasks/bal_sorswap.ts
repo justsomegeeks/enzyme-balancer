@@ -1,21 +1,25 @@
+/* eslint-disable prefer-const */
 /*
     This code is heavily inspired by: https://github.com/balancer-labs/balancer-sor/blob/master/test/testScripts/swapExample.ts
 */
 
 import type { SwapInfo } from '@balancer-labs/sor';
-import { scale, SOR, SwapTypes } from '@balancer-labs/sor';
+import { bnum, scale, SOR, SwapTypes } from '@balancer-labs/sor';
 import { getBalancerContract } from '@balancer-labs/v2-deployments';
+import type { BigNumberish } from '@ethersproject/bignumber';
+import { Contract } from '@ethersproject/contracts';
 import type { BaseProvider } from '@ethersproject/providers';
+import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber } from 'bignumber.js';
 import { task } from 'hardhat/config';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 enum Networks {
-  MAINNET = 1,
+  mainnet = 1,
 }
 
 const SUBGRAPH_URLS = {
-  [Networks.MAINNET]: 'https://api.thegraph.com/subgraphs/name/balancer-labs/balancer-v2',
+  [Networks.mainnet]: 'https://api.thegraph.com/subgraphs/name/balancer-labs/balancer-v2',
 };
 
 interface ERC20Info {
@@ -41,7 +45,7 @@ interface FundManagement {
 
 function getNetworkERC20s(hre: HardhatRuntimeEnvironment): NetworkERC20s {
   return {
-    [Networks.MAINNET]: {
+    [Networks.mainnet]: {
       BAL: {
         address: '0xba100000625a3754423978a60c9317c58a424e3d',
         decimals: new BigNumber(18),
@@ -123,48 +127,67 @@ task('bal_sorswap', 'Swap 2 tokens via Balancer SOR', async (args, hre: HardhatR
 
   const networkERC20s = getNetworkERC20s(hre);
 
+  // If true(swaps erc20 for erc20) else (swaps eth for erc20)
+  const isErc20Swap = true;
+
   const queryOnChain = true;
   const swapType = SwapTypes.SwapExactIn;
   const ethDescriptor = networkERC20s[networkInfo]['ETH'];
   const usdcDescriptor = networkERC20s[networkInfo]['USDC'];
-  const swapAmount = new BigNumber(1);
+  const balDescriptor = networkERC20s[networkInfo]['BAL'];
+  const swapAmount = new BigNumber(100);
 
-  const swapInfo = await getSwap(
-    provider,
-    networkInfo,
-    queryOnChain,
-    swapType,
-    ethDescriptor,
-    usdcDescriptor,
-    swapAmount,
-  );
-
-  console.log(`SwapInfo = ${JSON.stringify(swapInfo, undefined, 2)}`);
-
+  let swapInfo: SwapInfo;
+  if (isErc20Swap) {
+    swapInfo = await getSwap(provider, networkInfo, queryOnChain, swapType, balDescriptor, usdcDescriptor, swapAmount);
+  } else {
+    swapInfo = await getSwap(provider, networkInfo, queryOnChain, swapType, ethDescriptor, usdcDescriptor, swapAmount);
+  }
   if (!swapInfo.returnAmount.gt(0)) {
     console.log(`Return amount is 0. No swaps to execute.`);
     return;
   }
 
-  if (swapInfo.tokenIn !== hre.ethers.constants.AddressZero) {
-    // TODO ERC20 allowance/approve
-    // // Vault needs approval for swapping non ETH
-    // console.log('Checking vault allowance...');
-    // const tokenInContract = new Contract(swapInfo.tokenIn, erc20abi, provider);
-    // let allowance = await tokenInContract.allowance(wallet.address, vaultAddr);
-    // if (bnum(allowance).lt(swapInfo.swapAmount)) {
-    //   console.log(`Not Enough Allowance: ${allowance.toString()}. Approving vault now...`);
-    //   const txApprove = await tokenInContract.connect(wallet).approve(vaultAddr, MaxUint256);
-    //   await txApprove.wait();
-    //   console.log(`Allowance updated: ${txApprove.hash}`);
-    //   allowance = await tokenInContract.allowance(wallet.address, vaultAddr);
-    // }
-    // console.log(`Allowance: ${allowance.toString()}`);
+  const ierc20abi = [
+    'function balanceOf(address) external view returns (uint256)',
+    'function allowance(address,address) external view returns (uint256)',
+    'function approve(address,uint256) external returns (bool)',
+    'function transferFrom(address,address,uint256) external returns (bool)',
+    'function transfer(address,uint256) external returns (bool)',
+  ];
+
+  // We need different whales if both tokens are erc20
+  let whale: SignerWithAddress;
+  if (isErc20Swap) {
+    const balWhaleAddr = '0x876EabF441B2EE5B5b0554Fd502a8E0600950cFa';
+    await hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: [balWhaleAddr],
+    });
+    whale = await hre.ethers.getSigner(balWhaleAddr);
+  } else {
+    whale = (await hre.ethers.getSigners())[1];
   }
 
-  const [, whale] = await hre.ethers.getSigners();
-
   const vaultContract = await getBalancerContract('20210418-vault', 'Vault', networkName);
+
+  if (swapInfo.tokenIn !== hre.ethers.constants.AddressZero) {
+    // TODO ERC20 allowance/approve
+    // Vault needs approval for swapping non ETH
+    console.log('Checking vault allowance...');
+    const tokenInContract = new Contract(swapInfo.tokenIn, ierc20abi, provider);
+    let allowance = await tokenInContract.allowance(whale.address, vaultContract.address);
+    if (bnum(allowance).lt(swapInfo.swapAmount)) {
+      console.log(`Not Enough Allowance: ${allowance.toString()}. Approving vault now...`);
+      const txApprove = await tokenInContract
+        .connect(whale)
+        .approve(vaultContract.address, hre.ethers.constants.MaxUint256);
+      await txApprove.wait();
+      console.log(`Allowance updated: ${txApprove.hash}`);
+      allowance = await tokenInContract.allowance(whale.address, vaultContract.address);
+    }
+    console.log(`Allowance: ${allowance.toString()}`);
+  }
 
   const funds: FundManagement = {
     fromInternalBalance: false,
@@ -207,11 +230,17 @@ task('bal_sorswap', 'Swap 2 tokens via Balancer SOR', async (args, hre: HardhatR
   console.log(swapInfo.tokenAddresses);
   console.log(limits);
 
-  const ierc20abi = ['function balanceOf(address) external view returns (uint256)'];
+  const balToken = await hre.ethers.getContractAt(ierc20abi, balDescriptor.address);
   const usdcToken = await hre.ethers.getContractAt(ierc20abi, usdcDescriptor.address);
 
-  const ethBalanceBefore = await whale.getBalance();
-  const usdcBalanceBefore = await usdcToken.balanceOf(whale.address);
+  let usdcBalanceBefore, usdcBalanceAfter, balBalanceAfter, balBalanceBefore: any;
+  let ethBalanceBefore, ethBalanceAfter: BigNumberish;
+  // eslint-disable-next-line prefer-const
+  usdcBalanceBefore = await usdcToken.balanceOf(whale.address);
+  if (isErc20Swap) {
+    balBalanceBefore = await balToken.balanceOf(whale.address);
+  }
+  ethBalanceBefore = await whale.getBalance();
 
   console.log('Swapping...');
 
@@ -226,22 +255,37 @@ task('bal_sorswap', 'Swap 2 tokens via Balancer SOR', async (args, hre: HardhatR
     .connect(whale)
     .batchSwap(swapType, swapInfo.swaps, swapInfo.tokenAddresses, funds, limits, deadline, overrides);
 
-  const swapTxnReceipt = await swapTxn.wait();
+  await swapTxn.wait();
 
-  console.log(`swapTxnReceipt: ${JSON.stringify(swapTxnReceipt, undefined, 2)}`);
+  console.log('Swap completed..');
 
-  const ethBalanceAfter = await whale.getBalance();
-  const usdcBalanceAfter = await usdcToken.balanceOf(whale.address);
+  if (isErc20Swap) {
+    balBalanceAfter = await balToken.balanceOf(whale.address);
+  }
+  ethBalanceAfter = await whale.getBalance();
+  usdcBalanceAfter = await usdcToken.balanceOf(whale.address);
 
-  console.log(
-    `Balances before swap:\n  ETH: ${hre.ethers.utils.formatEther(
-      ethBalanceBefore,
-    )}\n  USDC: ${hre.ethers.utils.formatEther(usdcBalanceBefore)}`,
-  );
+  if (isErc20Swap) {
+    console.log(
+      `Balances before swap:\n  BAL: ${hre.ethers.utils.formatEther(
+        balBalanceBefore,
+      )}\n  USDC: ${hre.ethers.utils.formatUnits(usdcBalanceBefore, 6)}`,
+    );
 
-  console.log(
-    `Balances after swap:\n  ETH: ${hre.ethers.utils.formatEther(
-      ethBalanceAfter,
-    )}\n  USDC: ${hre.ethers.utils.formatUnits(usdcBalanceAfter, 6)}`,
-  );
+    console.log(
+      `Balances after swap:\n  BAL: ${hre.ethers.utils.formatEther(
+        balBalanceAfter,
+      )}\n  USDC: ${hre.ethers.utils.formatUnits(usdcBalanceAfter, 6)}`,
+    );
+  } else {
+    console.log(
+      `Balances before swap:\n  ETH: ${ethBalanceBefore}\n  USDC: ${hre.ethers.utils.formatUnits(
+        usdcBalanceBefore,
+        6,
+      )}`,
+    );
+    console.log(
+      `Balances after swap:\n  ETH: ${ethBalanceAfter}\n  USDC: ${hre.ethers.utils.formatUnits(usdcBalanceAfter, 6)}`,
+    );
+  }
 });
