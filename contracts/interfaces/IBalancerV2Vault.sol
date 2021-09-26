@@ -10,7 +10,6 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./IBalancerV2Asset.sol";
 
 /// @title IBalancerVault Interface
 /// @author JustSomeGeeks Hackathon Team <https://github.com/justsomegeeks>
@@ -26,7 +25,7 @@ interface IBalancerV2Vault {
     ) external payable;
 
     struct JoinPoolRequest {
-        IBalancerV2Asset[] assets;
+        address[] assets;
         uint256[] maxAmountsIn;
         bytes userData;
         bool fromInternalBalance;
@@ -40,19 +39,11 @@ interface IBalancerV2Vault {
     ) external;
 
     struct ExitPoolRequest {
-        IBalancerV2Asset[] assets;
+        address[] assets;
         uint256[] minAmountsOut;
         bytes userData;
         bool toInternalBalance;
     }
-
-    event PoolBalanceChanged(
-        bytes32 indexed poolId,
-        address indexed liquidityProvider,
-        IERC20[] tokens,
-        int256[] deltas,
-        uint256[] protocolFeeAmounts
-    );
 
     enum PoolBalanceChangeKind {
         JOIN,
@@ -74,7 +65,7 @@ interface IBalancerV2Vault {
     function batchSwap(
         SwapKind kind,
         BatchSwapStep[] memory swaps,
-        IBalancerV2Asset[] memory assets,
+        address[] memory assets,
         FundManagement memory funds,
         int256[] memory limits,
         uint256 deadline
@@ -97,15 +88,4 @@ interface IBalancerV2Vault {
         uint256 amount;
         bytes userData;
     }
-
-    /**
-     * @dev Emitted for each individual swap performed by `swap` or `batchSwap`.
-     */
-    event Swap(
-        bytes32 indexed poolId,
-        IERC20 indexed tokenIn,
-        IERC20 indexed tokenOut,
-        uint256 amountIn,
-        uint256 amountOut
-    );
 }
