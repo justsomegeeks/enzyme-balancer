@@ -50,9 +50,9 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
 
         IBalancerV2Vault.FundManagement memory funds = IBalancerV2Vault.FundManagement(
             msg.sender,
-            true, // fromInternalBalance   TODO: what should this be set to
+            false, // fromInternalBalance
             payable(_vaultProxy),
-            true // toInternalBalance   TODO: what should this be set to
+            false // toInternalBalance
         );
 
         __balancerV2BatchSwap(swapKind, swaps, assets, funds, limits, deadline);
