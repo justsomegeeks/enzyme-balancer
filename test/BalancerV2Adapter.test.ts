@@ -91,7 +91,7 @@ describe('BalancerV2Adapter', async function () {
         throw `Invalid chain id: ${chainId}`;
       }
 
-      const networkERC20s = getNetworkERC20s(hre.ethers.constants.AddressZero);
+      const networkERC20s = getNetworkERC20s();
 
       const queryOnChain = true;
       const swapType = SwapTypes.SwapExactIn;
