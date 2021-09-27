@@ -17,7 +17,7 @@ task('bal_sorswap', 'Swap 2 tokens via Balancer SOR', async (args, hre: HardhatR
     throw `Invalid chain id: ${chainId}`;
   }
 
-  const networkERC20s = getNetworkERC20s(hre);
+  const networkERC20s = getNetworkERC20s(hre.ethers.constants.AddressZero);
 
   const queryOnChain = true;
   const swapType = SwapTypes.SwapExactIn;
@@ -80,14 +80,14 @@ task('bal_sorswap', 'Swap 2 tokens via Balancer SOR', async (args, hre: HardhatR
     },
   };
 
-  console.log('Swapping...');
-
   // ETH in swaps must send ETH value
   const overrides =
     swapInfo.tokenIn === hre.ethers.constants.AddressZero ? { value: swapInfo.swapAmount.toString() } : {};
 
   // overrides['gasLimit'] = '200000';
   // overrides['gasPrice'] = '20000000000';
+
+  console.log('Swapping...');
 
   const swapTxn = await vaultContract
     .connect(whale)
