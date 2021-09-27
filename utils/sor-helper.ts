@@ -2,11 +2,12 @@
     This code is heavily inspired by: https://github.com/balancer-labs/balancer-sor/blob/master/test/testScripts/swapExample.ts
 */
 
-import type { SwapInfo } from '@balancer-labs/sor';
+import type { SwapInfo, SwapV2 } from '@balancer-labs/sor';
 import { scale, SOR, SwapTypes } from '@balancer-labs/sor';
+import { encodeArgs } from '@enzymefinance/protocol';
 import type { BaseProvider } from '@ethersproject/providers';
 import { BigNumber } from 'bignumber.js';
-import type { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { utils } from 'ethers';
 
 export enum Networks {
   MAINNET = 1,
@@ -37,6 +38,16 @@ export interface FundManagement {
   toInternalBalance: boolean;
 }
 
+export interface BalancerV2TakeOrder {
+  swapType: SwapTypes;
+  swaps: SwapV2[];
+  tokenAddresses: string[];
+  funds: FundManagement;
+  limits: string[];
+  deadline: BigNumber;
+  //   overrides: { value: string } | {};
+}
+
 export interface Balances {
   tokenIn: {
     before: string | undefined;
@@ -48,7 +59,7 @@ export interface Balances {
   };
 }
 
-export function getNetworkERC20s(hre: HardhatRuntimeEnvironment): NetworkERC20s {
+export function getNetworkERC20s(addressZero: string): NetworkERC20s {
   return {
     [Networks.MAINNET]: {
       BAL: {
@@ -57,7 +68,7 @@ export function getNetworkERC20s(hre: HardhatRuntimeEnvironment): NetworkERC20s 
         symbol: 'BAL',
       },
       ETH: {
-        address: hre.ethers.constants.AddressZero,
+        address: addressZero,
         decimals: new BigNumber(18),
         symbol: 'ETH',
       },
@@ -68,6 +79,30 @@ export function getNetworkERC20s(hre: HardhatRuntimeEnvironment): NetworkERC20s 
       },
     },
   };
+}
+
+const swapV2Tuple = utils.ParamType.fromString(
+  'tuple(string poolId, number assetInIndex, number assetOutIndex, string amount, string userData)',
+);
+
+const swapV2TupleArray = `${swapV2Tuple.format('full')}[]`;
+
+const swapV2FundManagement = utils.ParamType.fromString(
+  'tuple(address sender, bool fromInternalBalance, address payable recipient, bool toInternalBalance)',
+);
+
+export function balancerV2TakeOrderArgs({
+  swapType,
+  swaps,
+  tokenAddresses,
+  funds,
+  limits,
+  deadline,
+}: BalancerV2TakeOrder) {
+  return encodeArgs(
+    ['uint8', swapV2TupleArray, 'string[]', swapV2FundManagement, 'int256[]', 'uint256'],
+    [swapType, swaps, tokenAddresses, funds, limits, deadline],
+  );
 }
 
 export async function getSwap(

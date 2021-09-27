@@ -1,33 +1,13 @@
 import { SwapTypes } from '@balancer-labs/sor';
-import type { AddressLike } from '@enzymefinance/ethers';
-import {
-  assetTransferArgs,
-  IntegrationAdapterInterface,
-  IntegrationManager,
-  StandardToken,
-  takeOrderSelector,
-} from '@enzymefinance/protocol';
+import { assetTransferArgs, IntegrationManager, StandardToken, takeOrderSelector } from '@enzymefinance/protocol';
+import type { Provider } from '@ethersproject/providers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
-import { BigNumberish, Contract, ContractFactory } from 'ethers';
-import { BigNumber, utils } from 'ethers';
+import type { Contract, ContractFactory } from 'ethers';
 import hre from 'hardhat';
 import { before } from 'mocha';
-import { BalancerV2Adapter } from '../typechain';
 
-function balancerV2TakeOrderArgs({
-  pathAddresses,
-  pathFees,
-  outgoingAssetAmount,
-  minIncomingAssetAmount,
-}: {
-  swapType: SwapTypes;
-  pathFees: BigNumber[];
-  outgoingAssetAmount: BigNumberish;
-  minIncomingAssetAmount: BigNumberish;
-}) {
-  return '';
-}
+import { balancerV2TakeOrderArgs, getNetworkERC20s, getSwap, Networks } from '../utils/sor-helper';
 
 const addresses = {
   contracts: {
@@ -86,6 +66,7 @@ describe('BalancerV2Adapter', async function () {
 
   describe('takeOrder', async function () {
     let balancerV2Adapter: Contract;
+    let provider: Provider;
     let usdcWhale: SignerWithAddress;
 
     before(async function () {
@@ -94,6 +75,8 @@ describe('BalancerV2Adapter', async function () {
         addresses.contracts.BalancerV2Vault,
       );
 
+      provider = hre.ethers.getDefaultProvider();
+
       await integrationManager.registerAdapters([balancerV2Adapter.address]);
 
       usdcWhale = await hre.ethers.getSigner(addresses.whales.usdc);
@@ -101,15 +84,27 @@ describe('BalancerV2Adapter', async function () {
     });
 
     it('can only be called via the IntegrationManager', async function () {
-      const outgoingAsset = new StandardToken(addresses.erc20s.usdc.address, usdcWhale);
-      const incomingAsset = new StandardToken(addresses.erc20s.comp.address, hre.ethers.getDefaultProvider());
+      const chainId = (await provider.getNetwork()).chainId;
+      const networkInfo: Networks | undefined = Networks[Networks[chainId] as keyof typeof Networks];
 
-      const takeOrderArgs = balancerV2TakeOrderArgs({
-        minIncomingAssetAmount: utils.parseUnits('1', await incomingAsset.decimals()),
-        outgoingAssetAmount: utils.parseUnits('1', await outgoingAsset.decimals()),
-        pathAddresses: [outgoingAsset, incomingAsset],
-        pathFees: [BigNumber.from('3000')],
-      });
+      if (typeof networkInfo === 'undefined') {
+        throw `Invalid chain id: ${chainId}`;
+      }
+
+      const networkERC20s = getNetworkERC20s(hre.ethers.constants.AddressZero);
+
+      const queryOnChain = true;
+      const swapType = SwapTypes.SwapExactIn;
+
+      const tokenIn = networkERC20s[networkInfo]['ETH'];
+      const tokenOut = networkERC20s[networkInfo]['USDC'];
+
+      const outgoingAsset = new StandardToken(addresses.erc20s.usdc.address, usdcWhale);
+      const incomingAsset = new StandardToken(addresses.erc20s.comp.address, provider);
+
+      const [swapInfo, cost] = getSwap(provider, networkInfo, queryOnChain, swapType, tokenIn, tokenOut, swapAmount);
+
+      const takeOrderArgs = balancerV2TakeOrderArgs({});
 
       const transferArgs = await assetTransferArgs({
         adapter: balancerV2Adapter.getInterface(),
