@@ -1,8 +1,18 @@
-import { assetTransferArgs, StandardToken, takeOrderSelector, uniswapV3TakeOrderArgs } from '@enzymefinance/protocol';
+import { AddressLike } from '@enzymefinance/ethers';
+import { assetTransferArgs, StandardToken, takeOrderSelector } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { createNewFund, deployProtocolFixture, getAssetBalances, uniswapV3TakeOrder } from '@enzymefinance/testutils';
 import { expect } from 'chai';
-import { BigNumber, utils } from 'ethers';
+import { BigNumber, BigNumberish, utils } from 'ethers';
+
+function balancerV2TakeOrderArgs({ pathAddresses, pathFees, outgoingAssetAmount, minIncomingAssetAmount, }: {
+    pathAddresses: AddressLike[];
+    pathFees: BigNumber[];
+    outgoingAssetAmount: BigNumberish;
+    minIncomingAssetAmount: BigNumberish;
+}) {
+  return '';
+}
 
 let fork: ProtocolDeployment;
 beforeEach(async () => {
@@ -13,9 +23,9 @@ describe('constructor', () => {
   it('sets state vars', async () => {
     const uniswapV3Adapter = fork.deployment.uniswapV3Adapter;
 
-    expect(await uniswapV3Adapter.getUniswapV3Router()).toMatchAddress(fork.config.uniswapV3.router);
+    expect(await uniswapV3Adapter.getUniswapV3Router()).to.equal(fork.config.uniswapV3.router);
 
-    expect(await uniswapV3Adapter.getIntegrationManager()).toMatchAddress(fork.deployment.integrationManager);
+    expect(await uniswapV3Adapter.getIntegrationManager()).to.equal(fork.deployment.integrationManager);
   });
 });
 
@@ -34,7 +44,7 @@ describe('takeOrder', () => {
     const outgoingAsset = new StandardToken(fork.config.primitives.mln, whales.mln);
     const incomingAsset = new StandardToken(fork.config.weth, provider);
 
-    const takeOrderArgs = uniswapV3TakeOrderArgs({
+    const takeOrderArgs = balancerV2TakeOrderArgs({
       pathAddresses: [outgoingAsset, incomingAsset],
       pathFees: [BigNumber.from('3000')],
       outgoingAssetAmount: utils.parseUnits('1', await outgoingAsset.decimals()),
