@@ -1,7 +1,8 @@
 import { SwapTypes } from '@balancer-labs/sor';
 import { assetTransferArgs, IntegrationManager, StandardToken, takeOrderSelector } from '@enzymefinance/protocol';
-import type { Provider } from '@ethersproject/providers';
+import type { BaseProvider } from '@ethersproject/providers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { BigNumber } from 'bignumber.js';
 import { expect } from 'chai';
 import type { Contract, ContractFactory } from 'ethers';
 import hre from 'hardhat';
@@ -66,7 +67,7 @@ describe('BalancerV2Adapter', async function () {
 
   describe('takeOrder', async function () {
     let balancerV2Adapter: Contract;
-    let provider: Provider;
+    let provider: BaseProvider;
     let usdcWhale: SignerWithAddress;
 
     before(async function () {
@@ -95,9 +96,9 @@ describe('BalancerV2Adapter', async function () {
 
       const queryOnChain = true;
       const swapType = SwapTypes.SwapExactIn;
-
       const tokenIn = networkERC20s[networkInfo]['ETH'];
       const tokenOut = networkERC20s[networkInfo]['USDC'];
+      const swapAmount = new BigNumber(1);
 
       const outgoingAsset = new StandardToken(addresses.erc20s.usdc.address, usdcWhale);
       const incomingAsset = new StandardToken(addresses.erc20s.comp.address, provider);
