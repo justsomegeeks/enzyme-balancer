@@ -5,6 +5,7 @@
 import type { SwapInfo, SwapV2 } from '@balancer-labs/sor';
 import { scale, SOR, SwapTypes } from '@balancer-labs/sor';
 import { encodeArgs } from '@enzymefinance/protocol';
+import { AddressZero } from '@ethersproject/constants';
 import type { BaseProvider } from '@ethersproject/providers';
 import { BigNumber } from 'bignumber.js';
 import { utils } from 'ethers';
@@ -59,7 +60,7 @@ export interface Balances {
   };
 }
 
-export function getNetworkERC20s(addressZero: string): NetworkERC20s {
+export function getNetworkERC20s(): NetworkERC20s {
   return {
     [Networks.MAINNET]: {
       BAL: {
@@ -68,7 +69,7 @@ export function getNetworkERC20s(addressZero: string): NetworkERC20s {
         symbol: 'BAL',
       },
       ETH: {
-        address: addressZero,
+        address: AddressZero,
         decimals: new BigNumber(18),
         symbol: 'ETH',
       },

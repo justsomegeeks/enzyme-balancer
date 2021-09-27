@@ -1,5 +1,6 @@
 import { SwapTypes } from '@balancer-labs/sor';
 import { getBalancerContract } from '@balancer-labs/v2-deployments';
+import { AddressZero } from '@ethersproject/constants';
 import { BigNumber } from 'bignumber.js';
 import { task } from 'hardhat/config';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
@@ -17,7 +18,7 @@ task('bal_sorswap', 'Swap 2 tokens via Balancer SOR', async (args, hre: HardhatR
     throw `Invalid chain id: ${chainId}`;
   }
 
-  const networkERC20s = getNetworkERC20s(hre.ethers.constants.AddressZero);
+  const networkERC20s = getNetworkERC20s();
 
   const queryOnChain = true;
   const swapType = SwapTypes.SwapExactIn;
@@ -32,7 +33,7 @@ task('bal_sorswap', 'Swap 2 tokens via Balancer SOR', async (args, hre: HardhatR
     return;
   }
 
-  if (swapInfo.tokenIn !== hre.ethers.constants.AddressZero) {
+  if (swapInfo.tokenIn !== AddressZero) {
     // TODO ERC20 allowance/approve
     // // Vault needs approval for swapping non ETH
     // console.log('Checking vault allowance...');
