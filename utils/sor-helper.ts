@@ -26,7 +26,7 @@ interface ERC20Info {
   symbol: string;
 }
 
-type SupportedTokens = 'ETH' | 'BAL' | 'USDC' | 'AAVE';
+export type SupportedTokens = 'ETH' | 'BAL' | 'USDC' | 'AAVE';
 
 interface ERC20Descriptors {
   [key: string]: ERC20Info;
@@ -196,8 +196,7 @@ export async function getWhaleAddress(
         ? '0x876EabF441B2EE5B5b0554Fd502a8E0600950cFa'
         : tokenIn === 'AAVE'
         ? '0xF977814e90dA44bFA03b6295A0616a897441aceC'
-        : // if its USDC
-          '0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8';
+        : '0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8';
 
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',

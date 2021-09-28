@@ -9,12 +9,18 @@ import { BigNumber } from 'bignumber.js';
 import { task } from 'hardhat/config';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { Balances, FundManagement, getWhaleAddress } from '../utils/sor-helper';
-import { calculateLimits, getNetworkERC20s, getSwap, Networks, printSwapDetails } from '../utils/sor-helper';
-
 import erc20Artifact from '../abis/ERC20.json';
+import type { Balances, FundManagement, SupportedTokens } from '../utils/sor-helper';
+// eslint-disable-next-line @typescript-eslint/no-duplicate-imports
+import {
+  calculateLimits,
+  getNetworkERC20s,
+  getSwap,
+  getWhaleAddress,
+  Networks,
+  printSwapDetails,
+} from '../utils/sor-helper';
 
-type SupportedTokens = 'ETH' | 'BAL' | 'USDC' | 'AAVE';
 interface SorSwapArgs {
   tokenIn: SupportedTokens;
   tokenOut: SupportedTokens;
@@ -23,7 +29,7 @@ interface SorSwapArgs {
 const supportedTokens = ['ETH', 'BAL', 'USDC', 'AAVE'];
 
 task('bal_sorswap', 'Swap 2 tokens via Balancer SOR')
-  .addParam('tokenIn', "'ETH' or 'BAL' or 'USDC' or 'AAVE'", 'ETH')
+  .addParam('tokenIn', "'ETH' or 'BAL' or 'USDC' or 'AAVE'", 'AAVE')
   .addParam('tokenOut', "'ETH' or 'BAL' or 'USDC' or 'AAVE'", 'USDC')
   .addParam('amount', 'Swap Amount', '100')
   .setAction(async (args: SorSwapArgs, hre: HardhatRuntimeEnvironment) => {
