@@ -23,6 +23,7 @@
     "@balancer-labs/balancer-js": "^1.0.1",
     "@balancer-labs/sor": "^2.0.0-beta.0",
     "@balancer-labs/v2-deployments": "^2.2.0",
+    "@chainlink/contracts": "^0.2.2",
     "@enzymefinance/contracts": "^3.0.1",
     "@enzymefinance/eslint-config": "^1.0.11",
     "@enzymefinance/prettier-config-solidity": "^1.0.0",

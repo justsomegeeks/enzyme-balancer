@@ -5,6 +5,7 @@ import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 
 contract PriceConsumerV3 {
     AggregatorV3Interface internal priceFeedETH;
+
     AggregatorV3Interface internal priceFeedBTC;
 
     /**
@@ -24,35 +25,38 @@ contract PriceConsumerV3 {
     }
 
     function getLatestPriceETH() public view returns (int256) {
-        (
-            uint80 roundID,
-            int256 price,
-            uint256 startedAt,
-            uint256 timeStamp,
-            uint80 answeredInRound
-        ) = priceFeedETH.latestRoundData();
+        // (
+        //     uint80 roundID,
+        //     int256 price,
+        //     uint256 startedAt,
+        //     uint256 timeStamp,
+        //     uint80 answeredInRound
+        // ) = priceFeedETH.latestRoundData();
+        (, int256 price, , , ) = priceFeedETH.latestRoundData();
         return price;
     }
 
     function getLatestPriceBTC() public view returns (int256) {
-        (
-            uint80 roundID,
-            int256 price,
-            uint256 startedAt,
-            uint256 timeStamp,
-            uint80 answeredInRound
-        ) = priceFeedBTC.latestRoundData();
+        // (
+        //     uint80 roundID,
+        //     int256 price,
+        //     uint256 startedAt,
+        //     uint256 timeStamp,
+        //     uint80 answeredInRound
+        // ) = priceFeedETH.latestRoundData();
+        (, int256 price, , , ) = priceFeedETH.latestRoundData();
         return price;
     }
 
     function getTimestampBTC() public view returns (uint256) {
-        (
-            uint80 roundID,
-            int256 price,
-            uint256 startedAt,
-            uint256 timeStamp,
-            uint80 answeredInRound
-        ) = priceFeedBTC.latestRoundData();
+        // (
+        //     uint80 roundID,
+        //     int256 price,
+        //     uint256 startedAt,
+        //     uint256 timeStamp,
+        //     uint80 answeredInRound
+        // ) = priceFeedETH.latestRoundData();
+        (, , , uint256 timeStamp, ) = priceFeedETH.latestRoundData();
         return timeStamp;
     }
 }
