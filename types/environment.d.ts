@@ -4,4 +4,5 @@ declare namespace NodeJS {
     ETHEREUM_NODE_MAINNET?: string;
     ETHEREUM_ACCOUNTS_MAINNET?: string;
   }
+  
 }
