@@ -1,4 +1,3 @@
-/* eslint-disable prefer-const */
 /*
     This code is heavily inspired by: https://github.com/balancer-labs/balancer-sor/blob/master/test/testScripts/swapExample.ts
 */
@@ -11,14 +10,16 @@ import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 import erc20Artifact from '../abis/ERC20.json';
 import type { Balances, FundManagement, SupportedTokens } from '../utils/sor-helper';
-// eslint-disable-next-line @typescript-eslint/no-duplicate-imports
 import {
   calculateLimits,
   getNetworkERC20s,
   getSwap,
-  getWhaleAddress,
+  getWhaleSigner,
+  isETH,
+  isSupportedToken,
   Networks,
   printSwapDetails,
+  supportedTokensMessage,
 } from '../utils/sor-helper';
 
 interface SorSwapArgs {
@@ -26,20 +27,20 @@ interface SorSwapArgs {
   tokenOut: SupportedTokens;
   amount: string;
 }
-const supportedTokens = ['ETH', 'BAL', 'USDC', 'AAVE'];
 
 task('bal_sorswap', 'Swap 2 tokens via Balancer SOR')
-  .addParam('tokenIn', "'ETH' or 'BAL' or 'USDC' or 'AAVE'", 'AAVE')
-  .addParam('tokenOut', "'ETH' or 'BAL' or 'USDC' or 'AAVE'", 'USDC')
+  .addParam('tokenIn', supportedTokensMessage(), 'AAVE')
+  .addParam('tokenOut', supportedTokensMessage(), 'USDC')
   .addParam('amount', 'Swap Amount', '100')
   .setAction(async (args: SorSwapArgs, hre: HardhatRuntimeEnvironment) => {
     const { amount, tokenIn, tokenOut } = args;
     const swapAmount = new BigNumber(Number(amount));
 
     // Validate arguments
-    if (!supportedTokens.includes(tokenIn) || !supportedTokens.includes(tokenOut)) {
-      throw new Error(`Token not supported. Supported tokens are ${supportedTokens.join(' | ')}`);
+    if (!isSupportedToken(tokenIn) || !isSupportedToken(tokenOut)) {
+      throw new Error(`Token not supported. ${supportedTokensMessage()}`);
     }
+
     const provider = hre.ethers.getDefaultProvider();
     const chainId = (await provider.getNetwork()).chainId;
     const networkInfo: Networks | undefined = Networks[Networks[chainId] as keyof typeof Networks];
@@ -52,11 +53,11 @@ task('bal_sorswap', 'Swap 2 tokens via Balancer SOR')
     const networkERC20s = getNetworkERC20s();
 
     const queryOnChain = true;
-    let swapType = SwapTypes.SwapExactIn;
+    const swapType = SwapTypes.SwapExactIn;
     const tokenInDescriptor = networkERC20s[networkInfo][tokenIn];
     const tokenOutDescriptor = networkERC20s[networkInfo][tokenOut];
 
-    let [swapInfo, cost] = await getSwap(
+    const [swapInfo, cost] = await getSwap(
       provider,
       networkInfo,
       queryOnChain,
@@ -70,7 +71,7 @@ task('bal_sorswap', 'Swap 2 tokens via Balancer SOR')
       return;
     }
 
-    const whale = await getWhaleAddress(hre, tokenIn);
+    const whale = await getWhaleSigner(hre, tokenIn);
 
     const vaultContract = await getBalancerContract('20210418-vault', 'Vault', networkName);
 
@@ -105,11 +106,11 @@ task('bal_sorswap', 'Swap 2 tokens via Balancer SOR')
     const token2 = await hre.ethers.getContractAt(erc20Artifact.abi, tokenOutDescriptor.address);
 
     let tokenInBalanceBefore, tokenInBalanceAfter, tokenOutBalanceBefore, tokenOutBalanceAfter: any;
-    // eslint-disable-next-line prefer-const
-    if (tokenIn === 'ETH') {
+
+    if (isETH(tokenInDescriptor.address)) {
       tokenInBalanceBefore = await whale.getBalance();
       tokenOutBalanceBefore = await token2.balanceOf(whale.address);
-    } else if (tokenOut === 'ETH') {
+    } else if (isETH(tokenOutDescriptor.address)) {
       tokenInBalanceBefore = await token1.balanceOf(whale.address);
       tokenOutBalanceBefore = await whale.getBalance();
     } else {
@@ -133,10 +134,10 @@ task('bal_sorswap', 'Swap 2 tokens via Balancer SOR')
     await swapTxn.wait();
 
     console.log('Swap completed..');
-    if (tokenIn === 'ETH') {
+    if (isETH(tokenInDescriptor.address)) {
       tokenInBalanceAfter = await whale.getBalance();
       tokenOutBalanceAfter = await token2.balanceOf(whale.address);
-    } else if (tokenOut === 'ETH') {
+    } else if (isETH(tokenOutDescriptor.address)) {
       tokenInBalanceAfter = await token1.balanceOf(whale.address);
       tokenOutBalanceAfter = await whale.getBalance();
     } else {
