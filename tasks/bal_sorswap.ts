@@ -1,111 +1,113 @@
+/*
+    This code is heavily inspired by: https://github.com/balancer-labs/balancer-sor/blob/master/test/testScripts/swapExample.ts
+*/
+
 import { SwapTypes } from '@balancer-labs/sor';
 import { getBalancerContract } from '@balancer-labs/v2-deployments';
-import { AddressZero } from '@ethersproject/constants';
 import { BigNumber } from 'bignumber.js';
 import { task } from 'hardhat/config';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import type { Balances, FundManagement } from '../utils/sor-helper';
-import { calculateLimits, getNetworkERC20s, getSwap, Networks, printSwapDetails } from '../utils/sor-helper';
+import type { FundManagement, SorSwapArgs } from '../utils/sor-helper';
+import {
+  adjustAllowanceIfNeeded,
+  calculateLimits,
+  getBalances,
+  getNetworkDescriptor,
+  getSwap,
+  getWhaleSigner,
+  initializeSorHelper,
+  isSupportedToken,
+  printSwapDetails,
+  supportedTokensMessage,
+} from '../utils/sor-helper';
 
-task('bal_sorswap', 'Swap 2 tokens via Balancer SOR', async (args, hre: HardhatRuntimeEnvironment) => {
-  const provider = hre.ethers.getDefaultProvider();
-  const chainId = (await provider.getNetwork()).chainId;
-  const networkInfo: Networks | undefined = Networks[Networks[chainId] as keyof typeof Networks];
-  const networkName = Networks[networkInfo];
+task('bal_sorswap', 'Swap 2 tokens via Balancer SOR')
+  .addParam('tokenIn', supportedTokensMessage(), 'AAVE')
+  .addParam('tokenOut', supportedTokensMessage(), 'USDC')
+  .addParam('amount', 'Swap Amount', '100')
+  .setAction(async (args: SorSwapArgs, hre: HardhatRuntimeEnvironment) => {
+    initializeSorHelper(hre);
 
-  if (typeof networkInfo === 'undefined') {
-    throw `Invalid chain id: ${chainId}`;
-  }
+    const { amount, tokenIn, tokenOut } = args;
+    const swapAmount = new BigNumber(+amount);
 
-  const networkERC20s = getNetworkERC20s();
+    // Validate arguments
+    if (!isSupportedToken(tokenIn) || !isSupportedToken(tokenOut)) {
+      throw new Error(`Token not supported. ${supportedTokensMessage()}`);
+    }
 
-  const queryOnChain = true;
-  const swapType = SwapTypes.SwapExactIn;
-  const tokenIn = networkERC20s[networkInfo]['ETH'];
-  const tokenOut = networkERC20s[networkInfo]['USDC'];
-  const swapAmount = new BigNumber(1);
+    const provider = hre.ethers.getDefaultProvider();
+    const networkDescriptor = await getNetworkDescriptor(provider);
 
-  const [swapInfo, cost] = await getSwap(provider, networkInfo, queryOnChain, swapType, tokenIn, tokenOut, swapAmount);
+    const queryOnChain = true;
+    const swapType = SwapTypes.SwapExactIn;
+    const tokenInDescriptor = networkDescriptor.tokens[tokenIn];
+    const tokenOutDescriptor = networkDescriptor.tokens[tokenOut];
 
-  if (!swapInfo.returnAmount.gt(0)) {
-    console.log(`Return amount is 0. No swaps to execute.`);
-    return;
-  }
+    const [swapInfo, cost] = await getSwap(
+      provider,
+      queryOnChain,
+      swapType,
+      tokenInDescriptor,
+      tokenOutDescriptor,
+      swapAmount,
+    );
 
-  if (swapInfo.tokenIn !== AddressZero) {
-    // TODO ERC20 allowance/approve
-    // // Vault needs approval for swapping non ETH
-    // console.log('Checking vault allowance...');
-    // const tokenInContract = new Contract(swapInfo.tokenIn, erc20abi, provider);
-    // let allowance = await tokenInContract.allowance(wallet.address, vaultAddr);
-    // if (bnum(allowance).lt(swapInfo.swapAmount)) {
-    //   console.log(`Not Enough Allowance: ${allowance.toString()}. Approving vault now...`);
-    //   const txApprove = await tokenInContract.connect(wallet).approve(vaultAddr, MaxUint256);
-    //   await txApprove.wait();
-    //   console.log(`Allowance updated: ${txApprove.hash}`);
-    //   allowance = await tokenInContract.allowance(wallet.address, vaultAddr);
-    // }
-    // console.log(`Allowance: ${allowance.toString()}`);
-  }
+    if (!swapInfo.returnAmount.gt(0)) {
+      console.log(`Return amount is 0. No swaps to execute.`);
+      return;
+    }
 
-  const [, whale] = await hre.ethers.getSigners();
+    const whaleSigner = await getWhaleSigner(networkDescriptor, tokenIn);
+    const vaultContract = await getBalancerContract('20210418-vault', 'Vault', networkDescriptor.name);
 
-  const vaultContract = await getBalancerContract('20210418-vault', 'Vault', networkName);
+    await adjustAllowanceIfNeeded(whaleSigner, swapInfo, vaultContract);
 
-  const funds: FundManagement = {
-    fromInternalBalance: false,
-    recipient: whale.address,
-    sender: whale.address,
-    toInternalBalance: false,
-  };
+    const funds: FundManagement = {
+      fromInternalBalance: false,
+      recipient: whaleSigner.address,
+      sender: whaleSigner.address,
+      toInternalBalance: false,
+    };
 
-  const limits = calculateLimits(swapType, swapInfo);
+    const limits: string[] = calculateLimits(swapType, swapInfo);
 
-  const deadline = hre.ethers.constants.MaxUint256;
+    const deadline = hre.ethers.constants.MaxUint256;
 
-  const ierc20abi = ['function balanceOf(address) external view returns (uint256)'];
-  const tokenOutContract = await hre.ethers.getContractAt(ierc20abi, tokenOut.address);
+    let balances = await getBalances(whaleSigner, tokenInDescriptor, tokenOutDescriptor);
 
-  const tokenInBalanceBefore = await whale.getBalance();
-  const tokenOutBalanceBefore = await tokenOutContract.balanceOf(whale.address);
+    console.log('Swapping...');
 
-  const balances: Balances = {
-    tokenIn: {
-      after: undefined,
-      before: hre.ethers.utils.formatEther(tokenInBalanceBefore),
-    },
-    tokenOut: {
-      after: undefined,
-      before: hre.ethers.utils.formatEther(tokenOutBalanceBefore),
-    },
-  };
+    // ETH in swaps must send ETH value
+    const overrides =
+      swapInfo.tokenIn === hre.ethers.constants.AddressZero ? { value: swapInfo.swapAmount.toString() } : {};
 
-  // ETH in swaps must send ETH value
-  const overrides =
-    swapInfo.tokenIn === hre.ethers.constants.AddressZero ? { value: swapInfo.swapAmount.toString() } : {};
+    // overrides['gasLimit'] = '200000';
+    // overrides['gasPrice'] = '20000000000';
 
-  // overrides['gasLimit'] = '200000';
-  // overrides['gasPrice'] = '20000000000';
+    const swapTxn = await vaultContract
+      .connect(whaleSigner)
+      .batchSwap(swapType, swapInfo.swaps, swapInfo.tokenAddresses, funds, limits, deadline, overrides);
 
-  console.log('Swapping...');
+    await swapTxn.wait();
 
-  const swapTxn = await vaultContract
-    .connect(whale)
-    .batchSwap(swapType, swapInfo.swaps, swapInfo.tokenAddresses, funds, limits, deadline, overrides);
+    console.log('Swap completed.');
 
-  const swapTxnReceipt = await swapTxn.wait();
+    balances = await getBalances(whaleSigner, tokenInDescriptor, tokenOutDescriptor, balances);
 
-  console.log(`swapTxnReceipt: ${JSON.stringify(swapTxnReceipt, undefined, 2)}`);
+    const costScaled = cost.times(tokenInDescriptor.decimals).dp(0, BigNumber.ROUND_HALF_EVEN).toString();
+    const swapInTokenCost = hre.ethers.utils.formatUnits(costScaled, tokenOutDescriptor.decimals.toString());
 
-  const tokenInBalanceAfter = await whale.getBalance();
-  const tokenOutBalanceAfter = await tokenOutContract.balanceOf(whale.address);
-
-  balances.tokenIn.after = hre.ethers.utils.formatEther(tokenInBalanceAfter);
-  balances.tokenOut.after = hre.ethers.utils.formatEther(tokenOutBalanceAfter);
-
-  const costScaled = cost.times(tokenIn.decimals).dp(0, BigNumber.ROUND_HALF_EVEN).toString();
-  const swapInTokenCost = hre.ethers.utils.formatUnits(costScaled, tokenIn.decimals.toString());
-
-  printSwapDetails(swapType, swapInfo, funds, limits, tokenIn, tokenOut, swapAmount, swapInTokenCost, balances);
-});
+    printSwapDetails(
+      swapType,
+      swapInfo,
+      funds,
+      limits,
+      tokenInDescriptor,
+      tokenOutDescriptor,
+      swapAmount,
+      swapInTokenCost,
+      balances,
+    );
+  });
