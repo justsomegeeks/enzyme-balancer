@@ -296,8 +296,10 @@ export async function adjustAllowanceIfNeeded(signer: SignerWithAddress, swapInf
   const tokenInContract = await hre.ethers.getContractAt(erc20Artifact.abi, swapInfo.tokenIn);
   const allowance = await tokenInContract.allowance(signer.address, contract.address);
 
-  if (!bnum(allowance).lt(swapInfo.swapAmount)) {
-    console.log(`ERC20 token allowance amount is insuffificent. Increasing allowance now.`);
+  console.log(`allowance = ${allowance}, swapAmount = ${swapInfo.swapAmount}`);
+
+  if (bnum(allowance).lt(swapInfo.swapAmount)) {
+    console.log(`ERC20 token allowance amount is insufficient. Increasing allowance now.`);
 
     const txApprove = await tokenInContract.connect(signer).approve(contract.address, hre.ethers.constants.MaxUint256);
 
@@ -318,11 +320,11 @@ export async function getBalances(
   const balances = {
     tokenIn: {
       after: undefined,
-      before: currentBalances && currentBalances.tokenIn ? currentBalances.tokenIn : undefined,
+      before: currentBalances && currentBalances.tokenIn ? currentBalances.tokenIn.before : undefined,
     },
     tokenOut: {
       after: undefined,
-      before: currentBalances && currentBalances.tokenOut ? currentBalances.tokenOut : undefined,
+      before: currentBalances && currentBalances.tokenOut ? currentBalances.tokenOut.before : undefined,
     },
   } as Balances;
 
