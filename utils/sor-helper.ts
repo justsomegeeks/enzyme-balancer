@@ -13,9 +13,9 @@ import { BigNumber } from 'bignumber.js';
 import { utils } from 'ethers';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import erc20Artifact from '../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json';
+import erc20Artifact from '../abis/ERC20.json';
 
-const SUPPORTED_TOKENS = ['AAVE', 'ETH', 'BAL', 'COMP', 'USDC'] as const;
+const SUPPORTED_TOKENS = ['AAVE', 'ETH', 'BAL', 'COMP', 'USDC', 'DAI'] as const;
 type SupportedTokens = typeof SUPPORTED_TOKENS[number];
 
 const SUPPORTED_NETWORKS = ['mainnet'] as const;
@@ -98,7 +98,14 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
           contract: await hre.ethers.getContractAt(erc20Artifact.abi, '0xc00e94cb662c3520282e6f5717214004a7f26888'),
           decimals: new BigNumber(18),
           symbol: 'COMP',
-          whaleAddress: '0xC89b6f0146642688bb254bF93C28fcCF1E182C81',
+          whaleAddress: '0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8',
+        },
+        DAI: {
+          address: '0x6b175474e89094c44da98b954eedeac495271d0f',
+          contract: await hre.ethers.getContractAt(erc20Artifact.abi, '0x6b175474e89094c44da98b954eedeac495271d0f'),
+          decimals: new BigNumber(18),
+          symbol: 'DAI',
+          whaleAddress: '0x28C6c06298d514Db089934071355E5743bf21d60',
         },
         ETH: {
           address: AddressZero,
