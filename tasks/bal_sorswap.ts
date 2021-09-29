@@ -30,7 +30,7 @@ task('bal_sorswap', 'Swap 2 tokens via Balancer SOR')
     initializeSorHelper(hre);
 
     const { amount, tokenIn, tokenOut } = args;
-    const swapAmount = new BigNumber(Number(amount));
+    const swapAmount = new BigNumber(+amount);
 
     // Validate arguments
     if (!isSupportedToken(tokenIn) || !isSupportedToken(tokenOut)) {
@@ -51,7 +51,7 @@ task('bal_sorswap', 'Swap 2 tokens via Balancer SOR')
       swapType,
       tokenInDescriptor,
       tokenOutDescriptor,
-      new BigNumber(+swapAmount),
+      swapAmount,
     );
 
     if (!swapInfo.returnAmount.gt(0)) {
