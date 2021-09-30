@@ -13,7 +13,7 @@ import { BigNumber } from 'bignumber.js';
 import { utils } from 'ethers';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import erc20Artifact from '../abis/ERC20.json';
+import erc20Artifact from '../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json';
 
 const SUPPORTED_TOKENS = ['AAVE', 'ETH', 'BAL', 'COMP', 'USDC', 'DAI'] as const;
 type SupportedTokens = typeof SUPPORTED_TOKENS[number];
