@@ -7,7 +7,9 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+
 import "@enzymefinance/contracts/release/extensions/integration-manager/integrations/utils/AdapterBase2.sol";
+import "hardhat/console.sol";
 import "./BalancerV2ActionsMixin.sol";
 import "./interfaces/IBalancerV2Vault.sol";
 
@@ -47,6 +49,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             int256[] memory limits,
             uint256 deadline
         ) = __decodeCallArgs(_encodedCallArgs);
+        console.log("Here");
 
         IBalancerV2Vault.FundManagement memory funds = IBalancerV2Vault.FundManagement(
             msg.sender,
@@ -130,7 +133,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
     /// @dev Helper to decode the encoded callOnIntegration call arguments
     function __decodeCallArgs(bytes memory _encodedCallArgs)
         private
-        pure
+        view
         returns (
             IBalancerV2Vault.SwapKind swapKind_,
             IBalancerV2Vault.BatchSwapStep[] memory swaps_,
@@ -139,6 +142,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             uint256 deadline_
         )
     {
+        console.logBytes(_encodedCallArgs);
         return
             abi.decode(
                 _encodedCallArgs,

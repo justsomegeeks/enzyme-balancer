@@ -188,7 +188,7 @@ export interface Balances {
 }
 
 const swapV2Tuple = utils.ParamType.fromString(
-  'tuple(string poolId, number assetInIndex, number assetOutIndex, string amount, string userData)',
+  'tuple(bytes32 poolId, uint256 assetInIndex, uint256 assetOutIndex, uint256 amount, bytes userData)',
 );
 
 const swapV2TupleArray = `${swapV2Tuple.format('full')}[]`;
@@ -206,7 +206,7 @@ export function balancerV2TakeOrderArgs({
   deadline,
 }: BalancerV2TakeOrder) {
   return encodeArgs(
-    ['uint8', swapV2TupleArray, 'string[]', swapV2FundManagement, 'int256[]', 'uint256'],
+    ['uint8', swapV2TupleArray, 'address[]', swapV2FundManagement, 'int256[]', 'uint256'],
     [swapType, swaps, tokenAddresses, funds, limits, deadline],
   );
 }

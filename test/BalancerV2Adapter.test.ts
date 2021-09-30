@@ -68,12 +68,14 @@ describe('BalancerV2Adapter', async function () {
         networkDescriptor.contracts.BalancerV2Vault,
       );
 
+      await balancerV2Adapter.deployed();
+
       await integrationManager.registerAdapters([balancerV2Adapter.address]);
       usdcWhale = await hre.ethers.getSigner(networkDescriptor.tokens.USDC.whaleAddress);
       await hre.network.provider.send('hardhat_impersonateAccount', [usdcWhale.address]);
     });
 
-    xit('can only be called via the IntegrationManager', async function () {
+    it('can only be called via the IntegrationManager', async function () {
       const queryOnChain = true;
       const swapType = SwapTypes.SwapExactIn;
 
@@ -103,6 +105,8 @@ describe('BalancerV2Adapter', async function () {
         tokenAddresses: [tokenIn.address, tokenOut.address],
       } as BalancerV2TakeOrder);
 
+      console.log('I am here');
+
       const transferArgs = await assetTransferArgs({
         adapter: balancerV2Adapter.getInterface(),
         encodedCallArgs: takeOrderArgs,
@@ -112,7 +116,7 @@ describe('BalancerV2Adapter', async function () {
       expect(transferArgs).to.not.be.undefined;
 
       await expect(
-        balancerV2Adapter.takeOrder(balancerV2Adapter.address, takeOrderSelector, transferArgs),
+        await balancerV2Adapter.takeOrder(balancerV2Adapter.address, takeOrderSelector, transferArgs),
       ).to.be.revertedWith('Only the IntegrationManager can call this function');
     });
   });
