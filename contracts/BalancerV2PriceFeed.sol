@@ -90,10 +90,6 @@ contract BalancerV2PriceFeed {
 
         return (underlyingTokens_, underlyingValues_);
     }
-
-    function getBalancerV2Vault() public view returns (address) {
-        return address(vault);
-    }
 }
 
 /**

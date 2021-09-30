@@ -130,8 +130,4 @@ interface IBalancerV2Vault {
             uint256[] memory balances,
             uint256 lastChangeBlock
         );
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> fbadbee... some commits
