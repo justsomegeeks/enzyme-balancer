@@ -47,7 +47,7 @@ interface SubgraphPoolBase {
     swapEnabled?: boolean;
   }
 // Returns all public pools
-async function fetchSubgraphPools(
+export async function fetchSubgraphPools(
     subgraphUrl: string
 ): Promise<SubgraphPoolBase[]> {
     // can filter for publicSwap too??
