@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import "./interfaces/IBalancerV2Vault.sol";
+import "./interfaces/IBalancerV2Pool.sol";
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
@@ -119,12 +120,17 @@ contract BalancerV2PriceFeed {
         return (underlyingTokens_, underlyingValues_);
     }
 
+    function getPoolTotalSupply(address _poolAddress) internal returns(uint256){
+        IBalancerV2Pool pool = IBalancerV2Pool(_poolAddress);
+        return pool.totalSupply();
+    }
+
     function calcBPTValue(bytes32 _poolId, address _poolAddress)
         public
         returns (uint256 totalSupply, uint256 BPTValue)
     {
-        IBalancerV2Vault poolToken = IBalancerV2Vault(_poolAddress);
-        totalSupply = poolToken.totalSupply();
+        totalSupply = getPoolTotalSupply(_poolAddress);
+         console.log('Supply',totalSupply);
         uint256 totalTokenValue;
         (, uint256[] memory underlyingValues_) = calcUnderlyingValues(_poolId);
         for (uint256 i = 0; i < underlyingValues_.length; i++) {
