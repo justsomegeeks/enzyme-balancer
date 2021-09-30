@@ -114,6 +114,19 @@ contract BalancerV2PriceFeed {
 
         return (underlyingTokens_, underlyingValues_);
     }
+
+    function calcBPTValue(bytes32 _poolId)
+        external
+        returns (uint256 totalSupply, uint256 BPTvalue)
+    {
+        totalSupply = address(_poolId).totalSupply();
+        uint256 totalTokenValue;
+        (, uint256[] memory underlyingValues_) = calcUnderlyingValues(_poolId);
+        for (uint256 i = 0; i < underlyingValues_.length; i++) {
+            totalTokenValue += underlyingValues_[i];
+        }
+        BPTvalue = totalTokenValue / totalSupply;
+    }
 }
 
 /**

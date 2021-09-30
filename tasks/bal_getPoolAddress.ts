@@ -33,7 +33,7 @@ task(
   async function (args, hre: HardhatRuntimeEnvironment) {
     const provider = hre.ethers.getDefaultProvider();
     const poolContract = new hre.ethers.Contract(
-      '0x9e7fd25ad9d97f1e6716fa5bb04749a4621e892d',
+      '0xa660ba113f9aabaeb4bcd28a4a1705f4997d5432',
       weightedPool_abi,
       provider,
     );
