@@ -3,6 +3,9 @@ import IVaultArtifact from '@balancer-labs/v2-deployments/dist/tasks/20210418-va
 import { task } from 'hardhat/config';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 
+import vault_abi from '../node_modules/@balancer-labs/v2-deployments/dist/tasks/20210418-vault/abi/Vault.json';
+import weightedPool_abi from '../node_modules/@balancer-labs/v2-deployments/dist/tasks/20210418-weighted-pool/abi/WeightedPool.json';
+
 task('bal_getPoolAddress', 'Gets Balancer WBTC/WETH pool address', async () => {
   const v2WBTCWETHPoolId = '0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014';
   const v2WBTCWETHPoolAddress = getPoolAddress(v2WBTCWETHPoolId);
@@ -21,5 +24,20 @@ task(
 
     const poolTokens = Vault.getPoolTokens(V2PoolID);
     console.log(await poolTokens);
+  },
+);
+
+task(
+  'bal_getTotalSupply',
+  'gets totalsupply from a a balancer pool',
+  async function (args, hre: HardhatRuntimeEnvironment) {
+    const provider = hre.ethers.getDefaultProvider();
+    const poolContract = new hre.ethers.Contract(
+      '0x9e7fd25ad9d97f1e6716fa5bb04749a4621e892d',
+      weightedPool_abi,
+      provider,
+    );
+    const totalSupply = await poolContract.totalSupply();
+    console.log(totalSupply.toString());
   },
 );

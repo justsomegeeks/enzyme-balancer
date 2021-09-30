@@ -92,11 +92,68 @@ export async function fetchSubgraphPools(subgraphUrl: string): Promise<SubgraphP
 
   return data.pools ?? [];
 }
+export async function fetchSubgraphPool(subgraphUrl: string, pooladdress: string): Promise<SubgraphPoolBase[]> {
+  // can filter for publicSwap too??
+  const query = `
+      {
+        pools(where: {address: "${pooladdress}"}) {
+          id
+          address
+          poolType
+          swapFee
+          totalShares
+          tokens {
+            id
+            address
+            balance
+            decimals
+            weight
+            priceRate
+          }
+          tokensList
+          totalWeight
+          amp
+          expiryTime
+          unitSeconds
+          principalToken
+          baseToken
+          swapEnabled
+        }
+      }
+    `;
 
+  console.log(`fetchSubgraphPools: ${subgraphUrl}`);
+  const response = await fetch(subgraphUrl, {
+    body: JSON.stringify({
+      query,
+    }),
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+  });
+
+  const { data } = await response.json();
+
+  return data.pools ?? [];
+}
 task('bal_getPools', 'Get all public pools on balancer', async (args, hre: HardhatRuntimeEnvironment) => {
   const provider = hre.ethers.getDefaultProvider();
   const chainId = (await provider.getNetwork()).chainId;
   const networkInfo: Networks | undefined = Networks[Networks[chainId] as keyof typeof Networks];
   const result = fetchSubgraphPools(SUBGRAPH_URLS[networkInfo]);
-  console.log((await result).length);
+  console.log(await result);
 });
+
+task(
+  'bal_getPool',
+  'Fetches info for a specific pool with an address',
+  async function (args, hre: HardhatRuntimeEnvironment) {
+    const provider = hre.ethers.getDefaultProvider();
+    const chainId = (await provider.getNetwork()).chainId;
+    const networkInfo: Networks | undefined = Networks[Networks[chainId] as keyof typeof Networks];
+    const result = await fetchSubgraphPool(SUBGRAPH_URLS[networkInfo], '0xa660ba113f9aabaeb4bcd28a4a1705f4997d5432');
+    console.log(result);
+  },
+);
