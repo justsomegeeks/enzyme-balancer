@@ -4,6 +4,7 @@
 import { task } from 'hardhat/config';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 import fetch from 'isomorphic-fetch';
+import weightedPool_abi from '../node_modules/@balancer-labs/v2-deployments/dist/tasks/20210418-weighted-pool/abi/WeightedPool.json';
 
 enum Networks {
   MAINNET = 1,
@@ -188,6 +189,7 @@ export async function fetchSubgraphPairs(
 
   return data.pools ?? [];
 }
+
 task('bal_getPools', 'Get all public pools on balancer', async (args, hre: HardhatRuntimeEnvironment) => {
   const provider = hre.ethers.getDefaultProvider();
   const chainId = (await provider.getNetwork()).chainId;
@@ -207,6 +209,7 @@ task(
     console.log(result);
   },
 );
+
 task(
   'bal_getWETH_WBTCPools',
   'fetches all pools with WETH and WBTC in the token list',
@@ -222,3 +225,26 @@ task(
     console.log(result);
   },
 );
+
+task('bal_getAllPoolsSupplyOnChain','Iterate over all pools to see if weighted pool is a good encapsulation',async function(args, hre: HardhatRuntimeEnvironment){
+  const provider = hre.ethers.getDefaultProvider();
+  const chainId = (await provider.getNetwork()).chainId;
+  const networkInfo: Networks | undefined = Networks[Networks[chainId] as keyof typeof Networks];
+  const result = fetchSubgraphPools(SUBGRAPH_URLS[networkInfo]);
+  const supplys = [{"graph": "test", "contract": "test"}];
+  (await result).map( async (pool) => {
+
+    const poolContract = new hre.ethers.Contract(
+      pool.address,
+      weightedPool_abi,
+      provider,
+    );  
+
+    const totalSupply = await poolContract.totalSupply();
+    console.log('from subgraph',pool.totalShares);
+    console.log('From contract',await totalSupply);
+    supplys.push({"graph": pool.totalShares, "contract": await totalSupply}); 
+
+  });
+  console.log('supplies:',supplys);
+});

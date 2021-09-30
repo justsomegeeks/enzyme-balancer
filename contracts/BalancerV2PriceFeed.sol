@@ -49,8 +49,8 @@ contract BalancerV2PriceFeed {
         //     0xdCA36F27cbC4E38aE16C4E9f99D39b42337F6dcf,
         //     true
         // ); //usdc
-        tokenAggregator[0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48] = Aggregator(
-            0x8fffffd4afb6115b954bd326cbe7b4ba576818f6,
+        tokenAggregator[0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48] = Aggregator(
+            0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6,
             true
         ); //usdc-usd
         tokenAggregator[0x6B175474E89094C44Da98b954EedeAC495271d0F] = Aggregator(
@@ -132,6 +132,10 @@ contract BalancerV2PriceFeed {
         }
         BPTValue = totalTokenValue / totalSupply;
         console.log(totalSupply, BPTValue);
+    }
+
+    function getAddress(bytes32 data) external returns(address){
+      return  address(bytes20(data));
     }
 }
 
