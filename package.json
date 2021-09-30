@@ -72,5 +72,8 @@
   },
   "eslintConfig": {
     "extends": "@enzymefinance/eslint-config"
+  },
+  "dependencies": {
+    "@chainlink/contracts": "^0.2.2"
   }
 }
