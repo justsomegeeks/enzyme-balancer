@@ -11,7 +11,8 @@ import type { BaseProvider } from '@ethersproject/providers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import IERC20Artifact from '@openzeppelin/contracts/build/contracts/IERC20.json';
 import { BigNumber as BN } from 'bignumber.js';
-import { BigNumber, utils } from 'ethers';
+import type { BigNumber } from 'ethers';
+import { utils } from 'ethers';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 const SUPPORTED_TOKENS = ['AAVE', 'ETH', 'BAL', 'COMP', 'USDC', 'DAI'] as const;

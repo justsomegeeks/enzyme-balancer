@@ -9,8 +9,13 @@ import hre from 'hardhat';
 import { before } from 'mocha';
 
 import type { BalancerV2TakeOrder, FundManagement, NetworkDescriptor } from '../utils/sor-helper';
-import { calculateLimits } from '../utils/sor-helper';
-import { balancerV2TakeOrderArgs, getNetworkDescriptor, getSwap, initializeSorHelper } from '../utils/sor-helper';
+import {
+  balancerV2TakeOrderArgs,
+  calculateLimits,
+  getNetworkDescriptor,
+  getSwap,
+  initializeSorHelper,
+} from '../utils/sor-helper';
 
 describe('BalancerV2Adapter', async function () {
   let provider: BaseProvider;
