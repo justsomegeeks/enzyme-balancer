@@ -30,11 +30,12 @@ describe('BalancerV2PriceFeed', function () {
     expect(await balancerV2PriceFeed.getBalancerV2Vault()).to.equal(addresses.BalancerV2Vault);
   });
 
-  it('should return an array of tokens and balances', async () => {
-    // const response = await balancerV2PriceFeed.getTokensFromPool(
-    //   '0x01abc00e86c7e258823b9a055fd62ca6cf61a16300010000000000000000003b',
-    // );
-    // const pools = await fetchSubgraphPools('https://api.thegraph.com/subgraphs/name/balancer-labs/balancer-v2');
-    // expect(pools);
+  it('should return BPT Value and total BPT tokens.', async () => {
+    const response = await balancerV2PriceFeed.calcBPTValue(
+      '0xa660ba113f9aabaeb4bcd28a4a1705f4997d5432000200000000000000000022',
+      '0xa660ba113f9aabaeb4bcd28a4a1705f4997d5432',
+    );
+    console.log(response);
+    expect(response);
   });
 });

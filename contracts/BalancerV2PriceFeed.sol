@@ -45,10 +45,14 @@ contract BalancerV2PriceFeed {
             0xC1438AA3823A6Ba0C159CfA8D98dF5A994bA120b,
             true
         ); //bal
-        tokenAggregator[0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48] = Aggregator(
-            0xdCA36F27cbC4E38aE16C4E9f99D39b42337F6dcf,
+        // tokenAggregator[0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48] = Aggregator(
+        //     0xdCA36F27cbC4E38aE16C4E9f99D39b42337F6dcf,
+        //     true
+        // ); //usdc
+        tokenAggregator[0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48] = Aggregator(
+            0x8fffffd4afb6115b954bd326cbe7b4ba576818f6,
             true
-        ); //usdc
+        ); //usdc-usd
         tokenAggregator[0x6B175474E89094C44Da98b954EedeAC495271d0F] = Aggregator(
             0x2bA49Aaa16E6afD2a993473cfB70Fa8559B523cF,
             true
@@ -115,11 +119,12 @@ contract BalancerV2PriceFeed {
         return (underlyingTokens_, underlyingValues_);
     }
 
-    function calcBPTValue(bytes32 _poolId)
-        external
+    function calcBPTValue(bytes32 _poolId, address _poolAddress)
+        public
         returns (uint256 totalSupply, uint256 BPTValue)
     {
-        totalSupply = address(_poolId).totalSupply();
+        IBalancerV2Vault poolToken = IBalancerV2Vault(_poolAddress);
+        totalSupply = poolToken.totalSupply();
         uint256 totalTokenValue;
         (, uint256[] memory underlyingValues_) = calcUnderlyingValues(_poolId);
         for (uint256 i = 0; i < underlyingValues_.length; i++) {

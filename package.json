@@ -50,6 +50,7 @@
     "hardhat-deploy": "^0.9.1",
     "hardhat-gas-reporter": "^1.0.4",
     "husky": "^7.0.2",
+    "isomorphic-fetch": "^3.0.0",
     "prettier": "^2.4.0",
     "prettier-plugin-solidity": "^1.0.0-beta.18",
     "solhint": "^3.3.6",
@@ -57,8 +58,7 @@
     "solidity-coverage": "^0.7.17",
     "ts-node": "^10.2.1",
     "typechain": "^5.1.2",
-    "typescript": "^4.4.3",
-    "isomorphic-fetch": "^3.0.0"
+    "typescript": "^4.4.3"
   },
   "resolutions": {
     "ganache-core": "https://registry.yarnpkg.com/@favware/skip-dependency/-/skip-dependency-1.1.1.tgz"
@@ -74,5 +74,6 @@
   },
   "eslintConfig": {
     "extends": "@enzymefinance/eslint-config"
-  }
+  },
+  "dependencies": {}
 }
