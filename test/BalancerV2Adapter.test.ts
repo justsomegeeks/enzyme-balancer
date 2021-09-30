@@ -6,9 +6,8 @@ import BigNumber from 'bignumber.js';
 import { expect } from 'chai';
 import type { Contract, ContractFactory } from 'ethers';
 import hre from 'hardhat';
-import { before } from 'mocha';
 
-import type { BalancerV2TakeOrder, FundManagement, NetworkDescriptor } from '../utils/env-helper';
+import type { FundManagement, NetworkDescriptor } from '../utils/env-helper';
 import {
   balancerV2TakeOrderArgs,
   calculateLimits,
@@ -60,7 +59,7 @@ describe('BalancerV2Adapter', async function () {
 
   describe('takeOrder', async function () {
     let balancerV2Adapter: Contract;
-    let usdcWhale: SignerWithAddress;
+    let usdcWhaleSigner: SignerWithAddress;
 
     before(async function () {
       balancerV2Adapter = await balancerV2AdapterFactory.deploy(
@@ -71,8 +70,8 @@ describe('BalancerV2Adapter', async function () {
       await balancerV2Adapter.deployed();
 
       await integrationManager.registerAdapters([balancerV2Adapter.address]);
-      usdcWhale = await hre.ethers.getSigner(networkDescriptor.tokens.USDC.whaleAddress);
-      await hre.network.provider.send('hardhat_impersonateAccount', [usdcWhale.address]);
+      usdcWhaleSigner = await hre.ethers.getSigner(networkDescriptor.tokens.USDC.whaleAddress);
+      await hre.network.provider.send('hardhat_impersonateAccount', [usdcWhaleSigner.address]);
     });
 
     it('can only be called via the IntegrationManager', async function () {
@@ -103,12 +102,10 @@ describe('BalancerV2Adapter', async function () {
         swapType,
         swaps: swapInfo.swaps,
         tokenAddresses: [tokenIn.address, tokenOut.address],
-      } as BalancerV2TakeOrder);
-
-      console.log('I am here');
+      });
 
       const transferArgs = await assetTransferArgs({
-        adapter: balancerV2Adapter.getInterface(),
+        adapter: balancerV2Adapter,
         encodedCallArgs: takeOrderArgs,
         selector: takeOrderSelector,
       });
