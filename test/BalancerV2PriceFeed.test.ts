@@ -3,8 +3,6 @@ import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import hre from 'hardhat';
 
-import type { BalancerV2Adapter } from '../typechain';
-
 const addresses = {
   BalancerV2Vault: '0xBA12222222228d8Ba445958a75a0704d566BF2C8',
   EnzymeCouncil: '0xb270fe91e8e4b80452fbf1b4704208792a350f53',
@@ -20,10 +18,7 @@ before(async () => {
   await hre.network.provider.send('hardhat_impersonateAccount', [enzymeCouncil.address]);
 
   const balancerV2PriceFeedFactory = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
-  balancerV2PriceFeed = await balancerV2PriceFeedFactory.deploy(
-    addresses.IntegrationManager,
-    addresses.BalancerV2Vault,
-  );
+  balancerV2PriceFeed = await balancerV2PriceFeedFactory.deploy(addresses.BalancerV2Vault);
 
   integrationManager = new IntegrationManager(addresses.IntegrationManager, enzymeCouncil);
   await integrationManager.registerAdapters([balancerV2PriceFeed.address]);
