@@ -13,7 +13,7 @@ import { BigNumber } from 'bignumber.js';
 import { utils } from 'ethers';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import erc20Artifact from '../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json';
+import iErc20Artifact from '../abis/IERC20.json';
 
 const SUPPORTED_TOKENS = ['AAVE', 'ETH', 'BAL', 'COMP', 'USDC', 'DAI'] as const;
 type SupportedTokens = typeof SUPPORTED_TOKENS[number];
@@ -81,28 +81,28 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
       tokens: {
         AAVE: {
           address: '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9',
-          contract: await hre.ethers.getContractAt(erc20Artifact.abi, '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9'),
+          contract: await hre.ethers.getContractAt(iErc20Artifact.abi, '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9'),
           decimals: new BigNumber(18),
           symbol: 'AAVE',
           whaleAddress: '0xF977814e90dA44bFA03b6295A0616a897441aceC',
         },
         BAL: {
           address: '0xba100000625a3754423978a60c9317c58a424e3d',
-          contract: await hre.ethers.getContractAt(erc20Artifact.abi, '0xba100000625a3754423978a60c9317c58a424e3d'),
+          contract: await hre.ethers.getContractAt(iErc20Artifact.abi, '0xba100000625a3754423978a60c9317c58a424e3d'),
           decimals: new BigNumber(18),
           symbol: 'BAL',
           whaleAddress: '0x876EabF441B2EE5B5b0554Fd502a8E0600950cFa',
         },
         COMP: {
           address: '0xc00e94cb662c3520282e6f5717214004a7f26888',
-          contract: await hre.ethers.getContractAt(erc20Artifact.abi, '0xc00e94cb662c3520282e6f5717214004a7f26888'),
+          contract: await hre.ethers.getContractAt(iErc20Artifact.abi, '0xc00e94cb662c3520282e6f5717214004a7f26888'),
           decimals: new BigNumber(18),
           symbol: 'COMP',
           whaleAddress: '0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8',
         },
         DAI: {
           address: '0x6b175474e89094c44da98b954eedeac495271d0f',
-          contract: await hre.ethers.getContractAt(erc20Artifact.abi, '0x6b175474e89094c44da98b954eedeac495271d0f'),
+          contract: await hre.ethers.getContractAt(iErc20Artifact.abi, '0x6b175474e89094c44da98b954eedeac495271d0f'),
           decimals: new BigNumber(18),
           symbol: 'DAI',
           whaleAddress: '0x28C6c06298d514Db089934071355E5743bf21d60',
@@ -116,7 +116,7 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
         },
         USDC: {
           address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-          contract: await hre.ethers.getContractAt(erc20Artifact.abi, '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'),
+          contract: await hre.ethers.getContractAt(iErc20Artifact.abi, '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'),
           decimals: new BigNumber(6),
           symbol: 'USDC',
           whaleAddress: '0xae2d4617c862309a3d75a0ffb358c7a5009c673f',
@@ -300,7 +300,7 @@ export async function adjustAllowanceIfNeeded(signer: SignerWithAddress, swapInf
 
   console.log('Checking ERC20 allowance...');
 
-  const tokenInContract = await hre.ethers.getContractAt(erc20Artifact.abi, swapInfo.tokenIn);
+  const tokenInContract = await hre.ethers.getContractAt(iErc20Artifact.abi, swapInfo.tokenIn);
   const allowance = await tokenInContract.allowance(signer.address, contract.address);
 
   console.log(`allowance = ${allowance}, swapAmount = ${swapInfo.swapAmount}`);

@@ -102,16 +102,6 @@ jobs:
           path: '**/node_modules'
           key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
 
-      - name: Hardhat artifact cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            artifacts
-            cache/solidity-files-cache.json
-          key: ${{ runner.os }}-artifacts-${{ hashFiles('contracts/**/*.sol') }}
-          restore-keys: |
-            ${{ runner.os }}-artifacts-
-
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
