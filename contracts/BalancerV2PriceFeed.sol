@@ -117,7 +117,7 @@ contract BalancerV2PriceFeed {
 
     function calcBPTValue(bytes32 _poolId)
         external
-        returns (uint256 totalSupply, uint256 BPTvalue)
+        returns (uint256 totalSupply, uint256 BPTValue)
     {
         totalSupply = address(_poolId).totalSupply();
         uint256 totalTokenValue;
@@ -125,7 +125,8 @@ contract BalancerV2PriceFeed {
         for (uint256 i = 0; i < underlyingValues_.length; i++) {
             totalTokenValue += underlyingValues_[i];
         }
-        BPTvalue = totalTokenValue / totalSupply;
+        BPTValue = totalTokenValue / totalSupply;
+        console.log(totalSupply, BPTValue);
     }
 }
 
