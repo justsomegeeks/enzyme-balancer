@@ -101,7 +101,7 @@ contract BalancerV2PriceFeed {
     }
 
     function calcUnderlyingValues(bytes32 _poolId)
-        external
+        public
         returns (address[] memory underlyingTokens_, uint256[] memory underlyingValues_)
     {
         (IERC20[] memory tokens, uint256[] memory balances, ) = getPoolInfoFromPool(_poolId);
