@@ -61,12 +61,15 @@ contract BalancerV2PriceFeed {
     }
 
     function getLatestPrice(address _token) public returns (uint256) {
+
         priceFeed = AggregatorV3Interface(_token);
         (, int256 price, , , ) = priceFeed.latestRoundData();
         return uint256(price);
     }
 
     function getAllPrices(IERC20[] memory tokens) internal returns (uint256[] memory result) {
+        uint size = tokens.length;
+        result = new uint256[] (size);
         for (uint256 i = 0; i < tokens.length; i++) {
             if (tokenAggregator[address(tokens[0])].isValue) {
                 //prevents calling obscure tokens until we decide what to do with those
@@ -90,9 +93,6 @@ contract BalancerV2PriceFeed {
         )
     {
         (tokens, balances, lastChangeBlock) = vault.getPoolTokens(_poolId);
-        for (uint256 i = 0; i < tokens.length; i++) {
-            console.log("TOKEN", address(tokens[i]), "BALANCE", uint256(balances[i]));
-        }
         return (tokens, balances, lastChangeBlock);
     }
 
@@ -109,9 +109,11 @@ contract BalancerV2PriceFeed {
         public
         returns (address[] memory underlyingTokens_, uint256[] memory underlyingValues_)
     {
+
         (IERC20[] memory tokens, uint256[] memory balances, ) = getPoolInfoFromPool(_poolId);
         uint256[] memory prices = getAllPrices(tokens);
-
+        underlyingTokens_ = new  address[](tokens.length);
+        underlyingValues_ = new  uint256[](tokens.length);
         for (uint256 i = 0; i < tokens.length; i++) {
             underlyingValues_[i] = balances[i] * prices[i];
             underlyingTokens_[i] = address(tokens[i]);
@@ -130,7 +132,6 @@ contract BalancerV2PriceFeed {
         returns (uint256 totalSupply, uint256 BPTValue)
     {
         totalSupply = getPoolTotalSupply(_poolAddress);
-         console.log('Supply',totalSupply);
         uint256 totalTokenValue;
         (, uint256[] memory underlyingValues_) = calcUnderlyingValues(_poolId);
         for (uint256 i = 0; i < underlyingValues_.length; i++) {
