@@ -153,4 +153,41 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
                 )
             );
     }
+        /// @dev Helper to decode the encoded callOnIntegration call arguments
+    function __decodeEncodedLendArgs(bytes memory _encodedCallArgs)
+        private
+        pure
+        returns (
+            bytes32 poolId_,
+            address recipient_,
+            IBalancerV2Vault.JoinPoolRequest memory request_
+        )
+    {
+        return
+            abi.decode(
+                _encodedCallArgs,
+                (
+                    bytes32,
+                    address,
+                    IBalancerV2Vault.JoinPoolRequest
+                )
+            );
+    }
+
+    /// @notice Deposits an amount of an underlying asset into a pool
+    /// @param _vaultProxy The VaultProxy of the calling fund
+    /// @param _encodedCallArgs Encoded order parameters
+    function lend(
+        address _vaultProxy,
+        bytes calldata _encodedCallArgs,
+        bytes calldata
+    )external {
+        (
+        bytes32 poolId,
+        address recipient,
+        IBalancerV2Vault.JoinPoolRequest memory request
+        ) = __decodeEncodedLendArgs(_encodedCallArgs);
+
+        __balancerV2Lend(poolId, msg.sender, recipient, request);
+    }
 }
