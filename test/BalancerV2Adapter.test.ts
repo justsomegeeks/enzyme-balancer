@@ -1,15 +1,16 @@
 import { SwapTypes } from '@balancer-labs/sor';
-import { assetTransferArgs, IntegrationManager, takeOrderSelector } from '@enzymefinance/protocol';
+import { IntegrationManager, takeOrderSelector } from '@enzymefinance/protocol';
 import type { BaseProvider } from '@ethersproject/providers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import BigNumber from 'bignumber.js';
 import { expect } from 'chai';
 import type { Contract, ContractFactory } from 'ethers';
 import hre from 'hardhat';
-import { before } from 'mocha';
 
-import type { BalancerV2TakeOrder, FundManagement, NetworkDescriptor } from '../utils/env-helper';
+import type { BalancerV2Adapter } from '../typechain';
+import type { FundManagement, NetworkDescriptor } from '../utils/env-helper';
 import {
+  assetTransferArgs,
   balancerV2TakeOrderArgs,
   calculateLimits,
   getNetworkDescriptor,
@@ -59,20 +60,23 @@ describe('BalancerV2Adapter', async function () {
   });
 
   describe('takeOrder', async function () {
-    let balancerV2Adapter: Contract;
-    let usdcWhale: SignerWithAddress;
+    let balancerV2AdapterContract: Contract;
+    let balancerV2Adapter: BalancerV2Adapter;
+    let usdcWhaleSigner: SignerWithAddress;
 
     before(async function () {
-      balancerV2Adapter = await balancerV2AdapterFactory.deploy(
+      balancerV2AdapterContract = await balancerV2AdapterFactory.deploy(
         networkDescriptor.contracts.IntegrationManager,
         networkDescriptor.contracts.BalancerV2Vault,
       );
 
-      await balancerV2Adapter.deployed();
+      await balancerV2AdapterContract.deployed();
 
-      await integrationManager.registerAdapters([balancerV2Adapter.address]);
-      usdcWhale = await hre.ethers.getSigner(networkDescriptor.tokens.USDC.whaleAddress);
-      await hre.network.provider.send('hardhat_impersonateAccount', [usdcWhale.address]);
+      balancerV2Adapter = balancerV2AdapterContract as BalancerV2Adapter;
+
+      await integrationManager.registerAdapters([balancerV2AdapterContract.address]);
+      usdcWhaleSigner = await hre.ethers.getSigner(networkDescriptor.tokens.USDC.whaleAddress);
+      await hre.network.provider.send('hardhat_impersonateAccount', [usdcWhaleSigner.address]);
     });
 
     it('can only be called via the IntegrationManager', async function () {
@@ -103,12 +107,10 @@ describe('BalancerV2Adapter', async function () {
         swapType,
         swaps: swapInfo.swaps,
         tokenAddresses: [tokenIn.address, tokenOut.address],
-      } as BalancerV2TakeOrder);
-
-      console.log('I am here');
+      });
 
       const transferArgs = await assetTransferArgs({
-        adapter: balancerV2Adapter.getInterface(),
+        adapter: balancerV2Adapter,
         encodedCallArgs: takeOrderArgs,
         selector: takeOrderSelector,
       });
@@ -116,7 +118,7 @@ describe('BalancerV2Adapter', async function () {
       expect(transferArgs).to.not.be.undefined;
 
       await expect(
-        await balancerV2Adapter.takeOrder(balancerV2Adapter.address, takeOrderSelector, transferArgs),
+        await balancerV2AdapterContract.takeOrder(balancerV2AdapterContract.address, takeOrderSelector, transferArgs),
       ).to.be.revertedWith('Only the IntegrationManager can call this function');
     });
   });

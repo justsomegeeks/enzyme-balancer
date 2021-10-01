@@ -7,7 +7,6 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-
 import "@enzymefinance/contracts/release/extensions/integration-manager/integrations/utils/AdapterBase2.sol";
 import "hardhat/console.sol";
 import "./BalancerV2ActionsMixin.sol";
