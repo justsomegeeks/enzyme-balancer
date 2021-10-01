@@ -21,6 +21,9 @@ contract BalancerV2PriceFeed {
 
     constructor(address _balancerV2Vault) public {
         vault = IBalancerV2Vault(_balancerV2Vault);
+
+        // pass these addresses in to constructor args or some initialize function as makes sense
+        // in test and script get these addresses from the networkDescriptor and pass them into the contract functions
         tokenAggregator[0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2] = Aggregator(
             0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419,
             true

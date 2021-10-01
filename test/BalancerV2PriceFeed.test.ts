@@ -5,17 +5,36 @@ import hre from 'hardhat';
 // import { fetchSubgraphPools } from '../tasks/bal_poolCaching';
 
 describe('BalancerV2PriceFeed', function () {
+  //
+  // grab these addresses from ./utils/env-helper.ts
+  //
   const addresses = {
     BalancerV2Vault: '0xBA12222222228d8Ba445958a75a0704d566BF2C8',
     EnzymeCouncil: '0xb270fe91e8e4b80452fbf1b4704208792a350f53',
     IntegrationManager: '0x965ca477106476B4600562a2eBe13536581883A6',
   };
 
+  //
+  // (see test/BalancerV2Adapter.ts for example)
+  //
+  // let networkDescriptor: NetworkDescriptor;
+  //
   let enzymeCouncil: SignerWithAddress;
   let balancerV2PriceFeed: any;
   // let integrationManager: IntegrationManager;
 
   before(async () => {
+    // important to initialize the env-helper
+    // initializeEnvHelper(hre);
+    //
+    // and then get the environment:
+    //
+    // provider = hre.ethers.getDefaultProvider();
+    // networkDescriptor = await getNetworkDescriptor(provider);
+    //
+    // networkDescriptor can get used for handy access to addresses, pre-loaded erc20 contracts, etc, etc...
+    //
+
     enzymeCouncil = await hre.ethers.getSigner(addresses.EnzymeCouncil);
     await hre.network.provider.send('hardhat_impersonateAccount', [enzymeCouncil.address]);
 

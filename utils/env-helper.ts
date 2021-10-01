@@ -15,8 +15,14 @@ import type { BigNumber } from 'ethers';
 import { utils } from 'ethers';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 
+
+// add any new BPT tokens we want to support here...
 const SUPPORTED_TOKENS = ['AAVE', 'ETH', 'BAL', 'COMP', 'USDC', 'DAI'] as const;
 type SupportedTokens = typeof SUPPORTED_TOKENS[number];
+
+// add pool metadata stuff
+const SUPPORTED_POOLS = ['WBTC_WETH', ...] as const;
+type SupportedPools = typeof SUPPORTED_TOKENS[number];
 
 const SUPPORTED_NETWORKS = ['mainnet'] as const;
 type SupportedNetworks = typeof SUPPORTED_NETWORKS[number];
@@ -49,6 +55,14 @@ interface ContractDescriptor {
   [key: string]: string;
 }
 
+type PoolDescriptors = {
+  [key in SupportedPools]: {
+    name: key;
+    address: string;
+    // other useful pool metadata here
+  };
+};
+
 export interface NetworkDescriptor {
   chainId: number;
   contracts: ContractDescriptor;
@@ -61,6 +75,7 @@ type NetworkDescriptors = {
   [key in SupportedNetworks]: {
     chainId: number;
     contracts: ContractDescriptor;
+    pools: PoolDescriptors;
     name: key;
     subgraphURL: string;
     tokens: TokenDescriptors;
@@ -77,8 +92,28 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
         IntegrationManager: '0x965ca477106476B4600562a2eBe13536581883A6',
       },
       name: 'mainnet',
+      // i'd create a new `pools` key here and add the pool addresses and any metadata about them you want to grab here
+      // not sure, haven't thought about it enough, but...
+      // it will likely be useful to put priceFeed metadata either inside of the pools map below, or just put priceFeeds metadata
+      // here
+      priceFeeds: {
+
+      },
+      pools: {
+        POOL_NAME: {
+          address: '0x.....',
+          // etc...
+
+          priceFeeds: {           // or does it make more sense to put priceFeeds data inside of the pools data itself...?
+            priceFeedName: {
+              address:,
+              other priceFeed MediaMetadata....
+          }
+        }
+      },
       subgraphURL: 'https://api.thegraph.com/subgraphs/name/balancer-labs/balancer-v2',
       tokens: {
+        // add any new BPT tokens we want to support here...
         AAVE: {
           address: '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9',
           contract: await hre.ethers.getContractAt(IERC20Artifact.abi, '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9'),
