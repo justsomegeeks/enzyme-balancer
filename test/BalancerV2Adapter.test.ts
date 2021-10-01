@@ -112,5 +112,48 @@ describe('BalancerV2Adapter', async function () {
         balancerV2AdapterContract.takeOrder(balancerV2AdapterContract.address, takeOrderSelector, transferArgs),
       ).to.be.revertedWith('Only the IntegrationManager can call this function');
     });
+    it('should allow to do swap', async function () {
+      const queryOnChain = true;
+      const swapType = SwapTypes.SwapExactIn;
+
+      const tokenIn = networkDescriptor.tokens.ETH;
+      const tokenOut = networkDescriptor.tokens.USDC;
+      const swapAmount = new BigNumber(1);
+
+      const [swapInfo] = await getSwap(provider, queryOnChain, swapType, tokenIn, tokenOut, swapAmount);
+
+      const limits = calculateLimits(swapType, swapInfo);
+
+      const deadline = hre.ethers.constants.MaxUint256;
+
+      const takeOrderArgs = balancerV2TakeOrderArgs({
+        deadline,
+        limits,
+        swapType,
+        swaps: swapInfo.swaps,
+        tokenAddresses: [tokenIn.address, tokenOut.address],
+      });
+
+      const transferArgs = await assetTransferArgs({
+        adapter: balancerV2Adapter,
+        encodedCallArgs: takeOrderArgs,
+        selector: takeOrderSelector,
+      });
+      const integrationManagerSigner = await hre.ethers.getSigner(networkDescriptor.contracts.IntegrationManager);
+      await hre.network.provider.send('hardhat_impersonateAccount', [integrationManagerSigner.address]);
+
+      //TODO: Error is happening when trying to transfer the fund. Why? I have never seen this happen before.
+      const tx = await usdcWhaleSigner.sendTransaction({
+        to: networkDescriptor.contracts.IntegrationManager,
+        value: hre.ethers.utils.parseEther('10'),
+      });
+      await tx.wait();
+
+      await expect(
+        balancerV2AdapterContract
+          .connect(integrationManagerSigner)
+          .takeOrder(integrationManager.address, takeOrderSelector, transferArgs),
+      ).to.not.reverted;
+    });
   });
 });
