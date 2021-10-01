@@ -23,7 +23,7 @@ type SupportedNetworks = typeof SUPPORTED_NETWORKS[number];
 
 let hre: HardhatRuntimeEnvironment;
 
-export function initializeSorHelper(_hre: HardhatRuntimeEnvironment) {
+export function initializeEnvHelper(_hre: HardhatRuntimeEnvironment) {
   hre = _hre;
 }
 

@@ -8,14 +8,14 @@ import type { Contract, ContractFactory } from 'ethers';
 import hre from 'hardhat';
 import { before } from 'mocha';
 
-import type { BalancerV2TakeOrder, FundManagement, NetworkDescriptor } from '../utils/sor-helper';
+import type { BalancerV2TakeOrder, FundManagement, NetworkDescriptor } from '../utils/env-helper';
 import {
   balancerV2TakeOrderArgs,
   calculateLimits,
   getNetworkDescriptor,
   getSwap,
-  initializeSorHelper,
-} from '../utils/sor-helper';
+  initializeEnvHelper,
+} from '../utils/env-helper';
 
 describe('BalancerV2Adapter', async function () {
   let provider: BaseProvider;
@@ -27,7 +27,7 @@ describe('BalancerV2Adapter', async function () {
   let balancerV2AdapterFactory: ContractFactory;
 
   before(async function () {
-    initializeSorHelper(hre);
+    initializeEnvHelper(hre);
 
     provider = hre.ethers.getDefaultProvider();
 

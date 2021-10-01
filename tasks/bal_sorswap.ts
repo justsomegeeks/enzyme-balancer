@@ -8,7 +8,7 @@ import { BigNumber } from 'bignumber.js';
 import { task } from 'hardhat/config';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import type { FundManagement, SorSwapArgs } from '../utils/sor-helper';
+import type { FundManagement, SorSwapArgs } from '../utils/env-helper';
 import {
   adjustAllowanceIfNeeded,
   calculateLimits,
@@ -16,18 +16,18 @@ import {
   getNetworkDescriptor,
   getSwap,
   getWhaleSigner,
-  initializeSorHelper,
+  initializeEnvHelper,
   isSupportedToken,
   printSwapDetails,
   supportedTokensMessage,
-} from '../utils/sor-helper';
+} from '../utils/env-helper';
 
 task('bal_sorswap', 'Swap 2 tokens via Balancer SOR')
   .addParam('tokenIn', supportedTokensMessage(), 'AAVE')
   .addParam('tokenOut', supportedTokensMessage(), 'USDC')
   .addParam('amount', 'Swap Amount', '100')
   .setAction(async (args: SorSwapArgs, hre: HardhatRuntimeEnvironment) => {
-    initializeSorHelper(hre);
+    initializeEnvHelper(hre);
 
     const { amount, tokenIn, tokenOut } = args;
     const swapAmount = new BigNumber(+amount);
