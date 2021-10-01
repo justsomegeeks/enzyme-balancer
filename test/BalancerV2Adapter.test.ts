@@ -14,7 +14,7 @@ import {
   calculateLimits,
   getNetworkDescriptor,
   getSwap,
-  initializeSorHelper,
+  initializeEnvHelper,
 } from '../utils/env-helper';
 
 describe('BalancerV2Adapter', async function () {
@@ -27,7 +27,7 @@ describe('BalancerV2Adapter', async function () {
   let balancerV2AdapterFactory: ContractFactory;
 
   before(async function () {
-    initializeSorHelper(hre);
+    initializeEnvHelper(hre);
 
     provider = hre.ethers.getDefaultProvider();
 
