@@ -8,7 +8,7 @@ import { BigNumber } from 'bignumber.js';
 import { task } from 'hardhat/config';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import type { FundManagement, SorSwapArgs } from '../utils/sor-helper';
+import type { FundManagement, SorSwapArgs } from '../utils/env-helper';
 import {
   adjustAllowanceIfNeeded,
   calculateLimits,
@@ -20,7 +20,7 @@ import {
   isSupportedToken,
   printSwapDetails,
   supportedTokensMessage,
-} from '../utils/sor-helper';
+} from '../utils/env-helper';
 
 task('bal_sorswap', 'Swap 2 tokens via Balancer SOR')
   .addParam('tokenIn', supportedTokensMessage(), 'AAVE')
