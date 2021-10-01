@@ -172,6 +172,11 @@ export interface BalancerV2Lend {
   recipient: string;
   request: JoinPoolRequest;
 }
+export interface BalancerV2Lend {
+  poolId: string;
+  recipient: string;
+  request: JoinPoolRequest;
+}
 
 export interface Balances {
   tokenIn: {
