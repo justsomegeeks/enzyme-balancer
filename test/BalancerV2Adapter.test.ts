@@ -1,5 +1,5 @@
 import { SwapTypes } from '@balancer-labs/sor';
-import { assetTransferArgs, IntegrationManager, takeOrderSelector } from '@enzymefinance/protocol';
+import { IntegrationManager, takeOrderSelector } from '@enzymefinance/protocol';
 import type { BaseProvider } from '@ethersproject/providers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import BigNumber from 'bignumber.js';
@@ -7,8 +7,10 @@ import { expect } from 'chai';
 import type { Contract, ContractFactory } from 'ethers';
 import hre from 'hardhat';
 
+import type { BalancerV2Adapter } from '../typechain';
 import type { FundManagement, NetworkDescriptor } from '../utils/env-helper';
 import {
+  assetTransferArgs,
   balancerV2TakeOrderArgs,
   calculateLimits,
   getNetworkDescriptor,
@@ -58,18 +60,21 @@ describe('BalancerV2Adapter', async function () {
   });
 
   describe('takeOrder', async function () {
-    let balancerV2Adapter: Contract;
+    let balancerV2AdapterContract: Contract;
+    let balancerV2Adapter: BalancerV2Adapter;
     let usdcWhaleSigner: SignerWithAddress;
 
     before(async function () {
-      balancerV2Adapter = await balancerV2AdapterFactory.deploy(
+      balancerV2AdapterContract = await balancerV2AdapterFactory.deploy(
         networkDescriptor.contracts.IntegrationManager,
         networkDescriptor.contracts.BalancerV2Vault,
       );
 
-      await balancerV2Adapter.deployed();
+      await balancerV2AdapterContract.deployed();
 
-      await integrationManager.registerAdapters([balancerV2Adapter.address]);
+      balancerV2Adapter = balancerV2AdapterContract as BalancerV2Adapter;
+
+      await integrationManager.registerAdapters([balancerV2AdapterContract.address]);
       usdcWhaleSigner = await hre.ethers.getSigner(networkDescriptor.tokens.USDC.whaleAddress);
       await hre.network.provider.send('hardhat_impersonateAccount', [usdcWhaleSigner.address]);
     });
@@ -113,7 +118,7 @@ describe('BalancerV2Adapter', async function () {
       expect(transferArgs).to.not.be.undefined;
 
       await expect(
-        await balancerV2Adapter.takeOrder(balancerV2Adapter.address, takeOrderSelector, transferArgs),
+        await balancerV2AdapterContract.takeOrder(balancerV2AdapterContract.address, takeOrderSelector, transferArgs),
       ).to.be.revertedWith('Only the IntegrationManager can call this function');
     });
   });

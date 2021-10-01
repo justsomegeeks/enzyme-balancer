@@ -11,9 +11,11 @@ import type { BaseProvider } from '@ethersproject/providers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import IERC20Artifact from '@openzeppelin/contracts/build/contracts/IERC20.json';
 import { BigNumber as BN } from 'bignumber.js';
-import type { BigNumber } from 'ethers';
+import type { BigNumber, BytesLike } from 'ethers';
 import { utils } from 'ethers';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
+
+import type { BalancerV2Adapter } from '../typechain';
 
 const SUPPORTED_TOKENS = ['AAVE', 'ETH', 'BAL', 'COMP', 'USDC', 'DAI'] as const;
 type SupportedTokens = typeof SUPPORTED_TOKENS[number];
@@ -439,4 +441,26 @@ export function printSwapDetails(
   console.log(`  ${tokenOut.symbol}: ${balances.tokenOut.after}`);
 
   console.log(`================================================\n`);
+}
+
+export async function assetTransferArgs({
+  adapter,
+  selector,
+  encodedCallArgs,
+}: {
+  adapter: BalancerV2Adapter;
+  selector: BytesLike;
+  encodedCallArgs: BytesLike;
+}) {
+  const {
+    0: spendAssetsHandleType,
+    1: spendAssets,
+    2: spendAssetAmounts,
+    3: expectedIncomingAssets,
+  } = await adapter.parseAssetsForMethod(selector, encodedCallArgs);
+
+  return encodeArgs(
+    ['uint', 'address[]', 'uint[]', 'address[]'],
+    [spendAssetsHandleType, spendAssets, spendAssetAmounts, expectedIncomingAssets],
+  );
 }
