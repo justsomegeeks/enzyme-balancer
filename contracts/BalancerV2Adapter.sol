@@ -48,8 +48,6 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             int256[] memory limits,
             uint256 deadline
         ) = __decodeCallArgs(_encodedCallArgs);
-        console.log("Here");
-
         IBalancerV2Vault.FundManagement memory funds = IBalancerV2Vault.FundManagement(
             msg.sender,
             false, // fromInternalBalance
