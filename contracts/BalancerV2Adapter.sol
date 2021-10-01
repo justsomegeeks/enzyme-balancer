@@ -181,7 +181,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         address _vaultProxy,
         bytes calldata _encodedCallArgs,
         bytes calldata
-    )external {//TODO apply the fundAssetsTransferHandler modifier from the adapterbase contract to ensure safe transfer of assest
+    )external {
         (
         bytes32 poolId,
         address recipient,
