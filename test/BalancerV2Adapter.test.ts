@@ -108,10 +108,8 @@ describe('BalancerV2Adapter', async function () {
         selector: takeOrderSelector,
       });
 
-      expect(transferArgs).to.not.be.undefined;
-
       await expect(
-        await balancerV2AdapterContract.takeOrder(balancerV2AdapterContract.address, takeOrderSelector, transferArgs),
+        balancerV2AdapterContract.takeOrder(balancerV2AdapterContract.address, takeOrderSelector, transferArgs),
       ).to.be.revertedWith('Only the IntegrationManager can call this function');
     });
   });
