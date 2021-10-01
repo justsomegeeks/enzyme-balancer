@@ -157,4 +157,72 @@ describe('BalancerV2Adapter', function () {
       return;
     });
   });
+
+  describe('lend',() => {
+    let balancerV2Adapter: Contract;
+    let usdcWhale: SignerWithAddress;
+    before(async function () {
+      balancerV2Adapter = await balancerV2AdapterFactory.deploy(
+        networkDescriptor.contracts.IntegrationManager,
+        networkDescriptor.contracts.BalancerV2Vault,
+      );
+
+      await integrationManager.registerAdapters([balancerV2Adapter.address]);
+      usdcWhale = await hre.ethers.getSigner(networkDescriptor.tokens.USDC.whaleAddress);
+      await hre.network.provider.send('hardhat_impersonateAccount', [usdcWhale.address]);
+    });
+
+    it('works as expected when called for lending by a fund', async () => {
+  
+      /*const { comptrollerProxy, vaultProxy } = await createNewFund({
+        signer: usdcWhale,
+        usdcWhale,
+        fundDeployer: fork.deployment.fundDeployer,
+        denominationAsset: new StandardToken(fork.config.weth, usdcWhale),
+      });
+  
+      const token = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+      const amount = utils.parseUnits('1', await token.decimals());
+      const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
+  
+      await token.transfer(vaultProxy, amount);
+  
+      const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
+        account: vaultProxy,
+        assets: [aToken, token],
+      });
+  
+      const lendReceipt = await aaveLend({
+        comptrollerProxy,
+        integrationManager: fork.deployment.integrationManager,
+        fundOwner,
+        aaveAdapter: fork.deployment.aaveAdapter,
+        aToken,
+        amount,
+      });
+  
+      const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
+        account: vaultProxy,
+        assets: [aToken, token],
+      });
+  
+      // aToken amount received can be a small amount less than expected
+      const expectedIncomingAssetBalance = preTxIncomingAssetBalance.add(amount);
+      expect(postTxIncomingAssetBalance).toBeLteBigNumber(expectedIncomingAssetBalance);
+      expect(postTxIncomingAssetBalance).toBeGteBigNumber(expectedIncomingAssetBalance.sub(roundingBuffer));
+  
+      expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(amount));
+  
+      // Rounding up from 540942
+      expect(lendReceipt).toCostLessThan('542000');*/
+      await expect(
+        balancerV2Adapter.lend(
+          1,
+          1,
+          1,
+          1
+      ) ,
+      ).to.be.reverted;
+    });
+  });
 });
