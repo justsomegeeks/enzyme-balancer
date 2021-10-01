@@ -172,7 +172,6 @@ export interface BalancerV2TakeOrder {
   swapType: SwapTypes;
   swaps: SwapV2[];
   tokenAddresses: string[];
-  funds: FundManagement;
   limits: string[];
   deadline: BigNumber;
   //   overrides: { value: string } | {};
@@ -195,21 +194,10 @@ const swapV2Tuple = utils.ParamType.fromString(
 
 const swapV2TupleArray = `${swapV2Tuple.format('full')}[]`;
 
-const swapV2FundManagement = utils.ParamType.fromString(
-  'tuple(address sender, bool fromInternalBalance, address payable recipient, bool toInternalBalance)',
-);
-
-export function balancerV2TakeOrderArgs({
-  swapType,
-  swaps,
-  tokenAddresses,
-  funds,
-  limits,
-  deadline,
-}: BalancerV2TakeOrder) {
+export function balancerV2TakeOrderArgs({ swapType, swaps, tokenAddresses, limits, deadline }: BalancerV2TakeOrder) {
   return encodeArgs(
-    ['uint8', swapV2TupleArray, 'address[]', swapV2FundManagement, 'int256[]', 'uint256'],
-    [swapType, swaps, tokenAddresses, funds, limits, deadline],
+    ['uint8', swapV2TupleArray, 'address[]', 'int256[]', 'uint256'],
+    [swapType, swaps, tokenAddresses, limits, deadline],
   );
 }
 

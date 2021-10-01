@@ -8,7 +8,7 @@ import type { Contract, ContractFactory } from 'ethers';
 import hre from 'hardhat';
 
 import type { BalancerV2Adapter } from '../typechain';
-import type { FundManagement, NetworkDescriptor } from '../utils/env-helper';
+import type { NetworkDescriptor } from '../utils/env-helper';
 import {
   assetTransferArgs,
   balancerV2TakeOrderArgs,
@@ -89,20 +89,13 @@ describe('BalancerV2Adapter', async function () {
 
       const [swapInfo] = await getSwap(provider, queryOnChain, swapType, tokenIn, tokenOut, swapAmount);
 
-      const funds: FundManagement = {
-        fromInternalBalance: false,
-        recipient: tokenIn.whaleAddress,
-        sender: tokenIn.whaleAddress,
-        toInternalBalance: false,
-      };
-
       const limits = calculateLimits(swapType, swapInfo);
+      console.log(swapInfo.swaps);
 
       const deadline = hre.ethers.constants.MaxUint256;
 
       const takeOrderArgs = balancerV2TakeOrderArgs({
         deadline,
-        funds,
         limits,
         swapType,
         swaps: swapInfo.swaps,
