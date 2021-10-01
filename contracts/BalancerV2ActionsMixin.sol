@@ -45,7 +45,7 @@ abstract contract BalancerV2ActionsMixin is AssetHelpers {
         address _sender,
         address _recipient,
         IBalancerV2Vault.JoinPoolRequest memory _request
-    ) internal {
+    ) public {
         IBalancerV2Vault(BALANCER_V2_VAULT).joinPool(_poolId, _sender, _recipient, _request);
     }
 
