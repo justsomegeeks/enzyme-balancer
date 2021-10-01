@@ -3,6 +3,7 @@
 */
 
 import type { SwapInfo, SwapV2 } from '@balancer-labs/sor';
+import type { JoinPoolRequest } from '@balancer-labs/balancer-js';
 import { bnum, scale, SOR, SwapTypes } from '@balancer-labs/sor';
 import { encodeArgs } from '@enzymefinance/protocol';
 import { AddressZero } from '@ethersproject/constants';
@@ -175,6 +176,11 @@ export interface BalancerV2TakeOrder {
   deadline: BigNumber;
   //   overrides: { value: string } | {};
 }
+export interface BalancerV2Lend {
+  poolId: string;
+  recipient: string;
+  request: JoinPoolRequest;
+}
 
 export interface Balances {
   tokenIn: {
@@ -208,6 +214,17 @@ export function balancerV2TakeOrderArgs({
   return encodeArgs(
     ['uint8', swapV2TupleArray, 'string[]', swapV2FundManagement, 'int256[]', 'uint256'],
     [swapType, swaps, tokenAddresses, funds, limits, deadline],
+  );
+}
+
+export function BalancerV2LendArgs ({
+   poolId,
+   recipient,
+   request 
+}: BalancerV2Lend){
+  return encodeArgs(
+    ['string', 'string', 'string[]'],
+    [poolId, recipient, request],
   );
 }
 
