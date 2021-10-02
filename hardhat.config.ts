@@ -13,7 +13,6 @@ import 'solidity-coverage';
 import '@balancer-labs/v2-deployments';
 import './tasks/bal_poolCaching';
 import './tasks/bal_getPoolAddress';
-import './tasks/bal_sorswap';
 import './tasks/enz_withdrawFunds';
 
 import type { HardhatUserConfig } from 'hardhat/types';
