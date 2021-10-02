@@ -133,6 +133,7 @@ describe('BalancerV2Adapter', async function () {
       await integrationManager.registerAdapters([balancerV2Adapter.address]);
       usdcWhale = await hre.ethers.getSigner(networkDescriptor.tokens.USDC.whaleAddress);
       await hre.network.provider.send('hardhat_impersonateAccount', [usdcWhale.address]);
+
       const poolId = '0x01abc00e86c7e258823b9a055fd62ca6cf61a16300010000000000000000003b';
       const recipient = usdcWhale.address;
       let request: JoinPoolRequest;
@@ -149,7 +150,6 @@ describe('BalancerV2Adapter', async function () {
         fromInternalBalance: false,
       };
       
-      console.log('le request', request);
       lendArgs = BalancerV2LendArgs({
           poolId, recipient, request
         } as BalancerV2Lend);
@@ -159,7 +159,8 @@ describe('BalancerV2Adapter', async function () {
         encodedCallArgs: lendArgs,
         selector: lendSelector,
       });
-
+      
+      expect(transferArgs).to.not.be.undefined;
       expect(balancerV2Adapter.lend(balancerV2Adapter.address, lendSelector, transferArgs));
     });
 
