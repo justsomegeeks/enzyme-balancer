@@ -1,41 +1,20 @@
 import type { SwapInfo } from '@balancer-labs/sor';
 import { SwapTypes } from '@balancer-labs/sor';
-<<<<<<< HEAD
-import { IntegrationManager, takeOrderSelector } from '@enzymefinance/protocol';
-=======
 import { JoinPoolRequest } from '@balancer-labs/balancer-js';
 import { assetTransferArgs, IntegrationManager, takeOrderSelector, lendSelector } from '@enzymefinance/protocol';
->>>>>>> WIP: tests
 import type { BaseProvider } from '@ethersproject/providers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber as BN } from 'bignumber.js';
 import { expect } from 'chai';
 import type { ContractFactory } from 'ethers';
 import hre from 'hardhat';
-<<<<<<< HEAD
 
 import type { BalancerV2Adapter } from '../typechain';
-import type { NetworkDescriptor, TokenDescriptor } from '../utils/env-helper';
-import { getNetworkDescriptor, initializeEnvHelper } from '../utils/env-helper';
+import type { NetworkDescriptor, TokenDescriptor, BalancerV2Lend } from '../utils/env-helper';
+import { getNetworkDescriptor, initializeEnvHelper, BalancerV2LendArgs } from '../utils/env-helper';
 import { balancerV2TakeOrderArgs, calculateLimits, getSwap } from '../utils/integrations/balancerV2';
 
 describe('BalancerV2Adapter', function () {
-=======
-import { before } from 'mocha';
-
-import type { BalancerV2Lend, BalancerV2TakeOrder, FundManagement, NetworkDescriptor } from '../utils/env-helper';
-import {
-  balancerV2TakeOrderArgs,
-  BalancerV2LendArgs,
-  calculateLimits,
-  getNetworkDescriptor,
-  getSwap,
-  initializeEnvHelper,
-  
-} from '../utils/env-helper';
-
-describe('BalancerV2Adapter', async function () {
->>>>>>> WIP: tests
   let provider: BaseProvider;
 
   let networkDescriptor: NetworkDescriptor;
@@ -161,41 +140,20 @@ describe('BalancerV2Adapter', async function () {
   });
 
   describe('lend', function () {
-    xit('can only be called via the IntegrationManager', async function () {
-      return;
-    });
-
-    xit('works as expected when called by a fund', async function () {
-      return;
-    });
-  });
-
-  describe('redeem', function () {
-    xit('can only be called via the IntegrationManager', async function () {
-      return;
-    });
-
-    xit('works as expected when called by a fund', async function () {
-      return;
-    });
-  });
-
-  describe('lend',() => {
-    let balancerV2Adapter: Contract;
-    let usdcWhale: SignerWithAddress;
+    let balancerV2Adapter: BalancerV2Adapter;
     let lendArgs: any;
     before(async function () {
-      balancerV2Adapter = await balancerV2AdapterFactory.deploy(
+      balancerV2Adapter = (await balancerV2AdapterFactory.deploy(
         networkDescriptor.contracts.IntegrationManager,
         networkDescriptor.contracts.BalancerV2Vault,
-      );
+      )) as BalancerV2Adapter;
+
+      await balancerV2Adapter.deployed();
 
       await integrationManager.registerAdapters([balancerV2Adapter.address]);
-      usdcWhale = await hre.ethers.getSigner(networkDescriptor.tokens.USDC.whaleAddress);
-      await hre.network.provider.send('hardhat_impersonateAccount', [usdcWhale.address]);
 
       const poolId = '0x01abc00e86c7e258823b9a055fd62ca6cf61a16300010000000000000000003b';
-      const recipient = usdcWhale.address;
+      const recipient = enzymeCouncil.address;
       let request: JoinPoolRequest;
       const tokens = networkDescriptor.tokens;
       const initialBalances = [0 , 1];
@@ -215,7 +173,7 @@ describe('BalancerV2Adapter', async function () {
         } as BalancerV2Lend);
 
       const transferArgs = await assetTransferArgs({
-        adapter: balancerV2Adapter.getInterface(),
+        adapter: integrationManager.getInterface(),
         encodedCallArgs: lendArgs,
         selector: lendSelector,
       });
@@ -223,61 +181,30 @@ describe('BalancerV2Adapter', async function () {
       expect(transferArgs).to.not.be.undefined;
       expect(balancerV2Adapter.lend(balancerV2Adapter.address, lendSelector, transferArgs));
     });
-
-    it('should revert if parameter is invalid', async() => {
+    it('can only be called via the IntegrationManager', async function () {
       await expect(
         balancerV2Adapter.lend(
           balancerV2Adapter.address,
-          1,
+          lendSelector,
           lendArgs
       ) ,
       ).to.be.reverted;
     });
-    it('works as expected when called for lending by a fund', async () => {
-  
-      /*const { comptrollerProxy, vaultProxy } = await createNewFund({
-        signer: usdcWhale,
-        usdcWhale,
-        fundDeployer: fork.deployment.fundDeployer,
-        denominationAsset: new StandardToken(fork.config.weth, usdcWhale),
-      });
-  
-      const token = new StandardToken(fork.config.primitives.usdc, whales.usdc);
-      const amount = utils.parseUnits('1', await token.decimals());
-      const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
-  
-      await token.transfer(vaultProxy, amount);
-  
-      const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
-        account: vaultProxy,
-        assets: [aToken, token],
-      });
-  
-      const lendReceipt = await aaveLend({
-        comptrollerProxy,
-        integrationManager: fork.deployment.integrationManager,
-        fundOwner,
-        aaveAdapter: fork.deployment.aaveAdapter,
-        aToken,
-        amount,
-      });
-  
-      const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
-        account: vaultProxy,
-        assets: [aToken, token],
-      });
-  
-      // aToken amount received can be a small amount less than expected
-      const expectedIncomingAssetBalance = preTxIncomingAssetBalance.add(amount);
-      expect(postTxIncomingAssetBalance).toBeLteBigNumber(expectedIncomingAssetBalance);
-      expect(postTxIncomingAssetBalance).toBeGteBigNumber(expectedIncomingAssetBalance.sub(roundingBuffer));
-  
-      expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(amount));
-  
-      // Rounding up from 540942
-      expect(lendReceipt).toCostLessThan('542000');*/
-     const receipt = balancerV2Adapter.lend(balancerV2Adapter.address, 1, lendArgs);
-     expect(receipt).to.not.be.undefined;
+
+    it('works as expected when called by a fund', async function () {
+      const receipt = balancerV2Adapter.lend(balancerV2Adapter.address, lendSelector, lendArgs);
+      expect(receipt).to.not.be.undefined;
     });
   });
+
+  describe('redeem', function () {
+    xit('can only be called via the IntegrationManager', async function () {
+      return;
+    });
+
+    xit('works as expected when called by a fund', async function () {
+      return;
+    });
+  });
+
 });
