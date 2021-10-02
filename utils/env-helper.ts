@@ -20,6 +20,7 @@ const SUPPORTED_NETWORKS = ['mainnet'] as const;
 type SupportedNetworks = typeof SUPPORTED_NETWORKS[number];
 
 let hre: HardhatRuntimeEnvironment;
+const SCALING_FACTOR = 1e18;
 
 export function initializeEnvHelper(_hre: HardhatRuntimeEnvironment) {
   hre = _hre;
