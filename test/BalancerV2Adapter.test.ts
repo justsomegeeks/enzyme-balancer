@@ -195,23 +195,24 @@ describe('BalancerV2Adapter', async function () {
       await hre.network.provider.send('hardhat_impersonateAccount', [usdcWhale.address]);
       const poolId = '0x01abc00e86c7e258823b9a055fd62ca6cf61a16300010000000000000000003b';
       const recipient = usdcWhale.address;
-      let joinRequest: JoinPoolRequest;
+      let request: JoinPoolRequest;
       const tokens = networkDescriptor.tokens;
       const initialBalances = [0 , 1];
       const initUserData =
       hre.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256[]'],[0, initialBalances]);
 
 
-      joinRequest = {
+      request = {
         assets: [tokens.DAI.address, tokens.USDC.address],
         maxAmountsIn: [0, 1],
         userData: initUserData,
         fromInternalBalance: false,
       };
-
+      
+      console.log('le request', request);
       lendArgs = BalancerV2LendArgs({
-        poolId, recipient, joinRequest
-      } as BalancerV2Lend);
+          poolId, recipient, request
+        } as BalancerV2Lend);
 
       const transferArgs = await assetTransferArgs({
         adapter: balancerV2Adapter.getInterface(),

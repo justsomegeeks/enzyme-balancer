@@ -208,15 +208,41 @@ export interface Balances {
   };
 }
 
+const swapV2Tuple = utils.ParamType.fromString(
+  'tuple(string poolId, number assetInIndex, number assetOutIndex, string amount, string userData)',
+);
+
+const swapV2TupleArray = `${swapV2Tuple.format('full')}[]`;
+
+const swapV2FundManagement = utils.ParamType.fromString(
+  'tuple(address sender, bool fromInternalBalance, address payable recipient, bool toInternalBalance)',
+);
+
+const lendV2JoinPoolRequest = utils.ParamType.fromString('tuple(address[] assets, uint256[] maxAmountsIn, bytes userData, bool fromInternalBalance)');
+
+export function balancerV2TakeOrderArgs({
+  swapType,
+  swaps,
+  tokenAddresses,
+  funds,
+  limits,
+  deadline,
+}: BalancerV2TakeOrder) {
+  return encodeArgs(
+    ['uint8', swapV2TupleArray, 'string[]', swapV2FundManagement, 'int256[]', 'uint256'],
+    [swapType, swaps, tokenAddresses, funds, limits, deadline],
+  );
+}
+
 export function BalancerV2LendArgs ({
   poolId,
   recipient,
   request 
 }: BalancerV2Lend){
-   return encodeArgs(
-   ['string', 'string', lendV2JoinPoolRequest],
-   [poolId, recipient, request],
- );
+    return encodeArgs(
+    ['string', 'string', lendV2JoinPoolRequest],
+    [poolId, recipient, request],
+  );
 }
 
 export async function getSwap(
