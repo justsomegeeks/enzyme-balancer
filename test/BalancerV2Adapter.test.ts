@@ -1,7 +1,7 @@
 import type { SwapInfo } from '@balancer-labs/sor';
 import { SwapTypes } from '@balancer-labs/sor';
 import { JoinPoolRequest } from '@balancer-labs/balancer-js';
-import { assetTransferArgs, IntegrationManager, takeOrderSelector, lendSelector } from '@enzymefinance/protocol';
+import { IntegrationManager, takeOrderSelector, lendSelector } from '@enzymefinance/protocol';
 import type { BaseProvider } from '@ethersproject/providers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber as BN } from 'bignumber.js';
@@ -172,14 +172,13 @@ describe('BalancerV2Adapter', function () {
           poolId, recipient, request
         } as BalancerV2Lend);
 
-      const transferArgs = await assetTransferArgs({
+      /*const transferArgs = await assetTransferArgs({
         adapter: integrationManager.getInterface(),
         encodedCallArgs: lendArgs,
         selector: lendSelector,
-      });
+      });*/      
       
-      expect(transferArgs).to.not.be.undefined;
-      expect(balancerV2Adapter.lend(balancerV2Adapter.address, lendSelector, transferArgs));
+      expect(balancerV2Adapter.lend(balancerV2Adapter.address, lendSelector, lendArgs));
     });
     it('can only be called via the IntegrationManager', async function () {
       await expect(
@@ -192,7 +191,8 @@ describe('BalancerV2Adapter', function () {
     });
 
     it('works as expected when called by a fund', async function () {
-      const receipt = balancerV2Adapter.lend(balancerV2Adapter.address, lendSelector, lendArgs);
+      expect(lendArgs).to.not.be.undefined;
+      const receipt = balancerV2Adapter.lend(balancerV2Adapter.address, lendSelector, lendArgs);      
       expect(receipt).to.not.be.undefined;
     });
   });
