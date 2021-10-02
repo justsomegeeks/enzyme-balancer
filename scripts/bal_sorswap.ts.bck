@@ -4,22 +4,36 @@
 
 import { SwapTypes } from '@balancer-labs/sor';
 import { getBalancerContract } from '@balancer-labs/v2-deployments';
-import { BigNumber as BN } from 'bignumber.js';
-import { BigNumber } from 'ethers';
+import { BigNumber } from 'bignumber.js';
 import { task } from 'hardhat/config';
+import hre from 'hardhat';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 
+import type { FundManagement, SorSwapArgs } from '../utils/env-helper';
 import {
   adjustAllowanceIfNeeded,
+  calculateLimits,
   getBalances,
   getNetworkDescriptor,
+  getSwap,
   getWhaleSigner,
   initializeEnvHelper,
   isSupportedToken,
+  printSwapDetails,
   supportedTokensMessage,
 } from '../utils/env-helper';
-import type { FundManagement, SorSwapArgs } from '../utils/integrations/balancerV2';
-import { calculateLimits, getSwap, printSwapDetails } from '../utils/integrations/balancerV2';
+
+async function main() {
+  const factory = await hre.ethers.getContractFactory('ParaSwapV4Adapter');
+  factory.deploy(addresses.IntegrationManager, addresses.AugustusSwapper, addresses.TokenTransferProxy);
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
 
 task('bal_sorswap', 'Swap 2 tokens via Balancer SOR')
   .addParam('tokenIn', supportedTokensMessage(), 'AAVE')
@@ -29,7 +43,7 @@ task('bal_sorswap', 'Swap 2 tokens via Balancer SOR')
     initializeEnvHelper(hre);
 
     const { amount, tokenIn, tokenOut } = args;
-    const swapAmount = new BN(+amount);
+    const swapAmount = new BigNumber(+amount);
 
     // Validate arguments
     if (!isSupportedToken(tokenIn) || !isSupportedToken(tokenOut)) {
@@ -61,7 +75,7 @@ task('bal_sorswap', 'Swap 2 tokens via Balancer SOR')
     const whaleSigner = await getWhaleSigner(networkDescriptor, tokenIn);
     const vaultContract = await getBalancerContract('20210418-vault', 'Vault', networkDescriptor.name);
 
-    await adjustAllowanceIfNeeded(whaleSigner, tokenInDescriptor, BigNumber.from(swapAmount.toString()), vaultContract);
+    await adjustAllowanceIfNeeded(whaleSigner, swapInfo, vaultContract);
 
     const funds: FundManagement = {
       fromInternalBalance: false,
@@ -95,11 +109,8 @@ task('bal_sorswap', 'Swap 2 tokens via Balancer SOR')
 
     balances = await getBalances(whaleSigner, tokenInDescriptor, tokenOutDescriptor, balances);
 
-    const costScaled = cost.times(new BN(tokenInDescriptor.decimals.toString())).dp(0, BN.ROUND_HALF_EVEN);
-    const swapInTokenCost = hre.ethers.utils.formatUnits(
-      BigNumber.from(costScaled.toString()),
-      tokenOutDescriptor.decimals.toString(),
-    );
+    const costScaled = cost.times(tokenInDescriptor.decimals).dp(0, BigNumber.ROUND_HALF_EVEN).toString();
+    const swapInTokenCost = hre.ethers.utils.formatUnits(costScaled, tokenOutDescriptor.decimals.toString());
 
     printSwapDetails(
       swapType,

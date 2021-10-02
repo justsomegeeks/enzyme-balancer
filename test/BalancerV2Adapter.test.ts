@@ -1,23 +1,19 @@
+import type { SwapInfo } from '@balancer-labs/sor';
 import { SwapTypes } from '@balancer-labs/sor';
-import { assetTransferArgs, IntegrationManager, takeOrderSelector } from '@enzymefinance/protocol';
+import { IntegrationManager, takeOrderSelector } from '@enzymefinance/protocol';
 import type { BaseProvider } from '@ethersproject/providers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import BigNumber from 'bignumber.js';
+import { BigNumber as BN } from 'bignumber.js';
 import { expect } from 'chai';
-import type { Contract, ContractFactory } from 'ethers';
+import type { ContractFactory } from 'ethers';
 import hre from 'hardhat';
-import { before } from 'mocha';
 
-import type { BalancerV2TakeOrder, FundManagement, NetworkDescriptor } from '../utils/env-helper';
-import {
-  balancerV2TakeOrderArgs,
-  calculateLimits,
-  getNetworkDescriptor,
-  getSwap,
-  initializeEnvHelper,
-} from '../utils/env-helper';
+import type { BalancerV2Adapter } from '../typechain';
+import type { NetworkDescriptor, TokenDescriptor } from '../utils/env-helper';
+import { getNetworkDescriptor, initializeEnvHelper } from '../utils/env-helper';
+import { balancerV2TakeOrderArgs, calculateLimits, getSwap } from '../utils/integrations/balancerV2';
 
-describe('BalancerV2Adapter', async function () {
+describe('BalancerV2Adapter', function () {
   let provider: BaseProvider;
 
   let networkDescriptor: NetworkDescriptor;
@@ -40,7 +36,7 @@ describe('BalancerV2Adapter', async function () {
     integrationManager = new IntegrationManager(networkDescriptor.contracts.IntegrationManager, enzymeCouncil);
   });
 
-  describe('constructor', async function () {
+  describe('constructor', function () {
     it('deploys correctly', async function () {
       const balancerV2Adapter = await balancerV2AdapterFactory.deploy(
         networkDescriptor.contracts.IntegrationManager,
@@ -49,8 +45,10 @@ describe('BalancerV2Adapter', async function () {
 
       await integrationManager.registerAdapters([balancerV2Adapter.address]);
 
-      // Check that the initial values are set in the constructor.
+      // AdapterBase2
       expect(await balancerV2Adapter.getIntegrationManager()).to.equal(networkDescriptor.contracts.IntegrationManager);
+
+      // BalancerV2ActionsMixin
       expect(await balancerV2Adapter.getBalancerV2Vault()).to.equal(networkDescriptor.contracts.BalancerV2Vault);
 
       // Check that the adapter is registered on the integration manager.
@@ -58,62 +56,105 @@ describe('BalancerV2Adapter', async function () {
     });
   });
 
-  describe('takeOrder', async function () {
-    let balancerV2Adapter: Contract;
-    let usdcWhale: SignerWithAddress;
+  describe('parseAssetsForMethod', function () {
+    const queryOnChain = true;
+    const swapType = SwapTypes.SwapExactIn;
+    const swapAmount = new BN(1);
+
+    const deadline = hre.ethers.constants.MaxUint256;
+
+    let balancerV2Adapter: BalancerV2Adapter;
+    let swapInfo: SwapInfo;
+    let limits: string[];
+    let args: string;
+
+    let tokenIn: TokenDescriptor;
+    let tokenOut: TokenDescriptor;
 
     before(async function () {
-      balancerV2Adapter = await balancerV2AdapterFactory.deploy(
+      tokenIn = networkDescriptor.tokens.WBTC;
+      tokenOut = networkDescriptor.tokens.WETH;
+
+      balancerV2Adapter = (await balancerV2AdapterFactory.deploy(
         networkDescriptor.contracts.IntegrationManager,
         networkDescriptor.contracts.BalancerV2Vault,
-      );
+      )) as BalancerV2Adapter;
+
+      await balancerV2Adapter.deployed();
 
       await integrationManager.registerAdapters([balancerV2Adapter.address]);
-      usdcWhale = await hre.ethers.getSigner(networkDescriptor.tokens.USDC.whaleAddress);
-      await hre.network.provider.send('hardhat_impersonateAccount', [usdcWhale.address]);
-    });
 
-    xit('can only be called via the IntegrationManager', async function () {
-      const queryOnChain = true;
-      const swapType = SwapTypes.SwapExactIn;
+      [swapInfo] = await getSwap(provider, queryOnChain, swapType, tokenIn, tokenOut, swapAmount);
+      limits = calculateLimits(swapType, swapInfo);
 
-      const tokenIn = networkDescriptor.tokens.ETH;
-      const tokenOut = networkDescriptor.tokens.USDC;
-      const swapAmount = new BigNumber(1);
-
-      const [swapInfo] = await getSwap(provider, queryOnChain, swapType, tokenIn, tokenOut, swapAmount);
-
-      const funds: FundManagement = {
-        fromInternalBalance: false,
-        recipient: tokenIn.whaleAddress,
-        sender: tokenIn.whaleAddress,
-        toInternalBalance: false,
-      };
-
-      const limits = calculateLimits(swapType, swapInfo);
-
-      const deadline = hre.ethers.constants.MaxUint256;
-
-      const takeOrderArgs = balancerV2TakeOrderArgs({
+      args = balancerV2TakeOrderArgs({
         deadline,
-        funds,
         limits,
         swapType,
         swaps: swapInfo.swaps,
         tokenAddresses: [tokenIn.address, tokenOut.address],
-      } as BalancerV2TakeOrder);
-
-      const transferArgs = await assetTransferArgs({
-        adapter: balancerV2Adapter.getInterface(),
-        encodedCallArgs: takeOrderArgs,
-        selector: takeOrderSelector,
+        tokenOutAmount: swapInfo.returnAmount,
       });
+    });
 
-      expect(transferArgs).to.not.be.undefined;
+    it('does not allow a bad selector', async function () {
+      // avoid temptation to use `utils.randomBytes(4)`. unlikely in this case, but randomness in tests
+      // can cause spurious test failures
+      const randomBytes = [241, 189, 26, 18];
+      await expect(balancerV2Adapter.parseAssetsForMethod(randomBytes, args)).to.be.revertedWith('_selector invalid');
+    });
 
-      await expect(
-        balancerV2Adapter.takeOrder(balancerV2Adapter.address, takeOrderSelector, transferArgs),
-      ).to.be.revertedWith('Only the IntegrationManager can call this function');
+    it('returns expected parsed assets for method', async function () {
+      expect(await balancerV2Adapter.parseAssetsForMethod(takeOrderSelector, args)).to.have.length(5);
+
+      /*
+        TODO: find toMatchFunctionOutput() matcher
+        expect(result).toMatchFunctionOutput(paraSwapV4Adapter.parseAssetsForMethod, {
+          spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+          incomingAssets_: [incomingAsset],
+          spendAssets_: [outgoingAsset],
+          spendAssetAmounts_: [outgoingAssetAmount],
+          minIncomingAssetAmounts_: [minIncomingAssetAmount]
+        });
+      */
+    });
+
+    xit('generates expected output for lending', async function () {
+      return;
+    });
+
+    xit('generates expected output for redeeming', async function () {
+      return;
+    });
+  });
+
+  describe('takeOrder', function () {
+    xit('can only be called via the IntegrationManager', async function () {
+      return;
+    });
+
+    xit('works as expected when called by a fund', async function () {
+      return;
+    });
+  });
+
+  describe('lend', function () {
+    xit('can only be called via the IntegrationManager', async function () {
+      return;
+    });
+
+    xit('works as expected when called by a fund', async function () {
+      return;
+    });
+  });
+
+  describe('redeem', function () {
+    xit('can only be called via the IntegrationManager', async function () {
+      return;
+    });
+
+    xit('works as expected when called by a fund', async function () {
+      return;
     });
   });
 });
