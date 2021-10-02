@@ -1,15 +1,8 @@
 /*
     This code is heavily inspired by: https://github.com/balancer-labs/balancer-sor/blob/master/test/testScripts/swapExample.ts
 */
-<<<<<<< HEAD
 import { JoinPoolRequest } from '@balancer-labs/balancer-js';
 import { bnum } from '@balancer-labs/sor';
-=======
-
-import type { SwapInfo, SwapV2 } from '@balancer-labs/sor';
-import { JoinPoolRequest } from '@balancer-labs/balancer-js';
-import { bnum, scale, SOR, SwapTypes } from '@balancer-labs/sor';
->>>>>>> dafd491b1cc52a18f424b0913de9dd2b27e267d5
 import { encodeArgs } from '@enzymefinance/protocol';
 import { AddressZero } from '@ethersproject/constants';
 import type { Contract } from '@ethersproject/contracts';
@@ -196,110 +189,7 @@ export interface Balances {
   };
 }
 
-<<<<<<< HEAD
 const lendV2JoinPoolRequest = utils.ParamType.fromString('tuple(address[] assets, uint256[] maxAmountsIn, bytes userData, bool fromInternalBalance)');
-=======
-const swapV2Tuple = utils.ParamType.fromString(
-  'tuple(string poolId, number assetInIndex, number assetOutIndex, string amount, string userData)',
-);
-
-const swapV2TupleArray = `${swapV2Tuple.format('full')}[]`;
-
-const swapV2FundManagement = utils.ParamType.fromString(
-  'tuple(address sender, bool fromInternalBalance, address payable recipient, bool toInternalBalance)',
-);
-
-const lendV2JoinPoolRequest = utils.ParamType.fromString('tuple(address[] assets, uint256[] maxAmountsIn, bytes userData, bool fromInternalBalance)');
-
-export function balancerV2TakeOrderArgs({
-  swapType,
-  swaps,
-  tokenAddresses,
-  funds,
-  limits,
-  deadline,
-}: BalancerV2TakeOrder) {
-  return encodeArgs(
-    ['uint8', swapV2TupleArray, 'string[]', swapV2FundManagement, 'int256[]', 'uint256'],
-    [swapType, swaps, tokenAddresses, funds, limits, deadline],
-  );
-}
-
-export function BalancerV2LendArgs ({
-   poolId,
-   recipient,
-   request 
-}: BalancerV2Lend){
-    return encodeArgs(
-    ['string', 'string', lendV2JoinPoolRequest],
-    [poolId, recipient, request],
-  );
-}
-
-export async function getSwap(
-  provider: BaseProvider,
-  queryOnChain: boolean,
-  swapType: SwapTypes,
-  tokenIn: TokenDescriptor,
-  tokenOut: TokenDescriptor,
-  swapAmount: BN,
-): Promise<[SwapInfo, BN]> {
-  const networkDescriptor = await getNetworkDescriptor(provider);
-
-  const sor = new SOR(provider, networkDescriptor.chainId, networkDescriptor.subgraphURL);
-
-  // Will get onChain data for pools list
-  await sor.fetchPools(sor.getPools(), queryOnChain);
-
-  // gasPrice is used by SOR as a factor to determine how many pools to swap against.
-  // i.e. higher cost means more costly to trade against lots of different pools.
-  const gasPrice = new BN('40000000000');
-  // This determines the max no of pools the SOR will use to swap.
-  const maxPools = 4;
-
-  // This calculates the cost to make a swap which is used as an input to sor to allow it to make gas efficient recommendations.
-  // Note - tokenOut for SwapExactIn, tokenIn for SwapExactOut
-  const outputToken = swapType === SwapTypes.SwapExactOut ? tokenIn : tokenOut;
-  const cost = await sor.getCostOfSwapInToken(outputToken.address, outputToken.decimals, gasPrice);
-
-  const swapInfo: SwapInfo = await sor.getSwaps(tokenIn.address, tokenOut.address, swapType, swapAmount, {
-    gasPrice,
-    maxPools,
-  });
-
-  return [swapInfo, cost];
-}
-
-// Limits:
-// +ve means max to send
-// -ve mean min to receive
-// For a multihop the intermediate tokens should be 0
-// This is where slippage tolerance would be added
-export function calculateLimits(swapType: SwapTypes, swapInfo: SwapInfo): string[] {
-  const limits: string[] = [];
-
-  if (swapType === SwapTypes.SwapExactIn) {
-    swapInfo.tokenAddresses.forEach((token, i) => {
-      if (token.toLowerCase() === swapInfo.tokenIn.toLowerCase()) {
-        limits[i] = swapInfo.swapAmount.toString();
-      } else if (token.toLowerCase() === swapInfo.tokenOut.toLowerCase()) {
-        limits[i] = swapInfo.returnAmount.times(-0.99).toString().split('.')[0];
-      } else {
-        limits[i] = '0';
-      }
-    });
-  } else {
-    swapInfo.tokenAddresses.forEach((token, i) => {
-      if (token.toLowerCase() === swapInfo.tokenIn.toLowerCase()) {
-        limits[i] = swapInfo.returnAmount.toString();
-      } else if (token.toLowerCase() === swapInfo.tokenOut.toLowerCase()) {
-        limits[i] = swapInfo.swapAmount.times(-0.99).toString().split('.')[0];
-      } else {
-        limits[i] = '0';
-      }
-    });
-  }
->>>>>>> dafd491b1cc52a18f424b0913de9dd2b27e267d5
 
 export function BalancerV2LendArgs ({
   poolId,
