@@ -23,7 +23,6 @@ const SUPPORTED_NETWORKS = ['mainnet'] as const;
 type SupportedNetworks = typeof SUPPORTED_NETWORKS[number];
 
 let hre: HardhatRuntimeEnvironment;
-const SCALING_FACTOR = 1e18;
 
 export function initializeEnvHelper(_hre: HardhatRuntimeEnvironment) {
   hre = _hre;
@@ -204,6 +203,8 @@ const swapV2FundManagement = utils.ParamType.fromString(
   'tuple(address sender, bool fromInternalBalance, address payable recipient, bool toInternalBalance)',
 );
 
+const lendV2JoinPoolRequest = utils.ParamType.fromString('tuple(address[] assets, uint256[] maxAmountsIn, bytes userData, bool fromInternalBalance)');
+
 export function balancerV2TakeOrderArgs({
   swapType,
   swaps,
@@ -223,8 +224,8 @@ export function BalancerV2LendArgs ({
    recipient,
    request 
 }: BalancerV2Lend){
-  return encodeArgs(
-    ['string', 'string', JoinPoolRequest],
+    return encodeArgs(
+    ['string', 'string', lendV2JoinPoolRequest],
     [poolId, recipient, request],
   );
 }
