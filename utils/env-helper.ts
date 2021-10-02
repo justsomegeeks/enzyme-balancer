@@ -1,4 +1,10 @@
-import { bnum } from '@balancer-labs/sor';
+/*
+    This code is heavily inspired by: https://github.com/balancer-labs/balancer-sor/blob/master/test/testScripts/swapExample.ts
+*/
+import type { SwapInfo, SwapV2 } from '@balancer-labs/sor';
+import type { JoinPoolRequest } from '@balancer-labs/balancer-js';
+import { bnum, scale, SOR, SwapTypes } from '@balancer-labs/sor';
+import { encodeArgs } from '@enzymefinance/protocol';
 import { AddressZero } from '@ethersproject/constants';
 import type { Contract } from '@ethersproject/contracts';
 import type { BaseProvider } from '@ethersproject/providers';
@@ -162,6 +168,34 @@ export function isSupportedToken(token: SupportedTokens) {
   return SUPPORTED_TOKENS.includes(token);
 }
 
+export interface SorSwapArgs {
+  tokenIn: SupportedTokens;
+  tokenOut: SupportedTokens;
+  amount: string;
+}
+
+export interface FundManagement {
+  sender: string;
+  recipient: string;
+  fromInternalBalance: boolean;
+  toInternalBalance: boolean;
+}
+
+export interface BalancerV2TakeOrder {
+  swapType: SwapTypes;
+  swaps: SwapV2[];
+  tokenAddresses: string[];
+  funds: FundManagement;
+  limits: string[];
+  deadline: BigNumber;
+  //   overrides: { value: string } | {};
+}
+export interface BalancerV2Lend {
+  poolId: string;
+  recipient: string;
+  request: JoinPoolRequest;
+}
+
 export interface Balances {
   tokenIn: {
     before: string | undefined;
@@ -171,6 +205,17 @@ export interface Balances {
     before: string | undefined;
     after: string | undefined;
   };
+}
+
+export function BalancerV2LendArgs ({
+  poolId,
+  recipient,
+  request 
+}: BalancerV2Lend){
+ return encodeArgs(
+   ['string', 'string', 'string[]'],
+   [poolId, recipient, request],
+ );
 }
 
 export async function getWhaleSigner(
