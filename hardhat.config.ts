@@ -11,10 +11,10 @@ import '@typechain/ethers-v5';
 import '@typechain/hardhat';
 import 'solidity-coverage';
 import '@balancer-labs/v2-deployments';
+import './tasks/bal_poolCaching';
 import './tasks/bal_getPoolAddress';
 import './tasks/bal_sorswap';
 import './tasks/enz_withdrawFunds';
-import './tasks/bal_poolCaching';
 
 import type { HardhatUserConfig } from 'hardhat/types';
 

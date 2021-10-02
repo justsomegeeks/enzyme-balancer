@@ -1,24 +1,15 @@
-/*
-    This code is heavily inspired by: https://github.com/balancer-labs/balancer-sor/blob/master/test/testScripts/swapExample.ts
-*/
-
-import type { SwapInfo, SwapV2 } from '@balancer-labs/sor';
-import { bnum, scale, SOR, SwapTypes } from '@balancer-labs/sor';
-import { encodeArgs } from '@enzymefinance/protocol';
+import { bnum } from '@balancer-labs/sor';
 import { AddressZero } from '@ethersproject/constants';
 import type { Contract } from '@ethersproject/contracts';
 import type { BaseProvider } from '@ethersproject/providers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import IERC20Artifact from '@openzeppelin/contracts/build/contracts/IERC20.json';
 import { BigNumber as BN } from 'bignumber.js';
-import type { BigNumber, BytesLike } from 'ethers';
-import { utils } from 'ethers';
+import { BigNumber } from 'ethers';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import type { BalancerV2Adapter } from '../typechain';
-
-const SUPPORTED_TOKENS = ['AAVE', 'ETH', 'BAL', 'COMP', 'USDC', 'DAI'] as const;
-type SupportedTokens = typeof SUPPORTED_TOKENS[number];
+const SUPPORTED_TOKENS = ['AAVE', 'ETH', 'BAL', 'COMP', 'USDC', 'DAI', 'WBTC', 'WETH'] as const;
+export type SupportedTokens = typeof SUPPORTED_TOKENS[number];
 
 const SUPPORTED_NETWORKS = ['mainnet'] as const;
 type SupportedNetworks = typeof SUPPORTED_NETWORKS[number];
@@ -29,10 +20,10 @@ export function initializeEnvHelper(_hre: HardhatRuntimeEnvironment) {
   hre = _hre;
 }
 
-interface TokenDescriptor {
+export interface TokenDescriptor {
   address: string;
   contract: Contract | undefined;
-  decimals: BN;
+  decimals: BigNumber;
   symbol: string;
   whaleAddress: string;
 }
@@ -41,7 +32,7 @@ type TokenDescriptors = {
   [key in SupportedTokens]: {
     address: string;
     contract: Contract | undefined;
-    decimals: BN;
+    decimals: BigNumber;
     symbol: key;
     whaleAddress: string;
   };
@@ -75,7 +66,9 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
       chainId: 1,
       contracts: {
         BalancerV2Vault: '0xBA12222222228d8Ba445958a75a0704d566BF2C8',
+        Comptroller: '.....',
         EnzymeCouncil: '0xb270fe91e8e4b80452fbf1b4704208792a350f53',
+        EnzymeVaultProxy: '...',
         IntegrationManager: '0x965ca477106476B4600562a2eBe13536581883A6',
       },
       name: 'mainnet',
@@ -84,44 +77,58 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
         AAVE: {
           address: '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9',
           contract: await hre.ethers.getContractAt(IERC20Artifact.abi, '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9'),
-          decimals: new BN(18),
+          decimals: BigNumber.from(18),
           symbol: 'AAVE',
           whaleAddress: '0xF977814e90dA44bFA03b6295A0616a897441aceC',
         },
         BAL: {
           address: '0xba100000625a3754423978a60c9317c58a424e3d',
           contract: await hre.ethers.getContractAt(IERC20Artifact.abi, '0xba100000625a3754423978a60c9317c58a424e3d'),
-          decimals: new BN(18),
+          decimals: BigNumber.from(18),
           symbol: 'BAL',
           whaleAddress: '0x876EabF441B2EE5B5b0554Fd502a8E0600950cFa',
         },
         COMP: {
           address: '0xc00e94cb662c3520282e6f5717214004a7f26888',
           contract: await hre.ethers.getContractAt(IERC20Artifact.abi, '0xc00e94cb662c3520282e6f5717214004a7f26888'),
-          decimals: new BN(18),
+          decimals: BigNumber.from(18),
           symbol: 'COMP',
           whaleAddress: '0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8',
         },
         DAI: {
           address: '0x6b175474e89094c44da98b954eedeac495271d0f',
           contract: await hre.ethers.getContractAt(IERC20Artifact.abi, '0x6b175474e89094c44da98b954eedeac495271d0f'),
-          decimals: new BN(18),
+          decimals: BigNumber.from(18),
           symbol: 'DAI',
           whaleAddress: '0x28C6c06298d514Db089934071355E5743bf21d60',
         },
         ETH: {
           address: AddressZero,
           contract: undefined,
-          decimals: new BN(18),
+          decimals: BigNumber.from(18),
           symbol: 'ETH',
           whaleAddress: '0xf66852bC122fD40bFECc63CD48217E88bda12109',
         },
         USDC: {
           address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
           contract: await hre.ethers.getContractAt(IERC20Artifact.abi, '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'),
-          decimals: new BN(6),
+          decimals: BigNumber.from(6),
           symbol: 'USDC',
           whaleAddress: '0xae2d4617c862309a3d75a0ffb358c7a5009c673f',
+        },
+        WBTC: {
+          address: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
+          contract: await hre.ethers.getContractAt(IERC20Artifact.abi, '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599'),
+          decimals: BigNumber.from(8),
+          symbol: 'WBTC',
+          whaleAddress: '0xe08A8b19e5722a201EaF20A6BC595eF655397bd5',
+        },
+        WETH: {
+          address: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+          contract: await hre.ethers.getContractAt(IERC20Artifact.abi, '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'),
+          decimals: BigNumber.from(18),
+          symbol: 'WETH',
+          whaleAddress: '0x56178a0d5F301bAf6CF3e1Cd53d9863437345Bf9',
         },
       },
     },
@@ -155,28 +162,6 @@ export function isSupportedToken(token: SupportedTokens) {
   return SUPPORTED_TOKENS.includes(token);
 }
 
-export interface SorSwapArgs {
-  tokenIn: SupportedTokens;
-  tokenOut: SupportedTokens;
-  amount: string;
-}
-
-export interface FundManagement {
-  sender: string;
-  recipient: string;
-  fromInternalBalance: boolean;
-  toInternalBalance: boolean;
-}
-
-export interface BalancerV2TakeOrder {
-  swapType: SwapTypes;
-  swaps: SwapV2[];
-  tokenAddresses: string[];
-  limits: string[];
-  deadline: BigNumber;
-  //   overrides: { value: string } | {};
-}
-
 export interface Balances {
   tokenIn: {
     before: string | undefined;
@@ -186,86 +171,6 @@ export interface Balances {
     before: string | undefined;
     after: string | undefined;
   };
-}
-
-const swapV2Tuple = utils.ParamType.fromString(
-  'tuple(bytes32 poolId, uint256 assetInIndex, uint256 assetOutIndex, uint256 amount, bytes userData)',
-);
-
-const swapV2TupleArray = `${swapV2Tuple.format('full')}[]`;
-
-export function balancerV2TakeOrderArgs({ swapType, swaps, tokenAddresses, limits, deadline }: BalancerV2TakeOrder) {
-  return encodeArgs(
-    ['uint8', swapV2TupleArray, 'address[]', 'int256[]', 'uint256'],
-    [swapType, swaps, tokenAddresses, limits, deadline],
-  );
-}
-
-export async function getSwap(
-  provider: BaseProvider,
-  queryOnChain: boolean,
-  swapType: SwapTypes,
-  tokenIn: TokenDescriptor,
-  tokenOut: TokenDescriptor,
-  swapAmount: BN,
-): Promise<[SwapInfo, BN]> {
-  const networkDescriptor = await getNetworkDescriptor(provider);
-
-  const sor = new SOR(provider, networkDescriptor.chainId, networkDescriptor.subgraphURL);
-
-  // Will get onChain data for pools list
-  await sor.fetchPools(sor.getPools(), queryOnChain);
-
-  // gasPrice is used by SOR as a factor to determine how many pools to swap against.
-  // i.e. higher cost means more costly to trade against lots of different pools.
-  const gasPrice = new BN('40000000000');
-  // This determines the max no of pools the SOR will use to swap.
-  const maxPools = 4;
-
-  // This calculates the cost to make a swap which is used as an input to sor to allow it to make gas efficient recommendations.
-  // Note - tokenOut for SwapExactIn, tokenIn for SwapExactOut
-  const outputToken = swapType === SwapTypes.SwapExactOut ? tokenIn : tokenOut;
-  const cost = await sor.getCostOfSwapInToken(outputToken.address, outputToken.decimals, gasPrice);
-
-  const swapInfo: SwapInfo = await sor.getSwaps(tokenIn.address, tokenOut.address, swapType, swapAmount, {
-    gasPrice,
-    maxPools,
-  });
-
-  return [swapInfo, cost];
-}
-
-// Limits:
-// +ve means max to send
-// -ve mean min to receive
-// For a multihop the intermediate tokens should be 0
-// This is where slippage tolerance would be added
-export function calculateLimits(swapType: SwapTypes, swapInfo: SwapInfo): string[] {
-  const limits: string[] = [];
-
-  if (swapType === SwapTypes.SwapExactIn) {
-    swapInfo.tokenAddresses.forEach((token, i) => {
-      if (token.toLowerCase() === swapInfo.tokenIn.toLowerCase()) {
-        limits[i] = swapInfo.swapAmount.toString();
-      } else if (token.toLowerCase() === swapInfo.tokenOut.toLowerCase()) {
-        limits[i] = swapInfo.returnAmount.times(-0.99).toString().split('.')[0];
-      } else {
-        limits[i] = '0';
-      }
-    });
-  } else {
-    swapInfo.tokenAddresses.forEach((token, i) => {
-      if (token.toLowerCase() === swapInfo.tokenIn.toLowerCase()) {
-        limits[i] = swapInfo.returnAmount.toString();
-      } else if (token.toLowerCase() === swapInfo.tokenOut.toLowerCase()) {
-        limits[i] = swapInfo.swapAmount.times(-0.99).toString().split('.')[0];
-      } else {
-        limits[i] = '0';
-      }
-    });
-  }
-
-  return limits;
 }
 
 export async function getWhaleSigner(
@@ -282,29 +187,34 @@ export async function getWhaleSigner(
   return await hre.ethers.getSigner(whaleAddress);
 }
 
-export async function adjustAllowanceIfNeeded(signer: SignerWithAddress, swapInfo: SwapInfo, contract: Contract) {
+export async function adjustAllowanceIfNeeded(
+  signer: SignerWithAddress,
+  token: TokenDescriptor,
+  amount: BigNumber,
+  contract: Contract,
+) {
   // if 'token' is ETH itself, nothing to do. just return
-  if (swapInfo.tokenIn === AddressZero) {
+  if (token.address === AddressZero) {
     return;
   }
 
-  console.log('Checking ERC20 allowance...');
+  const tokenInContract = await hre.ethers.getContractAt(IERC20Artifact.abi, token.address);
+  let allowance = await tokenInContract.allowance(signer.address, contract.address);
 
-  const tokenInContract = await hre.ethers.getContractAt(IERC20Artifact.abi, swapInfo.tokenIn);
-  const allowance = await tokenInContract.allowance(signer.address, contract.address);
-
-  console.log(`allowance = ${allowance}, swapAmount = ${swapInfo.swapAmount}`);
-
-  if (bnum(allowance).lt(swapInfo.swapAmount)) {
-    console.log(`ERC20 token allowance amount is insufficient. Increasing allowance now.`);
+  if (bnum(allowance).lt(new BN(amount.toString()))) {
+    console.log(`ERC20 token allowance amount is insufficient.`);
+    console.log(`Current allowance = ${allowance}, Required allowance = ${amount}`);
+    console.log(`Increasing allowance...`);
 
     const txApprove = await tokenInContract.connect(signer).approve(contract.address, hre.ethers.constants.MaxUint256);
 
     await txApprove.wait();
 
-    console.log(`ERC20 token allowance increased.`);
-  } else {
-    console.log('ERC20 allowance is already sufficient.');
+    console.log(`Allowance increased...`);
+
+    allowance = await tokenInContract.allowance(signer.address, contract.address);
+
+    console.log(`New allowance = ${allowance}, Required allowance = ${amount}`);
   }
 }
 
@@ -386,69 +296,4 @@ export async function getBalances(
   }
 
   return balances;
-}
-
-export function printSwapDetails(
-  swapType: SwapTypes,
-  swapInfo: SwapInfo,
-  funds: FundManagement,
-  limits: string[],
-  tokenIn: TokenDescriptor,
-  tokenOut: TokenDescriptor,
-  swapAmount: BN,
-  cost: string,
-  balances: Balances,
-) {
-  const amtInScaled =
-    swapType === SwapTypes.SwapExactIn
-      ? swapAmount.toString()
-      : scale(swapInfo.returnAmount, -tokenIn.decimals).toString();
-  const amtOutScaled =
-    swapType === SwapTypes.SwapExactIn
-      ? scale(swapInfo.returnAmount, -tokenOut.decimals).toString()
-      : swapAmount.toString();
-  const swapTypeStr = swapType === SwapTypes.SwapExactIn ? 'SwapExactIn' : 'SwapExactOut';
-
-  console.log(`\n================================================`);
-
-  console.log(`Funds: ${JSON.stringify(funds, undefined, 2)}`);
-  console.log(`Swap addresses: ${JSON.stringify(swapInfo.tokenAddresses, undefined, 2)}`);
-  console.log(`Limits: ${JSON.stringify(limits, undefined, 2)}`);
-
-  console.log(`Swap type: ${swapTypeStr}`);
-  console.log(`Token In: ${tokenIn.symbol}, Amt: ${amtInScaled}`);
-  console.log(`Token Out: ${tokenOut.symbol}, Amt: ${amtOutScaled.toString()}`);
-  console.log(`Cost to swap in ${tokenIn.symbol}: ${cost} ${tokenIn.symbol}`);
-
-  console.log(`Balances before swap:`);
-  console.log(`  ${tokenIn.symbol}: ${balances.tokenIn.before}`);
-  console.log(`  ${tokenOut.symbol}: ${balances.tokenOut.before}`);
-
-  console.log(`Balances after swap:`);
-  console.log(`  ${tokenIn.symbol}: ${balances.tokenIn.after}`);
-  console.log(`  ${tokenOut.symbol}: ${balances.tokenOut.after}`);
-
-  console.log(`================================================\n`);
-}
-
-export async function assetTransferArgs({
-  adapter,
-  selector,
-  encodedCallArgs,
-}: {
-  adapter: BalancerV2Adapter;
-  selector: BytesLike;
-  encodedCallArgs: BytesLike;
-}) {
-  const {
-    0: spendAssetsHandleType,
-    1: spendAssets,
-    2: spendAssetAmounts,
-    3: expectedIncomingAssets,
-  } = await adapter.parseAssetsForMethod(selector, encodedCallArgs);
-
-  return encodeArgs(
-    ['uint', 'address[]', 'uint[]', 'address[]'],
-    [spendAssetsHandleType, spendAssets, spendAssetAmounts, expectedIncomingAssets],
-  );
 }

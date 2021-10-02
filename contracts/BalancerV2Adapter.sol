@@ -8,7 +8,6 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "@enzymefinance/contracts/release/extensions/integration-manager/integrations/utils/AdapterBase2.sol";
-import "hardhat/console.sol";
 import "./BalancerV2ActionsMixin.sol";
 import "./interfaces/IBalancerV2Vault.sol";
 
@@ -45,6 +44,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             IBalancerV2Vault.SwapKind swapKind,
             IBalancerV2Vault.BatchSwapStep[] memory swaps,
             address[] memory assets,
+            ,
             int256[] memory limits,
             uint256 deadline
         ) = __decodeCallArgs(_encodedCallArgs);
@@ -88,7 +88,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
     /// during swap() calls
     function __parseAssetsForSwap(bytes calldata _encodedCallArgs)
         private
-        view
+        pure
         returns (
             IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
             address[] memory spendAssets_,
@@ -101,22 +101,22 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             ,
             IBalancerV2Vault.BatchSwapStep[] memory swaps,
             address[] memory assets,
-            int256[] memory limits,
-            uint256 deadline_
+            uint256 tokenOutAmount,
+            ,
+
         ) = __decodeCallArgs(_encodedCallArgs);
 
-        // TODO populate variables below with the info from the variables returned above in the __decodeCallArgs() call
         spendAssets_ = new address[](1);
-        spendAssets_[0] = address(0x0);
+        spendAssets_[0] = assets[0];
 
         spendAssetAmounts_ = new uint256[](1);
-        spendAssetAmounts_[0] = 0;
+        spendAssetAmounts_[0] = swaps[0].amount;
 
         incomingAssets_ = new address[](1);
-        incomingAssets_[0] = address(0x0);
+        incomingAssets_[0] = assets[1];
 
         minIncomingAssetAmounts_ = new uint256[](1);
-        minIncomingAssetAmounts_[0] = 0;
+        minIncomingAssetAmounts_[0] = tokenOutAmount;
 
         return (
             IIntegrationManager.SpendAssetsHandleType.Transfer,
@@ -130,16 +130,16 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
     /// @dev Helper to decode the encoded callOnIntegration call arguments
     function __decodeCallArgs(bytes memory _encodedCallArgs)
         private
-        view
+        pure
         returns (
             IBalancerV2Vault.SwapKind swapKind_,
             IBalancerV2Vault.BatchSwapStep[] memory swaps_,
             address[] memory assets_,
+            uint256 tokenOutAmount_,
             int256[] memory limits_,
             uint256 deadline_
         )
     {
-        console.logBytes(_encodedCallArgs);
         return
             abi.decode(
                 _encodedCallArgs,
@@ -147,6 +147,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
                     IBalancerV2Vault.SwapKind,
                     IBalancerV2Vault.BatchSwapStep[],
                     address[],
+                    uint256,
                     int256[],
                     uint256
                 )
