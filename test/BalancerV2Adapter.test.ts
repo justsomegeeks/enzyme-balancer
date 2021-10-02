@@ -1,5 +1,6 @@
 import { SwapTypes } from '@balancer-labs/sor';
-import { assetTransferArgs, IntegrationManager, takeOrderSelector } from '@enzymefinance/protocol';
+import { JoinPoolRequest } from '@balancer-labs/balancer-js';
+import { assetTransferArgs, IntegrationManager, takeOrderSelector, lendSelector } from '@enzymefinance/protocol';
 import type { BaseProvider } from '@ethersproject/providers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import BigNumber from 'bignumber.js';
@@ -8,13 +9,15 @@ import type { Contract, ContractFactory } from 'ethers';
 import hre from 'hardhat';
 import { before } from 'mocha';
 
-import type { BalancerV2TakeOrder, FundManagement, NetworkDescriptor } from '../utils/env-helper';
+import type { BalancerV2Lend, BalancerV2TakeOrder, FundManagement, NetworkDescriptor } from '../utils/env-helper';
 import {
   balancerV2TakeOrderArgs,
+  BalancerV2LendArgs,
   calculateLimits,
   getNetworkDescriptor,
   getSwap,
   initializeEnvHelper,
+  
 } from '../utils/env-helper';
 
 describe('BalancerV2Adapter', async function () {
@@ -120,6 +123,7 @@ describe('BalancerV2Adapter', async function () {
   describe('lend',() => {
     let balancerV2Adapter: Contract;
     let usdcWhale: SignerWithAddress;
+    let lendArgs: any;
     before(async function () {
       balancerV2Adapter = await balancerV2AdapterFactory.deploy(
         networkDescriptor.contracts.IntegrationManager,
@@ -129,8 +133,44 @@ describe('BalancerV2Adapter', async function () {
       await integrationManager.registerAdapters([balancerV2Adapter.address]);
       usdcWhale = await hre.ethers.getSigner(networkDescriptor.tokens.USDC.whaleAddress);
       await hre.network.provider.send('hardhat_impersonateAccount', [usdcWhale.address]);
+      const poolId = '0x01abc00e86c7e258823b9a055fd62ca6cf61a16300010000000000000000003b';
+      const recipient = usdcWhale.address;
+      let joinRequest: JoinPoolRequest;
+      const tokens = networkDescriptor.tokens;
+      const initialBalances = [0 , 1];
+      const initUserData =
+      hre.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256[]'],[0, initialBalances]);
+
+
+      joinRequest = {
+        assets: [tokens.DAI.address, tokens.USDC.address],
+        maxAmountsIn: [0, 1],
+        userData: initUserData,
+        fromInternalBalance: false,
+      };
+
+      lendArgs = BalancerV2LendArgs({
+        poolId, recipient, joinRequest
+      } as BalancerV2Lend);
+
+      const transferArgs = await assetTransferArgs({
+        adapter: balancerV2Adapter.getInterface(),
+        encodedCallArgs: lendArgs,
+        selector: lendSelector,
+      });
+
+      expect(balancerV2Adapter.lend(balancerV2Adapter.address, lendSelector, transferArgs));
     });
 
+    it('should revert if parameter is invalid', async() => {
+      await expect(
+        balancerV2Adapter.lend(
+          balancerV2Adapter.address,
+          1,
+          lendArgs
+      ) ,
+      ).to.be.reverted;
+    });
     it('works as expected when called for lending by a fund', async () => {
   
       /*const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -174,14 +214,8 @@ describe('BalancerV2Adapter', async function () {
   
       // Rounding up from 540942
       expect(lendReceipt).toCostLessThan('542000');*/
-      await expect(
-        balancerV2Adapter.lend(
-          1,
-          1,
-          1,
-          1
-      ) ,
-      ).to.be.reverted;
+     const receipt = balancerV2Adapter.lend(balancerV2Adapter.address, 1, lendArgs);
+     expect(receipt).to.not.be.undefined;
     });
   });
 });

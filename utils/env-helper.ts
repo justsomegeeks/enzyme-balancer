@@ -3,7 +3,7 @@
 */
 
 import type { SwapInfo, SwapV2 } from '@balancer-labs/sor';
-import type { JoinPoolRequest } from '@balancer-labs/balancer-js';
+import { JoinPoolRequest } from '@balancer-labs/balancer-js';
 import { bnum, scale, SOR, SwapTypes } from '@balancer-labs/sor';
 import { encodeArgs } from '@enzymefinance/protocol';
 import { AddressZero } from '@ethersproject/constants';
@@ -23,6 +23,7 @@ const SUPPORTED_NETWORKS = ['mainnet'] as const;
 type SupportedNetworks = typeof SUPPORTED_NETWORKS[number];
 
 let hre: HardhatRuntimeEnvironment;
+const SCALING_FACTOR = 1e18;
 
 export function initializeEnvHelper(_hre: HardhatRuntimeEnvironment) {
   hre = _hre;
@@ -223,7 +224,7 @@ export function BalancerV2LendArgs ({
    request 
 }: BalancerV2Lend){
   return encodeArgs(
-    ['string', 'string', 'string[]'],
+    ['string', 'string', JoinPoolRequest],
     [poolId, recipient, request],
   );
 }
