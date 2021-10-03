@@ -65,10 +65,11 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
     mainnet: {
       chainId: 1,
       contracts: {
-        BalancerV2Vault: '0xBA12222222228d8Ba445958a75a0704d566BF2C8',
-        Comptroller: '.....',
+        BalancerV2WBTCWETHVault: '0xBA12222222228d8Ba445958a75a0704d566BF2C8',
+        EnyzmeComptroller: '0xe0dcf68b0b2fd1097442f2134e57339404a00639',
         EnzymeCouncil: '0xb270fe91e8e4b80452fbf1b4704208792a350f53',
-        EnzymeVaultProxy: '...',
+        EnzymeVaultProxy: '0x24f3b37934D1AB26B7bda7F86781c90949aE3a79', // Rhino Fund
+        FundOwner: '0x978cc856357946f980fba68db3b7f0d72e570da8', // Rhino Fund Manager
         IntegrationManager: '0x965ca477106476B4600562a2eBe13536581883A6',
       },
       name: 'mainnet',
@@ -219,11 +220,13 @@ export async function adjustAllowanceIfNeeded(
 }
 
 export async function getBalances(
-  signer: SignerWithAddress,
+  address: string,
   tokenIn: TokenDescriptor,
   tokenOut: TokenDescriptor,
   currentBalances?: Balances,
 ): Promise<Balances> {
+  const provider = hre.ethers.getDefaultProvider();
+
   const balances = {
     tokenIn: {
       after: undefined,
@@ -238,29 +241,29 @@ export async function getBalances(
   if (typeof balances.tokenIn.before === 'undefined' || typeof balances.tokenOut.before === 'undefined') {
     if (isETH(tokenIn.address)) {
       balances.tokenIn.before = hre.ethers.utils.formatUnits(
-        (await signer.getBalance()).toString(),
+        (await provider.getBalance(address)).toString(),
         tokenIn.decimals.toString(),
       );
       balances.tokenOut.before = hre.ethers.utils.formatUnits(
-        await tokenOut.contract?.balanceOf(signer.address),
+        await tokenOut.contract?.balanceOf(address),
         tokenOut.decimals.toString(),
       );
     } else if (isETH(tokenOut.address)) {
       balances.tokenIn.before = hre.ethers.utils.formatUnits(
-        await tokenIn.contract?.balanceOf(signer.address),
+        await tokenIn.contract?.balanceOf(address),
         tokenIn.decimals.toString(),
       );
       balances.tokenOut.before = hre.ethers.utils.formatUnits(
-        (await signer.getBalance()).toString(),
+        (await provider.getBalance(address)).toString(),
         tokenOut.decimals.toString(),
       );
     } else {
       balances.tokenIn.before = hre.ethers.utils.formatUnits(
-        await tokenIn.contract?.balanceOf(signer.address),
+        await tokenIn.contract?.balanceOf(address),
         tokenIn.decimals.toString(),
       );
       balances.tokenOut.before = hre.ethers.utils.formatUnits(
-        await tokenOut.contract?.balanceOf(signer.address),
+        await tokenOut.contract?.balanceOf(address),
         tokenOut.decimals.toString(),
       );
     }
@@ -268,29 +271,29 @@ export async function getBalances(
 
   if (isETH(tokenIn.address)) {
     balances.tokenIn.after = hre.ethers.utils.formatUnits(
-      (await signer.getBalance()).toString(),
+      (await provider.getBalance(address)).toString(),
       tokenIn.decimals.toString(),
     );
     balances.tokenOut.after = hre.ethers.utils.formatUnits(
-      await tokenOut.contract?.balanceOf(signer.address),
+      await tokenOut.contract?.balanceOf(address),
       tokenOut.decimals.toString(),
     );
   } else if (isETH(tokenOut.address)) {
     balances.tokenIn.after = hre.ethers.utils.formatUnits(
-      await tokenIn.contract?.balanceOf(signer.address),
+      await tokenIn.contract?.balanceOf(address),
       tokenIn.decimals.toString(),
     );
     balances.tokenOut.after = hre.ethers.utils.formatUnits(
-      (await signer.getBalance()).toString(),
+      (await provider.getBalance(address)).toString(),
       tokenOut.decimals.toString(),
     );
   } else {
     balances.tokenIn.after = hre.ethers.utils.formatUnits(
-      await tokenIn.contract?.balanceOf(signer.address),
+      await tokenIn.contract?.balanceOf(address),
       tokenIn.decimals.toString(),
     );
     balances.tokenOut.after = hre.ethers.utils.formatUnits(
-      await tokenOut.contract?.balanceOf(signer.address),
+      await tokenOut.contract?.balanceOf(address),
       tokenOut.decimals.toString(),
     );
   }

@@ -74,7 +74,7 @@ task('bal_sorswap', 'Swap 2 tokens via Balancer SOR')
 
     const deadline = hre.ethers.constants.MaxUint256;
 
-    let balances = await getBalances(whaleSigner, tokenInDescriptor, tokenOutDescriptor);
+    let balances = await getBalances(whaleSigner.address, tokenInDescriptor, tokenOutDescriptor);
 
     console.log('Swapping...');
 
@@ -93,7 +93,7 @@ task('bal_sorswap', 'Swap 2 tokens via Balancer SOR')
 
     console.log('Swap completed.');
 
-    balances = await getBalances(whaleSigner, tokenInDescriptor, tokenOutDescriptor, balances);
+    balances = await getBalances(whaleSigner.address, tokenInDescriptor, tokenOutDescriptor, balances);
 
     const costScaled = cost.times(new BN(tokenInDescriptor.decimals.toString())).dp(0, BN.ROUND_HALF_EVEN);
     const swapInTokenCost = hre.ethers.utils.formatUnits(
