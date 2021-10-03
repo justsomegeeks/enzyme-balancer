@@ -121,6 +121,4 @@ interface IBalancerV2Vault {
             uint256[] memory balances,
             uint256 lastChangeBlock
         );
-
-    function totalSupply() external view returns (uint256);
 }

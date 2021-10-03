@@ -61,15 +61,14 @@ contract BalancerV2PriceFeed {
     }
 
     function getLatestPrice(address _token) public returns (uint256) {
-
         priceFeed = AggregatorV3Interface(_token);
         (, int256 price, , , ) = priceFeed.latestRoundData();
         return uint256(price);
     }
 
     function getAllPrices(IERC20[] memory tokens) internal returns (uint256[] memory result) {
-        uint size = tokens.length;
-        result = new uint256[] (size);
+        uint256 size = tokens.length;
+        result = new uint256[](size);
         for (uint256 i = 0; i < tokens.length; i++) {
             if (tokenAggregator[address(tokens[0])].isValue) {
                 //prevents calling obscure tokens until we decide what to do with those
@@ -109,11 +108,10 @@ contract BalancerV2PriceFeed {
         public
         returns (address[] memory underlyingTokens_, uint256[] memory underlyingValues_)
     {
-
         (IERC20[] memory tokens, uint256[] memory balances, ) = getPoolInfoFromPool(_poolId);
         uint256[] memory prices = getAllPrices(tokens);
-        underlyingTokens_ = new  address[](tokens.length);
-        underlyingValues_ = new  uint256[](tokens.length);
+        underlyingTokens_ = new address[](tokens.length);
+        underlyingValues_ = new uint256[](tokens.length);
         for (uint256 i = 0; i < tokens.length; i++) {
             underlyingValues_[i] = balances[i] * prices[i];
             underlyingTokens_[i] = address(tokens[i]);
@@ -122,15 +120,13 @@ contract BalancerV2PriceFeed {
         return (underlyingTokens_, underlyingValues_);
     }
 
-    function getPoolTotalSupply(address _poolAddress) internal returns(uint256){
+    function getPoolTotalSupply(address _poolAddress) internal returns (uint256) {
         IBalancerV2Pool pool = IBalancerV2Pool(_poolAddress);
         return pool.totalSupply();
     }
 
-    function calcBPTValue(bytes32 _poolId, address _poolAddress)
-        public
-        returns (uint256 totalSupply, uint256 BPTValue)
-    {
+    function calcBPTValue(bytes32 _poolId) public returns (uint256 totalSupply, uint256 BPTValue) {
+        address _poolAddress = getAddress(_poolId);
         totalSupply = getPoolTotalSupply(_poolAddress);
         uint256 totalTokenValue;
         (, uint256[] memory underlyingValues_) = calcUnderlyingValues(_poolId);
@@ -141,8 +137,8 @@ contract BalancerV2PriceFeed {
         console.log(totalSupply, BPTValue);
     }
 
-    function getAddress(bytes32 data) external returns(address){
-      return  address(bytes20(data));
+    function getAddress(bytes32 data) external returns (address) {
+        return address(bytes20(data));
     }
 }
 
