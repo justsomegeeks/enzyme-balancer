@@ -185,7 +185,8 @@ describe('BalancerV2Adapter', function () {
 
     it('works as expected when called by a fund', async function () {
       expect(lendArgs).to.not.be.undefined;
-      const receipt = balancerV2Adapter.lend(balancerV2Adapter.address, lendSelector, lendArgs);      
+      const receipt = await balancerV2Adapter.lend(balancerV2Adapter.address, lendSelector, lendArgs);  
+      console.log('getting,',  receipt);    
       expect(receipt).to.not.be.undefined;
     });
   });
