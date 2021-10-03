@@ -170,18 +170,11 @@ describe('BalancerV2Adapter', function () {
       
       lendArgs = BalancerV2LendArgs({
           poolId, recipient, request
-        } as BalancerV2Lend);
+      } as BalancerV2Lend);
 
-      /*const transferArgs = await assetTransferArgs({
-        adapter: integrationManager.getInterface(),
-        encodedCallArgs: lendArgs,
-        selector: lendSelector,
-      });*/      
-      
-      expect(balancerV2Adapter.lend(balancerV2Adapter.address, lendSelector, lendArgs));
     });
     it('can only be called via the IntegrationManager', async function () {
-      await expect(
+       expect(await
         balancerV2Adapter.lend(
           balancerV2Adapter.address,
           lendSelector,
