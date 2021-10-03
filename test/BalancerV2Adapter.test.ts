@@ -174,12 +174,12 @@ describe('BalancerV2Adapter', function () {
 
     });
     it('can only be called via the IntegrationManager', async function () {
-       expect(await
+       await expect(
         balancerV2Adapter.lend(
           balancerV2Adapter.address,
           lendSelector,
           lendArgs
-      ) ,
+      ) 
       ).to.be.reverted;
     });
 
