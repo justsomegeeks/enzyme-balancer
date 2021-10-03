@@ -11,6 +11,8 @@ import "@enzymefinance/contracts/release/extensions/integration-manager/integrat
 import "./BalancerV2ActionsMixin.sol";
 import "./interfaces/IBalancerV2Vault.sol";
 
+import "hardhat/console.sol";
+
 /// @title BalancerV2Adapter Contract
 /// @author JustSomeGeeks Hackathon Team <https://github.com/justsomegeeks>
 /// @notice Adapter for interacting with Balancer (v2)
@@ -44,16 +46,52 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             IBalancerV2Vault.SwapKind swapKind,
             IBalancerV2Vault.BatchSwapStep[] memory swaps,
             address[] memory assets,
-            ,
+            uint256 tokenOutAmount,
             int256[] memory limits,
             uint256 deadline
         ) = __decodeCallArgs(_encodedCallArgs);
+
+        if (swapKind == IBalancerV2Vault.SwapKind.GIVEN_IN) {
+            console.log("swapKind: GIVEN_IN (0)");
+        } else {
+            console.log("swapKind: GIVEN_IN (1)");
+        }
+
+        console.log("swaps[0].poolId = ");
+        console.logBytes32(swaps[0].poolId);
+
+        console.log("swaps[0].amount = ", swaps[0].amount);
+        console.log("swaps[0].userData = ");
+        console.logBytes(swaps[0].userData);
+
+        console.log("assets[0] tokenIn = ", assets[0]);
+        console.log("assets[1] tokenOut = ", assets[1]);
+
+        console.log("tokenOutAmount = ", tokenOutAmount);
+
+        console.log("limits[0] = ");
+        console.logInt(limits[0]);
+
+        console.log("limits[1] = ");
+        console.logInt(limits[1]);
+
+        console.log("deadline = ", deadline);
+
         IBalancerV2Vault.FundManagement memory funds = IBalancerV2Vault.FundManagement(
             msg.sender,
             false, // fromInternalBalance
             payable(_vaultProxy),
             false // toInternalBalance
         );
+
+        console.log("FundManagement: ");
+        console.log("  sender = ", funds.sender);
+        console.log("  fromInternalBalance = ");
+        console.logBool(funds.fromInternalBalance);
+        console.log("FundManagement: ");
+        console.log("  recipient = ", funds.recipient);
+        console.log("  toInternalBalance = ");
+        console.logBool(funds.toInternalBalance);
 
         __balancerV2BatchSwap(swapKind, swaps, assets, funds, limits, deadline);
     }

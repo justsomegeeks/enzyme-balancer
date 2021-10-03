@@ -51,7 +51,7 @@ export async function balancerV2TakeOrder({
     limits,
     swapType,
     swaps: swapInfo.swaps,
-    tokenAddresses: [swapInfo.tokenIn, swapInfo.tokenIn],
+    tokenAddresses: [swapInfo.tokenIn, swapInfo.tokenOut],
     tokenOutAmount: swapInfo.returnAmount,
   });
 
