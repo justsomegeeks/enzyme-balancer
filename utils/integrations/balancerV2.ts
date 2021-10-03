@@ -13,9 +13,10 @@ import { scale, SOR, SwapTypes } from '@balancer-labs/sor';
 import { encodeArgs } from '@enzymefinance/protocol';
 import type { BaseProvider } from '@ethersproject/providers';
 import { BigNumber as BN } from 'bignumber.js';
-import { BigNumber, BytesLike, utils } from 'ethers';
-import { BalancerV2Adapter } from '../../typechain';
+import type { BytesLike } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 
+import type { BalancerV2Adapter } from '../../typechain';
 import type { Balances, SupportedTokens, TokenDescriptor } from '../env-helper';
 import { getNetworkDescriptor } from '../env-helper';
 

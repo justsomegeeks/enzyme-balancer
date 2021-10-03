@@ -2,6 +2,8 @@
     This code is heavily inspired by: https://github.com/balancer-labs/balancer-sor/blob/master/test/testScripts/swapExample.ts
 */
 
+import '@nomiclabs/hardhat-ethers';
+
 import { SwapTypes } from '@balancer-labs/sor';
 import { getBalancerContract } from '@balancer-labs/v2-deployments';
 import { BigNumber as BN } from 'bignumber.js';

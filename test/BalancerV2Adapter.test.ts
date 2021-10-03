@@ -10,8 +10,7 @@ import hre from 'hardhat';
 
 import type { BalancerV2Adapter } from '../typechain';
 import type { NetworkDescriptor, TokenDescriptor } from '../utils/env-helper';
-import { getBalances } from '../utils/env-helper';
-import { getNetworkDescriptor, initializeEnvHelper } from '../utils/env-helper';
+import { getBalances, getNetworkDescriptor, initializeEnvHelper } from '../utils/env-helper';
 import { assetTransferArgs, balancerV2TakeOrderArgs, calculateLimits, getSwap } from '../utils/integrations/balancerV2';
 import { balancerV2TakeOrder } from '../utils/integrations/testutils/balancerV2TestHelper';
 
