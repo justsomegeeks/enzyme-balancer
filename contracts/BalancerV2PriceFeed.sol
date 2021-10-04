@@ -69,9 +69,10 @@ contract BalancerV2PriceFeed {
         uint256 size = tokens.length;
         result = new uint256[](size);
         for (uint256 i = 0; i < tokens.length; i++) {
-            if (tokenAggregator[address(tokens[0])].isValue) {
+            if (tokenAggregator[address(tokens[i])].isValue) {
                 //prevents calling obscure tokens until we decide what to do with those
-                result[i] = getLatestPrice(tokenAggregator[address(tokens[0])].aggAddress);
+                result[i] = getLatestPrice(tokenAggregator[address(tokens[i])].aggAddress);
+                console.log("RESULT", result[i]);
             }
         }
     }
@@ -108,6 +109,9 @@ contract BalancerV2PriceFeed {
         returns (address[] memory underlyingTokens_, uint256[] memory underlyingValues_)
     {
         (IERC20[] memory tokens, uint256[] memory balances, ) = getPoolInfoFromPool(_poolId);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            console.log("CALCUNDER Tokens", address(tokens[i]));
+        }
         uint256[] memory prices = getAllPrices(tokens);
         underlyingTokens_ = new address[](tokens.length);
         underlyingValues_ = new uint256[](tokens.length);
