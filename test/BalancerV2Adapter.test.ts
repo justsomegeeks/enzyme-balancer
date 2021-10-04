@@ -1,7 +1,7 @@
 import type { SwapInfo } from '@balancer-labs/sor';
 import { SwapTypes } from '@balancer-labs/sor';
 import { JoinPoolRequest } from '@balancer-labs/balancer-js';
-import { IntegrationManager, takeOrderSelector, lendSelector } from '@enzymefinance/protocol';
+import { IntegrationManager, takeOrderSelector, lendSelector, VaultLib, ComptrollerLib } from '@enzymefinance/protocol';
 import type { BaseProvider } from '@ethersproject/providers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber as BN } from 'bignumber.js';
@@ -10,9 +10,10 @@ import type { ContractFactory } from 'ethers';
 import hre from 'hardhat';
 
 import type { BalancerV2Adapter } from '../typechain';
-import type { NetworkDescriptor, TokenDescriptor, BalancerV2Lend } from '../utils/env-helper';
-import { getNetworkDescriptor, initializeEnvHelper, BalancerV2LendArgs } from '../utils/env-helper';
-import { balancerV2TakeOrderArgs, calculateLimits, getSwap } from '../utils/integrations/balancerV2';
+import type { NetworkDescriptor, TokenDescriptor } from '../utils/env-helper';
+import { getNetworkDescriptor, initializeEnvHelper } from '../utils/env-helper';
+import { balancerV2TakeOrderArgs, calculateLimits, getSwap, assetTransferArgs  } from '../utils/integrations/balancerV2';
+import { balancerV2Lend } from '../utils/integrations/testutils/balancerV2TestHelper';
 
 describe('BalancerV2Adapter', function () {
   let provider: BaseProvider;
@@ -142,7 +143,22 @@ describe('BalancerV2Adapter', function () {
   describe('lend', function () {
     let balancerV2Adapter: BalancerV2Adapter;
     let lendArgs: any;
+    let enzymeFundAddress: string;
+    let enzymeFundOwner: SignerWithAddress;
+    let fundOwner: VaultLib;
+    let request: JoinPoolRequest;
+    let poolId: string;
+    let recipient: string;
+    let comptrollerProxy: ComptrollerLib;
+    let enzymeComptrollerAddress: string;
+    
     before(async function () {
+      enzymeComptrollerAddress = networkDescriptor.contracts.EnyzmeComptroller;
+      enzymeFundAddress = networkDescriptor.contracts.EnzymeVaultProxy;
+      enzymeFundOwner = await hre.ethers.getSigner(networkDescriptor.contracts.FundOwner);
+      fundOwner = new VaultLib(enzymeFundAddress, enzymeFundOwner);
+      comptrollerProxy = new ComptrollerLib(enzymeComptrollerAddress, enzymeFundOwner);
+
       balancerV2Adapter = (await balancerV2AdapterFactory.deploy(
         networkDescriptor.contracts.IntegrationManager,
         networkDescriptor.contracts.BalancerV2Vault,
@@ -152,9 +168,9 @@ describe('BalancerV2Adapter', function () {
 
       await integrationManager.registerAdapters([balancerV2Adapter.address]);
 
-      const poolId = '0x01abc00e86c7e258823b9a055fd62ca6cf61a16300010000000000000000003b';
-      const recipient = enzymeCouncil.address;
-      let request: JoinPoolRequest;
+      poolId = '0x01abc00e86c7e258823b9a055fd62ca6cf61a16300010000000000000000003b';
+      recipient = enzymeCouncil.address;
+
       const tokens = networkDescriptor.tokens;
       const initialBalances = [0 , 1];
       const initUserData =
@@ -162,7 +178,7 @@ describe('BalancerV2Adapter', function () {
 
 
       request = {
-        assets: [tokens.DAI.address, tokens.USDC.address],
+        assets: [tokens.DAI.address, tokens.USDC.address],//TODO use the correct tokens for the pool being used
         maxAmountsIn: [0, 1],
         userData: initUserData,
         fromInternalBalance: false,
@@ -173,20 +189,37 @@ describe('BalancerV2Adapter', function () {
       } as BalancerV2Lend);
 
     });
+
     it('can only be called via the IntegrationManager', async function () {
+      
+      const transferArgs = await assetTransferArgs({
+        adapter: balancerV2Adapter,
+        encodedCallArgs: lendArgs,
+        selector: lendSelector,
+      });
 
       await expect(balancerV2Adapter.lend(
-        balancerV2Adapter.address,
+        enzymeFundAddress,
         lendSelector,
-        lendArgs)
+        transferArgs)
         ).to.be.revertedWith(
         'Only the IntegrationManager can call this function',
       );
     });
 
     it('works as expected when called by a fund', async function () {
+
       expect(lendArgs).to.not.be.undefined;
-      const receipt = await balancerV2Adapter.lend(balancerV2Adapter.address, lendSelector, lendArgs);  
+      //const receipt = await balancerV2Adapter.lend(enzymeFundAddress, lendSelector, lendArgs);  
+      const receipt = await balancerV2Lend({
+        comptrollerProxy,
+        integrationManager,
+        fundOwner,
+        balancerV2Adapter: balancerV2Adapter.address,
+        poolId, 
+        recipient, 
+        request
+      });
       console.log('getting,',  receipt);    
       expect(receipt).to.not.be.undefined;
     });

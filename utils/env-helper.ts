@@ -1,16 +1,15 @@
 /*
     This code is heavily inspired by: https://github.com/balancer-labs/balancer-sor/blob/master/test/testScripts/swapExample.ts
 */
-import { JoinPoolRequest } from '@balancer-labs/balancer-js';
+
 import { bnum } from '@balancer-labs/sor';
-import { encodeArgs } from '@enzymefinance/protocol';
 import { AddressZero } from '@ethersproject/constants';
 import type { Contract } from '@ethersproject/contracts';
 import type { BaseProvider } from '@ethersproject/providers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import IERC20Artifact from '@openzeppelin/contracts/build/contracts/IERC20.json';
 import { BigNumber as BN } from 'bignumber.js';
-import { BigNumber, utils } from 'ethers';
+import { BigNumber } from 'ethers';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 const SUPPORTED_TOKENS = ['AAVE', 'ETH', 'BAL', 'COMP', 'USDC', 'DAI', 'WBTC', 'WETH'] as const;
@@ -167,17 +166,6 @@ export function isSupportedToken(token: SupportedTokens) {
   return SUPPORTED_TOKENS.includes(token);
 }
 
-export interface BalancerV2Lend {
-  poolId: string;
-  recipient: string;
-  request: JoinPoolRequest;
-}
-export interface BalancerV2Lend {
-  poolId: string;
-  recipient: string;
-  request: JoinPoolRequest;
-}
-
 export interface Balances {
   tokenIn: {
     before: string | undefined;
@@ -187,19 +175,6 @@ export interface Balances {
     before: string | undefined;
     after: string | undefined;
   };
-}
-
-const lendV2JoinPoolRequest = utils.ParamType.fromString('tuple(address[] assets, uint256[] maxAmountsIn, bytes userData, bool fromInternalBalance)');
-
-export function BalancerV2LendArgs ({
-  poolId,
-  recipient,
-  request 
-}: BalancerV2Lend){
-    return encodeArgs(
-    ['string', 'string', lendV2JoinPoolRequest],
-    [poolId, recipient, request],
-  );
 }
 
 export async function getWhaleSigner(

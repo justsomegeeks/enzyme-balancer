@@ -8,11 +8,12 @@
 import type { SwapInfo, SwapTypes } from '@balancer-labs/sor';
 import type { AddressLike } from '@enzymefinance/ethers';
 import type { ComptrollerLib, IntegrationManager } from '@enzymefinance/protocol';
-import { callOnIntegrationArgs, IntegrationManagerActionId, takeOrderSelector } from '@enzymefinance/protocol';
+import { JoinPoolRequest } from '@balancer-labs/balancer-js';
+import { callOnIntegrationArgs, IntegrationManagerActionId, takeOrderSelector, lendSelector } from '@enzymefinance/protocol';
 import type { BigNumber } from '@ethersproject/bignumber';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
-import { balancerV2TakeOrderArgs, calculateLimits } from '../balancerV2';
+import { balancerV2TakeOrderArgs, calculateLimits, BalancerV2LendArgs, BalancerV2Lend } from '../balancerV2';
 
 export async function balancerV2TakeOrder({
   comptrollerProxy,
@@ -59,6 +60,39 @@ export async function balancerV2TakeOrder({
     adapter: balancerV2Adapter,
     encodedCallArgs: takeOrderArgs,
     selector: takeOrderSelector,
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export async function balancerV2Lend({
+  comptrollerProxy,
+  integrationManager,
+  fundOwner,
+  balancerV2Adapter,
+  poolId, 
+  recipient, 
+  request
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  balancerV2Adapter: AddressLike;
+  poolId: string;
+  recipient: string;
+  request: JoinPoolRequest;  
+}) {
+
+  const lendArgs = BalancerV2LendArgs({
+    poolId, recipient, request
+  } as BalancerV2Lend);
+
+  const callArgs = callOnIntegrationArgs({
+    adapter: balancerV2Adapter,
+    encodedCallArgs: lendArgs,
+    selector: lendSelector,
   });
 
   return comptrollerProxy

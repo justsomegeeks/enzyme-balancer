@@ -14,9 +14,11 @@ import { encodeArgs } from '@enzymefinance/protocol';
 import type { BaseProvider } from '@ethersproject/providers';
 import { BigNumber as BN } from 'bignumber.js';
 import { BigNumber, utils } from 'ethers';
-
+import { JoinPoolRequest } from '@balancer-labs/balancer-js';
 import type { Balances, SupportedTokens, TokenDescriptor } from '../env-helper';
 import { getNetworkDescriptor } from '../env-helper';
+import type { BalancerV2Adapter } from '../../typechain';
+import type { BytesLike } from 'ethers';
 
 export interface SorSwapArgs {
   tokenIn: SupportedTokens;
@@ -129,7 +131,31 @@ export function calculateLimits(swapType: SwapTypes, swapInfo: SwapInfo): string
 
   return limits;
 }
+//
+// hand rolled version of:
+//   https://github.com/enzymefinance/protocol/blob/current/packages/protocol/src/utils/integrations/common.ts#L52-L72
+//
+export async function assetTransferArgs({
+  adapter,
+  selector,
+  encodedCallArgs,
+}: {
+  adapter: BalancerV2Adapter;
+  selector: BytesLike;
+  encodedCallArgs: BytesLike;
+}) {
+  const {
+    0: spendAssetsHandleType,
+    1: spendAssets,
+    2: spendAssetAmounts,
+    3: expectedIncomingAssets,
+  } = await adapter.parseAssetsForMethod(selector, encodedCallArgs);
 
+  return encodeArgs(
+    ['uint', 'address[]', 'uint[]', 'address[]'],
+    [spendAssetsHandleType, spendAssets, spendAssetAmounts, expectedIncomingAssets],
+  );
+}
 //
 // hand rolled version of:
 //   https://github.com/enzymefinance/protocol/blob/current/packages/protocol/src/utils/integrations/common.ts#L52-L72
@@ -197,4 +223,22 @@ export function printSwapDetails(
   console.log(`  ${tokenOut.symbol}: ${balances.tokenOut.after}`);
 
   console.log(`================================================\n`);
+}
+
+const lendV2JoinPoolRequest = utils.ParamType.fromString('tuple(address[] assets, uint256[] maxAmountsIn, bytes userData, bool fromInternalBalance)');
+
+export function BalancerV2LendArgs ({
+  poolId,
+  recipient,
+  request 
+}: BalancerV2Lend){
+    return encodeArgs(
+    ['string', 'string', lendV2JoinPoolRequest],
+    [poolId, recipient, request],
+  );
+}
+export interface BalancerV2Lend {
+  poolId: string;
+  recipient: string;
+  request: JoinPoolRequest;
 }
