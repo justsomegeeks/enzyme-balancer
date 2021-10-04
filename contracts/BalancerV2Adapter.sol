@@ -52,6 +52,13 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             uint256 deadline
         ) = __decodeCallArgs(_encodedCallArgs);
 
+        IBalancerV2Vault.FundManagement memory funds = IBalancerV2Vault.FundManagement(
+            address(this),
+            false, // fromInternalBalance
+            payable(_vaultProxy),
+            false // toInternalBalance
+        );
+
         if (swapKind == IBalancerV2Vault.SwapKind.GIVEN_IN) {
             console.log("swapKind: GIVEN_IN (0)");
         } else {
@@ -78,33 +85,15 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
 
         console.log("deadline = ", deadline);
 
-        IBalancerV2Vault.FundManagement memory funds = IBalancerV2Vault.FundManagement(
-            address(this),
-            false, // fromInternalBalance
-            payable(_vaultProxy),
-            false // toInternalBalance
-        );
-
         console.log("FundManagement: ");
         console.log("  sender = ", funds.sender);
         console.log("  fromInternalBalance = ");
         console.logBool(funds.fromInternalBalance);
-        console.log("FundManagement: ");
         console.log("  recipient = ", funds.recipient);
         console.log("  toInternalBalance = ");
         console.logBool(funds.toInternalBalance);
-        console.log("+++++++++++++++++++++++++++++++++++++++++++");
-        console.log("Min Incoming Amount");
-        console.logUint(tokenOutAmount);
-        uint256 balanceBefore = IERC20(assets[1]).balanceOf(address(this));
-        console.log("BALANCE BEFORE");
-        console.logUint(balanceBefore);
 
         __balancerV2BatchSwap(swapKind, swaps, assets, funds, limits, deadline);
-        uint256 balanceAfter = IERC20(assets[1]).balanceOf(address(this));
-        console.log("BALANCE After");
-        console.logUint(balanceAfter);
-        console.log("+++++++++++++++++++++++++++++++++++++++++++");
     }
 
     /// @notice Parses the expected assets to receive from a call on integration

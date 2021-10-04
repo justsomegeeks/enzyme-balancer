@@ -167,7 +167,8 @@ export function printSwapDetails(
   tokenOut: TokenDescriptor,
   swapAmount: BN,
   cost: string,
-  balances: Balances,
+  preSwapBalances: Balances,
+  postSwapBalances: Balances,
 ) {
   const amtInScaled =
     swapType === SwapTypes.SwapExactIn
@@ -191,12 +192,12 @@ export function printSwapDetails(
   console.log(`Cost to swap in ${tokenIn.symbol}: ${cost} ${tokenIn.symbol}`);
 
   console.log(`Balances before swap:`);
-  console.log(`  ${tokenIn.symbol}: ${balances.tokenIn.before}`);
-  console.log(`  ${tokenOut.symbol}: ${balances.tokenOut.before}`);
+  console.log(`  ${tokenIn.symbol}: ${preSwapBalances.tokenIn.balance}`);
+  console.log(`  ${tokenOut.symbol}: ${preSwapBalances.tokenOut.balance}`);
 
   console.log(`Balances after swap:`);
-  console.log(`  ${tokenIn.symbol}: ${balances.tokenIn.after}`);
-  console.log(`  ${tokenOut.symbol}: ${balances.tokenOut.after}`);
+  console.log(`  ${tokenIn.symbol}: ${postSwapBalances.tokenIn.balance}`);
+  console.log(`  ${tokenOut.symbol}: ${postSwapBalances.tokenOut.balance}`);
 
   console.log(`================================================\n`);
 }

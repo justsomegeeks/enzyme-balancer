@@ -1,6 +1,12 @@
 import type { SwapInfo } from '@balancer-labs/sor';
 import { SwapTypes } from '@balancer-labs/sor';
-import { ComptrollerLib, IntegrationManager, takeOrderSelector, VaultLib } from '@enzymefinance/protocol';
+import {
+  ComptrollerLib,
+  IntegrationManager,
+  SpendAssetsHandleType,
+  takeOrderSelector,
+  VaultLib,
+} from '@enzymefinance/protocol';
 import type { BaseProvider } from '@ethersproject/providers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber as BN } from 'bignumber.js';
@@ -118,26 +124,21 @@ describe('BalancerV2Adapter', function () {
 
       const parsedArgs = await balancerV2Adapter.parseAssetsForMethod(takeOrderSelector, args);
 
-      console.log({ parsedArgs });
-      console.log(`---------------\n`);
-      console.log(`parsedArgs = `);
-
-      parsedArgs.forEach((arg: unknown, index: number) => {
-        console.log(`  [${index}]: ${arg}`);
-      });
-
       expect(parsedArgs).to.have.length(5);
 
-      /*
-        TODO: find toMatchFunctionOutput() matcher
-        expect(result).toMatchFunctionOutput(paraSwapV4Adapter.parseAssetsForMethod, {
-          spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-          incomingAssets_: [incomingAsset],
-          spendAssets_: [outgoingAsset],
-          spendAssetAmounts_: [outgoingAssetAmount],
-          minIncomingAssetAmounts_: [minIncomingAssetAmount]
-        });
-      */
+      expect(parsedArgs[0]).to.equal(SpendAssetsHandleType.Transfer);
+
+      expect(parsedArgs[1]).to.have.length(1);
+      expect(parsedArgs[1][0].toLowerCase()).to.equal(networkDescriptor.tokens.WBTC.address.toLowerCase());
+
+      expect(parsedArgs[2]).to.have.length(1);
+      // TODO expect(parsedArgs[2][0]).to.equal(big number amount);
+
+      expect(parsedArgs[3]).to.have.length(1);
+      expect(parsedArgs[3][0].toLowerCase()).to.equal(networkDescriptor.tokens.WETH.address.toLowerCase());
+
+      expect(parsedArgs[4]).to.have.length(1);
+      // TODO expect(parsedArgs[4][0]).to.equal(big number amount);
     });
 
     xit('generates expected output for lending', async function () {
@@ -152,7 +153,6 @@ describe('BalancerV2Adapter', function () {
   describe('takeOrder', function () {
     const queryOnChain = true;
     const swapType = SwapTypes.SwapExactIn;
-    const swapAmount = new BN(1);
 
     const deadline = hre.ethers.constants.MaxUint256;
 
@@ -192,8 +192,24 @@ describe('BalancerV2Adapter', function () {
       await balancerV2Adapter.deployed();
 
       await integrationManager.registerAdapters([balancerV2Adapter.address]);
+    });
 
-      [swapInfo] = await getSwap(provider, queryOnChain, swapType, tokenIn, tokenOut, swapAmount);
+    it('can only be called via the IntegrationManager', async function () {
+      // For more info about 'interface ExpectedTrade {' see docs for the ExpectedTrade interface
+      // in ../utils/env-helper.ts
+      if (typeof tokenIn.mainnetPinnedBlockTradeCache === 'undefined') {
+        throw `Token ${tokenIn.symbol} has no 'mainnetPinnedBlockTradeCache' set. See: ../utils/env-helper.ts`;
+      }
+
+      [swapInfo] = await getSwap(
+        provider,
+        queryOnChain,
+        swapType,
+        tokenIn,
+        tokenOut,
+        tokenIn.mainnetPinnedBlockTradeCache.tokenInAmount,
+      );
+
       limits = calculateLimits(swapType, swapInfo);
 
       args = balancerV2TakeOrderArgs({
@@ -204,9 +220,7 @@ describe('BalancerV2Adapter', function () {
         tokenAddresses: [tokenIn.address, tokenOut.address],
         tokenOutAmount: swapInfo.returnAmount,
       });
-    });
 
-    it('can only be called via the IntegrationManager', async function () {
       const transferArgs = await assetTransferArgs({
         adapter: balancerV2Adapter,
         encodedCallArgs: args,
@@ -219,27 +233,40 @@ describe('BalancerV2Adapter', function () {
     });
 
     it('works as expected when called by a fund', async function () {
-      let balances = await getBalances(enzymeFundAddress, tokenIn, tokenOut);
-      console.log(`balances = ${JSON.stringify(balances, undefined, 2)}`);
+      // For more info about 'interface ExpectedTrade {' see docs for the ExpectedTrade interface
+      // in ../utils/env-helper.ts
+      if (typeof tokenIn.mainnetPinnedBlockTradeCache === 'undefined') {
+        throw `Token ${tokenIn.symbol} has no 'mainnetPinnedBlockTradeCache' set. See: ../utils/env-helper.ts`;
+      }
 
-      // const outgoingAssetAmount = utils.parseEther('0.1');
-      // const amountsOut = await uniswapRouter.getAmountsOut(outgoingAssetAmount, path);
-      // const expectedIncomingAssetAmount = amountsOut[1];
+      const preTradeBalances = await getBalances(enzymeFundAddress, tokenIn, tokenOut);
 
-      // Seed fund with outgoing asset
-      // await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
+      [swapInfo] = await getSwap(
+        provider,
+        queryOnChain,
+        swapType,
+        tokenIn,
+        tokenOut,
+        tokenIn.mainnetPinnedBlockTradeCache.tokenInAmount,
+      );
 
-      // Get the balances of the incoming and outgoing assets pre-trade
-      // const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
-      //   account: vaultProxy,
-      //   assets: [incomingAsset, outgoingAsset],
-      // });
+      limits = calculateLimits(swapType, swapInfo);
+
+      args = balancerV2TakeOrderArgs({
+        deadline,
+        limits,
+        swapType,
+        swaps: swapInfo.swaps,
+        tokenAddresses: [tokenIn.address, tokenOut.address],
+        tokenOutAmount: swapInfo.returnAmount,
+      });
 
       // Trade on BalancerV2
 
-      // Hardcoding the token amount that is being recieved from forked block
-      swapInfo.returnAmount = networkDescriptor.cache.assets.minWETHToRecieve;
-      const receipt = await balancerV2TakeOrder({
+      swapInfo.returnAmount = tokenIn.mainnetPinnedBlockTradeCache.tokenOutAmount;
+
+      // const receipt = await balancerV2TakeOrder({
+      await balancerV2TakeOrder({
         balancerV2Adapter: balancerV2Adapter.address,
         deadline,
         enzymeComptroller,
@@ -250,13 +277,17 @@ describe('BalancerV2Adapter', function () {
         swapType,
       });
 
-      console.log(`receipt = ${JSON.stringify(receipt, undefined, 2)}`);
-
       // Get the balances of the incoming and outgoing assets post-trade
-      balances = await getBalances(enzymeFundAddress, tokenIn, tokenOut, balances);
-      console.log(`balances = ${JSON.stringify(balances, undefined, 2)}`);
+      const postTradeBalances = await getBalances(enzymeFundAddress, tokenIn, tokenOut);
 
-      // // Assert the correct final token balances of incoming and outgoing assets
+      const tokenInAmountBigNumber = hre.ethers.BigNumber.from(
+        tokenIn.mainnetPinnedBlockTradeCache.tokenInAmount.toString(),
+      );
+      const returnAmountBigNumber = hre.ethers.BigNumber.from(swapInfo.returnAmount.toString());
+
+      // Assert the correct final token balances of incoming and outgoing assets
+      expect(postTradeBalances.tokenIn.balance).to.equal(preTradeBalances.tokenIn.balance.sub(tokenInAmountBigNumber));
+      expect(postTradeBalances.tokenOut.balance).to.equal(preTradeBalances.tokenOut.balance.add(returnAmountBigNumber));
       // expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(expectedIncomingAssetAmount));
       // expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingAssetAmount));
 
@@ -275,6 +306,83 @@ describe('BalancerV2Adapter', function () {
       //   integrationData: expect.anything(),
       // });
     });
+
+    // it('works as expected when called by a fund - REVERSE TRADE', async function () {
+    //   const reverseTokenIn = tokenOut;
+    //   const reverseTokenOut = tokenIn;
+
+    //   // For more info about 'interface ExpectedTrade {' see docs for the ExpectedTrade interface
+    //   // in ../utils/env-helper.ts
+    //   if (typeof reverseTokenIn.mainnetPinnedBlockTradeCache === 'undefined') {
+    //     throw `Token ${reverseTokenIn.symbol} has no 'mainnetPinnedBlockTradeCache' set. See: ../utils/env-helper.ts`;
+    //   }
+
+    //   const preTradeBalances = await getBalances(enzymeFundAddress, reverseTokenIn, reverseTokenOut);
+
+    //   [swapInfo] = await getSwap(
+    //     provider,
+    //     queryOnChain,
+    //     swapType,
+    //     reverseTokenIn,
+    //     reverseTokenOut,
+    //     reverseTokenIn.mainnetPinnedBlockTradeCache.tokenInAmount,
+    //   );
+
+    //   limits = calculateLimits(swapType, swapInfo);
+
+    //   args = balancerV2TakeOrderArgs({
+    //     deadline,
+    //     limits,
+    //     swapType,
+    //     swaps: swapInfo.swaps,
+    //     tokenAddresses: [reverseTokenIn.address, reverseTokenOut.address],
+    //     tokenOutAmount: swapInfo.returnAmount,
+    //   });
+
+    //   // Trade on BalancerV2
+
+    //   swapInfo.returnAmount = reverseTokenIn.mainnetPinnedBlockTradeCache.tokenOutAmount;
+
+    //   // const receipt = await balancerV2TakeOrder({
+    //   await balancerV2TakeOrder({
+    //     balancerV2Adapter: balancerV2Adapter.address,
+    //     deadline,
+    //     enzymeComptroller,
+    //     enzymeFund,
+    //     enzymeFundOwner,
+    //     integrationManager,
+    //     swapInfo,
+    //     swapType,
+    //   });
+
+    //   // Get the balances of the incoming and outgoing assets post-trade
+    //   const postTradeBalances = await getBalances(enzymeFundAddress, reverseTokenIn, reverseTokenOut);
+
+    //   console.log(`Pre-trade balances:`);
+    //   printBalances(preTradeBalances);
+
+    //   console.log(`Post-trade balances:`);
+    //   printBalances(postTradeBalances);
+
+    //   // // Assert the correct final token balances of incoming and outgoing assets
+    //   // expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(expectedIncomingAssetAmount));
+    //   // expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingAssetAmount));
+
+    //   // // Assert the correct event was emitted
+    //   // const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
+    //   // assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
+    //   //   comptrollerProxy: comptrollerProxy,
+    //   //   vaultProxy,
+    //   //   caller: fundOwner,
+    //   //   adapter: uniswapV2Adapter,
+    //   //   selector: takeOrderSelector,
+    //   //   incomingAssets: [incomingAsset],
+    //   //   incomingAssetAmounts: [expectedIncomingAssetAmount],
+    //   //   outgoingAssets: [outgoingAsset],
+    //   //   outgoingAssetAmounts: [outgoingAssetAmount],
+    //   //   integrationData: expect.anything(),
+    //   // });
+    // });
   });
 
   describe('lend', function () {

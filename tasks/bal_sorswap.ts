@@ -2,6 +2,7 @@
     This code is heavily inspired by: https://github.com/balancer-labs/balancer-sor/blob/master/test/testScripts/swapExample.ts
 */
 
+/*
 import '@nomiclabs/hardhat-ethers';
 
 import { SwapTypes } from '@balancer-labs/sor';
@@ -115,3 +116,4 @@ task('bal_sorswap', 'Swap 2 tokens via Balancer SOR')
       balances,
     );
   });
+*/

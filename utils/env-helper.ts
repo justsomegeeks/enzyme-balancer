@@ -8,7 +8,7 @@ import { BigNumber as BN } from 'bignumber.js';
 import { BigNumber } from 'ethers';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-const SUPPORTED_TOKENS = ['AAVE', 'ETH', 'BAL', 'COMP', 'USDC', 'DAI', 'WBTC', 'WETH'] as const;
+const SUPPORTED_TOKENS = [/*'AAVE', 'ETH', 'BAL', 'COMP', 'USDC', 'DAI',*/ 'WBTC', 'WETH'] as const;
 export type SupportedTokens = typeof SUPPORTED_TOKENS[number];
 
 const SUPPORTED_NETWORKS = ['mainnet'] as const;
@@ -16,14 +16,21 @@ type SupportedNetworks = typeof SUPPORTED_NETWORKS[number];
 
 let hre: HardhatRuntimeEnvironment;
 
-export function initializeEnvHelper(_hre: HardhatRuntimeEnvironment) {
-  hre = _hre;
+// temporary hack to get around testing on pinned mainnet, while using 'live' mainnet chainlink feeds and
+// mainnet subgrah
+interface ExpectedTrade {
+  tokenInAmount: BN;
+  tokenOut: SupportedTokens;
+  tokenOutAmount: BN;
 }
 
 export interface TokenDescriptor {
   address: string;
   contract: Contract | undefined;
   decimals: BigNumber;
+  // temporary hack to get around testing on pinned mainnet, while using 'live' mainnet chainlink feeds and
+  // mainnet subgrah
+  mainnetPinnedBlockTradeCache?: ExpectedTrade;
   symbol: string;
   whaleAddress: string;
 }
@@ -33,6 +40,7 @@ type TokenDescriptors = {
     address: string;
     contract: Contract | undefined;
     decimals: BigNumber;
+    mainnetPinnedBlockTradeCache?: ExpectedTrade;
     symbol: key;
     whaleAddress: string;
   };
@@ -41,17 +49,12 @@ type TokenDescriptors = {
 interface ContractDescriptor {
   [key: string]: string;
 }
-interface AssetAmount {
-  [key: string]: BN;
-}
-
 export interface NetworkDescriptor {
   chainId: number;
   contracts: ContractDescriptor;
   name: SupportedNetworks;
   subgraphURL: string;
   tokens: TokenDescriptors;
-  cache: { assets: AssetAmount };
 }
 
 type NetworkDescriptors = {
@@ -61,18 +64,16 @@ type NetworkDescriptors = {
     name: key;
     subgraphURL: string;
     tokens: TokenDescriptors;
-    cache: { assets: AssetAmount };
   };
 };
+
+export function initializeEnvHelper(_hre: HardhatRuntimeEnvironment) {
+  hre = _hre;
+}
 
 export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
   return {
     mainnet: {
-      cache: {
-        assets: {
-          minWETHToRecieve: new BN('14048180065889770850'),
-        },
-      },
       chainId: 1,
       contracts: {
         BalancerV2WBTCWETHVault: '0xBA12222222228d8Ba445958a75a0704d566BF2C8',
@@ -85,6 +86,7 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
       name: 'mainnet',
       subgraphURL: 'https://api.thegraph.com/subgraphs/name/balancer-labs/balancer-v2',
       tokens: {
+        /*
         AAVE: {
           address: '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9',
           contract: await hre.ethers.getContractAt(IERC20Artifact.abi, '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9'),
@@ -127,10 +129,16 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
           symbol: 'USDC',
           whaleAddress: '0xae2d4617c862309a3d75a0ffb358c7a5009c673f',
         },
+        */
         WBTC: {
           address: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
           contract: await hre.ethers.getContractAt(IERC20Artifact.abi, '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599'),
           decimals: BigNumber.from(8),
+          mainnetPinnedBlockTradeCache: {
+            tokenInAmount: new BN('1'),
+            tokenOut: 'WETH',
+            tokenOutAmount: new BN('14048180065889770850'),
+          },
           symbol: 'WBTC',
           whaleAddress: '0xe08A8b19e5722a201EaF20A6BC595eF655397bd5',
         },
@@ -138,6 +146,11 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
           address: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
           contract: await hre.ethers.getContractAt(IERC20Artifact.abi, '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'),
           decimals: BigNumber.from(18),
+          mainnetPinnedBlockTradeCache: {
+            tokenInAmount: new BN('14048180065889770850'),
+            tokenOut: 'WBTC',
+            tokenOutAmount: new BN('1'),
+          },
           symbol: 'WETH',
           whaleAddress: '0x56178a0d5F301bAf6CF3e1Cd53d9863437345Bf9',
         },
@@ -174,13 +187,14 @@ export function isSupportedToken(token: SupportedTokens) {
 }
 
 export interface Balances {
+  address: string;
   tokenIn: {
-    before: string | undefined;
-    after: string | undefined;
+    balance: BigNumber;
+    tokenDescriptor: TokenDescriptor;
   };
   tokenOut: {
-    before: string | undefined;
-    after: string | undefined;
+    balance: BigNumber;
+    tokenDescriptor: TokenDescriptor;
   };
 }
 
@@ -229,84 +243,36 @@ export async function adjustAllowanceIfNeeded(
   }
 }
 
+// export async function getBalance(address: string, token: TokenDescriptor) {
+//   const provider = hre.ethers.getDefaultProvider();
+
+//   return isETH(token.address)
+//     ? hre.ethers.utils.formatEther(await provider.getBalance(address))
+//     : hre.ethers.utils.formatUnits(await token.contract?.balanceOf(address), token.decimals);
+// }
+
+export async function getBalance(address: string, token: TokenDescriptor) {
+  const provider = hre.ethers.getDefaultProvider();
+
+  return isETH(token.address) ? await provider.getBalance(address) : await token.contract?.balanceOf(address);
+}
+
 export async function getBalances(
   address: string,
   tokenIn: TokenDescriptor,
   tokenOut: TokenDescriptor,
-  currentBalances?: Balances,
 ): Promise<Balances> {
-  const provider = hre.ethers.getDefaultProvider();
-
   const balances = {
+    address,
     tokenIn: {
-      after: undefined,
-      before: currentBalances && currentBalances.tokenIn ? currentBalances.tokenIn.before : undefined,
+      balance: await getBalance(address, tokenIn),
+      tokenDescriptor: tokenIn,
     },
     tokenOut: {
-      after: undefined,
-      before: currentBalances && currentBalances.tokenOut ? currentBalances.tokenOut.before : undefined,
+      balance: await getBalance(address, tokenOut),
+      tokenDescriptor: tokenOut,
     },
   } as Balances;
-
-  if (typeof balances.tokenIn.before === 'undefined' || typeof balances.tokenOut.before === 'undefined') {
-    if (isETH(tokenIn.address)) {
-      balances.tokenIn.before = hre.ethers.utils.formatUnits(
-        (await provider.getBalance(address)).toString(),
-        tokenIn.decimals.toString(),
-      );
-      balances.tokenOut.before = hre.ethers.utils.formatUnits(
-        await tokenOut.contract?.balanceOf(address),
-        tokenOut.decimals.toString(),
-      );
-    } else if (isETH(tokenOut.address)) {
-      balances.tokenIn.before = hre.ethers.utils.formatUnits(
-        await tokenIn.contract?.balanceOf(address),
-        tokenIn.decimals.toString(),
-      );
-      balances.tokenOut.before = hre.ethers.utils.formatUnits(
-        (await provider.getBalance(address)).toString(),
-        tokenOut.decimals.toString(),
-      );
-    } else {
-      balances.tokenIn.before = hre.ethers.utils.formatUnits(
-        await tokenIn.contract?.balanceOf(address),
-        tokenIn.decimals.toString(),
-      );
-      balances.tokenOut.before = hre.ethers.utils.formatUnits(
-        await tokenOut.contract?.balanceOf(address),
-        tokenOut.decimals.toString(),
-      );
-    }
-  }
-
-  if (isETH(tokenIn.address)) {
-    balances.tokenIn.after = hre.ethers.utils.formatUnits(
-      (await provider.getBalance(address)).toString(),
-      tokenIn.decimals.toString(),
-    );
-    balances.tokenOut.after = hre.ethers.utils.formatUnits(
-      await tokenOut.contract?.balanceOf(address),
-      tokenOut.decimals.toString(),
-    );
-  } else if (isETH(tokenOut.address)) {
-    balances.tokenIn.after = hre.ethers.utils.formatUnits(
-      await tokenIn.contract?.balanceOf(address),
-      tokenIn.decimals.toString(),
-    );
-    balances.tokenOut.after = hre.ethers.utils.formatUnits(
-      (await provider.getBalance(address)).toString(),
-      tokenOut.decimals.toString(),
-    );
-  } else {
-    balances.tokenIn.after = hre.ethers.utils.formatUnits(
-      await tokenIn.contract?.balanceOf(address),
-      tokenIn.decimals.toString(),
-    );
-    balances.tokenOut.after = hre.ethers.utils.formatUnits(
-      await tokenOut.contract?.balanceOf(address),
-      tokenOut.decimals.toString(),
-    );
-  }
 
   return balances;
 }
