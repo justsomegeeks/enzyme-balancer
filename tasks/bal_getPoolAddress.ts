@@ -2,8 +2,6 @@ import { getPoolAddress } from '@balancer-labs/balancer-js';
 import IVaultArtifact from '@balancer-labs/v2-deployments/dist/tasks/20210418-vault/abi/Vault.json';
 import { task } from 'hardhat/config';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
-
-import vault_abi from '../node_modules/@balancer-labs/v2-deployments/dist/tasks/20210418-vault/abi/Vault.json';
 import weightedPool_abi from '../node_modules/@balancer-labs/v2-deployments/dist/tasks/20210418-weighted-pool/abi/WeightedPool.json';
 
 task('bal_getPoolAddress', 'Gets Balancer WBTC/WETH pool address', async () => {
@@ -41,4 +39,3 @@ task(
     console.log(totalSupply.toString());
   },
 );
-

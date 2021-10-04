@@ -30,12 +30,26 @@ describe('BalancerV2PriceFeed', function () {
     expect(await balancerV2PriceFeed.getBalancerV2Vault()).to.equal(addresses.BalancerV2Vault);
   });
 
-  it('should return BPT Value and total BPT tokens.', async () => {
-    const response = await balancerV2PriceFeed.calcBPTValue(
+  it('should return accurate total supply', async () => {
+    const supply = await balancerV2PriceFeed.getPoolTotalSupply('0xa660ba113f9aabaeb4bcd28a4a1705f4997d5432');
+    const graphSupply = await hre.run('bal_getTotalSupply');
+    expect(graphSupply === supply);
+  });
+
+  it('should return total underlying tokens and their values', async () => {
+    const [tokens, values] = await balancerV2PriceFeed.callStatic.calcUnderlyingValues(
       '0xa660ba113f9aabaeb4bcd28a4a1705f4997d5432000200000000000000000022',
-      '0xa660ba113f9aabaeb4bcd28a4a1705f4997d5432',
     );
-    console.log(response);
-    expect(response);
+    const graphTokens = await hre.run('bal_getPool');
+    //const graphSupply = await hre.run('bal_getTotalSupply');
+    expect(tokens.filter((el: number, i: number) => el === graphTokens[0].tokensList[i]).length === 2);
+  });
+
+  it('should return total value of supply in pool and total BPTValue', async () => {
+    const [totalSupply, BPTValue] = await balancerV2PriceFeed.callStatic.calcBPTValue(
+      '0xa660ba113f9aabaeb4bcd28a4a1705f4997d5432000200000000000000000022',
+    );
+    //const graphSupply = await hre.run('bal_getTotalSupply');    // BPTValue);
+    expect(BPTValue, totalSupply);
   });
 });

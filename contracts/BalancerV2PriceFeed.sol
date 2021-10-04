@@ -12,7 +12,6 @@ contract BalancerV2PriceFeed {
     using SafeMath for uint256;
     AggregatorV3Interface internal priceFeed;
     IBalancerV2Vault internal vault;
-    mapping(uint256 => uint256) public tokenValues;
     mapping(address => Aggregator) public tokenAggregator;
 
     struct Aggregator {
@@ -116,13 +115,12 @@ contract BalancerV2PriceFeed {
             underlyingValues_[i] = balances[i] * prices[i];
             underlyingTokens_[i] = address(tokens[i]);
         }
-
         return (underlyingTokens_, underlyingValues_);
     }
 
-    function getPoolTotalSupply(address _poolAddress) internal returns (uint256) {
+    function getPoolTotalSupply(address _poolAddress) public returns (uint256 totalSupply) {
         IBalancerV2Pool pool = IBalancerV2Pool(_poolAddress);
-        return pool.totalSupply();
+        totalSupply = pool.totalSupply();
     }
 
     function calcBPTValue(bytes32 _poolId) public returns (uint256 totalSupply, uint256 BPTValue) {
@@ -134,10 +132,9 @@ contract BalancerV2PriceFeed {
             totalTokenValue += underlyingValues_[i];
         }
         BPTValue = totalTokenValue / totalSupply;
-        console.log(totalSupply, BPTValue);
     }
 
-    function getAddress(bytes32 data) external returns (address) {
+    function getAddress(bytes32 data) public returns (address) {
         return address(bytes20(data));
     }
 }
