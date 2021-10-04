@@ -2,7 +2,7 @@ import { getPoolAddress } from '@balancer-labs/balancer-js';
 import IVaultArtifact from '@balancer-labs/v2-deployments/dist/tasks/20210418-vault/abi/Vault.json';
 import { task } from 'hardhat/config';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
-import weightedPool_abi from '../node_modules/@balancer-labs/v2-deployments/dist/tasks/20210418-weighted-pool/abi/WeightedPool.json';
+import weightedPool_abi from '@balancer-labs/v2-deployments/dist/tasks/20210418-weighted-pool/abi/WeightedPool.json';
 
 task('bal_getPoolAddress', 'Gets Balancer WBTC/WETH pool address', async () => {
   const v2WBTCWETHPoolId = '0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014';
