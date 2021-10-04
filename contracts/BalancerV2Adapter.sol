@@ -96,12 +96,12 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         console.log("+++++++++++++++++++++++++++++++++++++++++++");
         console.log("Min Incoming Amount");
         console.logUint(tokenOutAmount);
-        uint balanceBefore = IERC20(assets[1]).balanceOf(address(this));
+        uint256 balanceBefore = IERC20(assets[1]).balanceOf(address(this));
         console.log("BALANCE BEFORE");
         console.logUint(balanceBefore);
 
         __balancerV2BatchSwap(swapKind, swaps, assets, funds, limits, deadline);
-        uint balanceAfter = IERC20(assets[1]).balanceOf(address(this));
+        uint256 balanceAfter = IERC20(assets[1]).balanceOf(address(this));
         console.log("BALANCE After");
         console.logUint(balanceAfter);
         console.log("+++++++++++++++++++++++++++++++++++++++++++");

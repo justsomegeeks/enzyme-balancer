@@ -41,6 +41,9 @@ type TokenDescriptors = {
 interface ContractDescriptor {
   [key: string]: string;
 }
+interface AssetAmount {
+  [key: string]: BN;
+}
 
 export interface NetworkDescriptor {
   chainId: number;
@@ -48,6 +51,7 @@ export interface NetworkDescriptor {
   name: SupportedNetworks;
   subgraphURL: string;
   tokens: TokenDescriptors;
+  cache: { assets: AssetAmount };
 }
 
 type NetworkDescriptors = {
@@ -57,12 +61,18 @@ type NetworkDescriptors = {
     name: key;
     subgraphURL: string;
     tokens: TokenDescriptors;
+    cache: { assets: AssetAmount };
   };
 };
 
 export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
   return {
     mainnet: {
+      cache: {
+        assets: {
+          minWETHToRecieve: new BN('14048180065889770850'),
+        },
+      },
       chainId: 1,
       contracts: {
         BalancerV2WBTCWETHVault: '0xBA12222222228d8Ba445958a75a0704d566BF2C8',

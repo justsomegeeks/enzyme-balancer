@@ -236,6 +236,9 @@ describe('BalancerV2Adapter', function () {
       // });
 
       // Trade on BalancerV2
+
+      // Hardcoding the token amount that is being recieved from forked block
+      swapInfo.returnAmount = networkDescriptor.cache.assets.minWETHToRecieve;
       const receipt = await balancerV2TakeOrder({
         balancerV2Adapter: balancerV2Adapter.address,
         deadline,
