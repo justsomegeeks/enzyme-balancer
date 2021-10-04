@@ -37,7 +37,6 @@ describe('BalancerV2PriceFeed', function () {
   });
 
   it('should return total underlying tokens and their values', async () => {
-    // const [tokens, values] = await balancerV2PriceFeed.callStatic.calcUnderlyingValues(
     const [tokens] = await balancerV2PriceFeed.callStatic.calcUnderlyingValues(
       '0xa660ba113f9aabaeb4bcd28a4a1705f4997d5432000200000000000000000022',
     );
