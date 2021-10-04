@@ -52,4 +52,5 @@ describe('BalancerV2PriceFeed', function () {
     //const graphSupply = await hre.run('bal_getTotalSupply');    // BPTValue);
     expect(BPTValue, totalSupply);
   });
+  it('should return the values of the token passed in', async function () {});
 });

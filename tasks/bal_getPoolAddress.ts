@@ -37,6 +37,7 @@ task(
       provider,
     );
     const totalSupply = await poolContract.totalSupply();
-    console.log(totalSupply.toString());
+    //console.log(totalSupply.toString());
+    return totalSupply;
   },
 );
