@@ -73,6 +73,8 @@ contract BalancerV2PriceFeed {
                 //prevents calling obscure tokens until we decide what to do with those
                 result[i] = getLatestPrice(tokenAggregator[address(tokens[i])].aggAddress);
                 console.log("RESULT", result[i]);
+            } else {
+                revert("token price not available");
             }
         }
     }
