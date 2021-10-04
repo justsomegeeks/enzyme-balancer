@@ -13,7 +13,7 @@ enum Networks {
 const SUBGRAPH_URLS = {
   [Networks.MAINNET]: 'https://api.thegraph.com/subgraphs/name/balancer-labs/balancer-v2',
 };
-const subGraphQueries = `{
+const subGraphQueriesBalancer = `{
   id
   address
   poolType
@@ -74,7 +74,7 @@ export async function fetchSubgraphPools(subgraphUrl: string): Promise<SubgraphP
   // can filter for publicSwap too??
   const query = `
       {
-        pools: pools(first: 1000) ${subGraphQueries}}`;
+        pools: pools(first: 1000) ${subGraphQueriesBalancer}}`;
 
   console.log(`fetchSubgraphPools: ${subgraphUrl}`);
   const response = await fetch(subgraphUrl, {
@@ -96,7 +96,7 @@ export async function fetchSubgraphPool(subgraphUrl: string, pooladdress: string
   // can filter for publicSwap too??
   const query = `
       {
-        pools(where: {address: "${pooladdress}"}) ${subGraphQueries}}`;
+        pools(where: {address: "${pooladdress}"}) ${subGraphQueriesBalancer}}`;
 
   console.log(`fetchSubgraphPools: ${subgraphUrl}`);
   const response = await fetch(subgraphUrl, {
@@ -122,7 +122,7 @@ export async function fetchSubgraphPairs(
   // can filter for publicSwap too??
   const query = `
       {
-        pools(where: {tokensList_contains: ["${token1}", "${token2}"]})  ${subGraphQueries}}`;
+        pools(where: {tokensList_contains: ["${token1}", "${token2}"]})  ${subGraphQueriesBalancer}}`;
 
   console.log(`fetchSubgraphPools: ${subgraphUrl}`);
   const response = await fetch(subgraphUrl, {
