@@ -1,10 +1,10 @@
 /*
     This code is heavily inspired by:https://github.com/balancer-labs/balancer-sor/blob/7b7ff636378568b08990643f3dd8db2d237e2e53/src/poolCaching/subgraph.ts
 */
+import IWeightedPoolArtifact from '@balancer-labs/v2-deployments/dist/tasks/20210418-weighted-pool/abi/WeightedPool.json';
 import { task } from 'hardhat/config';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 import fetch from 'isomorphic-fetch';
-import weightedPool_abi from '../node_modules/@balancer-labs/v2-deployments/dist/tasks/20210418-weighted-pool/abi/WeightedPool.json';
 
 enum Networks {
   MAINNET = 1,
@@ -186,14 +186,14 @@ task(
     const chainId = (await provider.getNetwork()).chainId;
     const networkInfo: Networks | undefined = Networks[Networks[chainId] as keyof typeof Networks];
     const result = fetchSubgraphPools(SUBGRAPH_URLS[networkInfo]);
-    const supplys = [{ graph: 'test', contract: 'test' }];
+    const supplys = [{ contract: 'test', graph: 'test' }];
     (await result).map(async (pool) => {
-      const poolContract = new hre.ethers.Contract(pool.address, weightedPool_abi, provider);
+      const poolContract = new hre.ethers.Contract(pool.address, IWeightedPoolArtifact, provider);
 
       const totalSupply = await poolContract.totalSupply();
       console.log('from subgraph', pool.totalShares);
       console.log('From contract', await totalSupply);
-      supplys.push({ graph: pool.totalShares, contract: await totalSupply });
+      supplys.push({ contract: await totalSupply, graph: pool.totalShares });
     });
     console.log('supplies:', supplys);
   },
