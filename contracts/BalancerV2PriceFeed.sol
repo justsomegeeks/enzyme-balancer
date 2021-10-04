@@ -79,6 +79,8 @@ contract BalancerV2PriceFeed {
         }
     }
 
+    receive() external payable {}
+
     function getTimestamp(address _token) public returns (int256) {
         priceFeed = AggregatorV3Interface(_token);
         (, , , uint256 timeStamp, ) = priceFeed.latestRoundData();
