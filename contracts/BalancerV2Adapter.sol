@@ -81,7 +81,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         IBalancerV2Vault.FundManagement memory funds = IBalancerV2Vault.FundManagement(
             address(this),
             false, // fromInternalBalance
-            payable(address(this)),
+            payable(_vaultProxy),
             false // toInternalBalance
         );
 

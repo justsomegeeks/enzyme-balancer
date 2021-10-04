@@ -11,6 +11,7 @@ import type { ComptrollerLib, IntegrationManager, VaultLib } from '@enzymefinanc
 import { callOnIntegrationArgs, IntegrationManagerActionId, takeOrderSelector } from '@enzymefinance/protocol';
 import type { BigNumber } from '@ethersproject/bignumber';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { BigNumber as BN } from 'bignumber.js';
 
 import { balancerV2TakeOrderArgs, calculateLimits } from '../balancerV2';
 
@@ -52,7 +53,7 @@ export async function balancerV2TakeOrder({
     swapType,
     swaps: swapInfo.swaps,
     tokenAddresses: [swapInfo.tokenIn, swapInfo.tokenOut],
-    tokenOutAmount: swapInfo.returnAmount,
+    tokenOutAmount: new BN('14048180065889770850'),
   });
 
   const callArgs = callOnIntegrationArgs({
