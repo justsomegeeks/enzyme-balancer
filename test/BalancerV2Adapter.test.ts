@@ -250,7 +250,7 @@ describe('BalancerV2Adapter', function () {
       console.log(`receipt = ${JSON.stringify(receipt, undefined, 2)}`);
 
       // Get the balances of the incoming and outgoing assets post-trade
-      balances = await getBalances(enzymeFundAddress, tokenIn, tokenOut);
+      balances = await getBalances(enzymeFundAddress, tokenIn, tokenOut, balances);
       console.log(`balances = ${JSON.stringify(balances, undefined, 2)}`);
 
       // // Assert the correct final token balances of incoming and outgoing assets
