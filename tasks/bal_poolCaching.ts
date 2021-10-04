@@ -4,6 +4,7 @@
 import { task } from 'hardhat/config';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 import fetch from 'isomorphic-fetch';
+
 import weightedPool_abi from '../node_modules/@balancer-labs/v2-deployments/dist/tasks/20210418-weighted-pool/abi/WeightedPool.json';
 
 enum Networks {
@@ -13,7 +14,7 @@ enum Networks {
 const SUBGRAPH_URLS = {
   [Networks.MAINNET]: 'https://api.thegraph.com/subgraphs/name/balancer-labs/balancer-v2',
 };
-const subGraphQueries = `{
+const subGraphQueriesBalancer = `{
   id
   address
   poolType
@@ -74,7 +75,7 @@ export async function fetchSubgraphPools(subgraphUrl: string): Promise<SubgraphP
   // can filter for publicSwap too??
   const query = `
       {
-        pools: pools(first: 1000) ${subGraphQueries}}`;
+        pools: pools(first: 1000) ${subGraphQueriesBalancer}}`;
 
   console.log(`fetchSubgraphPools: ${subgraphUrl}`);
   const response = await fetch(subgraphUrl, {
@@ -96,7 +97,7 @@ export async function fetchSubgraphPool(subgraphUrl: string, pooladdress: string
   // can filter for publicSwap too??
   const query = `
       {
-        pools(where: {address: "${pooladdress}"}) ${subGraphQueries}}`;
+        pools(where: {address: "${pooladdress}"}) ${subGraphQueriesBalancer}}`;
 
   console.log(`fetchSubgraphPools: ${subgraphUrl}`);
   const response = await fetch(subgraphUrl, {
@@ -122,7 +123,7 @@ export async function fetchSubgraphPairs(
   // can filter for publicSwap too??
   const query = `
       {
-        pools(where: {tokensList_contains: ["${token1}", "${token2}"]})  ${subGraphQueries}}`;
+        pools(where: {tokensList_contains: ["${token1}", "${token2}"]})  ${subGraphQueriesBalancer}}`;
 
   console.log(`fetchSubgraphPools: ${subgraphUrl}`);
   const response = await fetch(subgraphUrl, {
@@ -186,14 +187,14 @@ task(
     const chainId = (await provider.getNetwork()).chainId;
     const networkInfo: Networks | undefined = Networks[Networks[chainId] as keyof typeof Networks];
     const result = fetchSubgraphPools(SUBGRAPH_URLS[networkInfo]);
-    const supplys = [{ graph: 'test', contract: 'test' }];
+    const supplys = [{ contract: 'test', graph: 'test' }];
     (await result).map(async (pool) => {
       const poolContract = new hre.ethers.Contract(pool.address, weightedPool_abi, provider);
 
       const totalSupply = await poolContract.totalSupply();
       console.log('from subgraph', pool.totalShares);
       console.log('From contract', await totalSupply);
-      supplys.push({ graph: pool.totalShares, contract: await totalSupply });
+      supplys.push({ contract: await totalSupply, graph: pool.totalShares });
     });
     console.log('supplies:', supplys);
   },
