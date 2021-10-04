@@ -12,7 +12,7 @@ import hre from 'hardhat';
 import type { BalancerV2Adapter } from '../typechain';
 import type { NetworkDescriptor, TokenDescriptor } from '../utils/env-helper';
 import { getNetworkDescriptor, initializeEnvHelper } from '../utils/env-helper';
-import { balancerV2TakeOrderArgs, calculateLimits, getSwap, assetTransferArgs  } from '../utils/integrations/balancerV2';
+import { balancerV2TakeOrderArgs, calculateLimits, getSwap, assetTransferArgs, BalancerV2LendArgs, BalancerV2Lend  } from '../utils/integrations/balancerV2';
 import { balancerV2Lend } from '../utils/integrations/testutils/balancerV2TestHelper';
 
 describe('BalancerV2Adapter', function () {
