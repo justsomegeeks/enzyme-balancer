@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import "./interfaces/IBalancerV2Vault.sol";
+import "./interfaces/IBalancerV2Pool.sol";
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
@@ -11,7 +12,6 @@ contract BalancerV2PriceFeed {
     using SafeMath for uint256;
     AggregatorV3Interface internal priceFeed;
     IBalancerV2Vault internal vault;
-    mapping(uint256 => uint256) public tokenValues;
     mapping(address => Aggregator) public tokenAggregator;
 
     struct Aggregator {
@@ -45,10 +45,14 @@ contract BalancerV2PriceFeed {
             0xC1438AA3823A6Ba0C159CfA8D98dF5A994bA120b,
             true
         ); //bal
+        // tokenAggregator[0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48] = Aggregator(
+        //     0xdCA36F27cbC4E38aE16C4E9f99D39b42337F6dcf,
+        //     true
+        // ); //usdc
         tokenAggregator[0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48] = Aggregator(
-            0xdCA36F27cbC4E38aE16C4E9f99D39b42337F6dcf,
+            0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6,
             true
-        ); //usdc
+        ); //usdc-usd
         tokenAggregator[0x6B175474E89094C44Da98b954EedeAC495271d0F] = Aggregator(
             0x2bA49Aaa16E6afD2a993473cfB70Fa8559B523cF,
             true
@@ -62,6 +66,8 @@ contract BalancerV2PriceFeed {
     }
 
     function getAllPrices(IERC20[] memory tokens) internal returns (uint256[] memory result) {
+        uint256 size = tokens.length;
+        result = new uint256[](size);
         for (uint256 i = 0; i < tokens.length; i++) {
             if (tokenAggregator[address(tokens[0])].isValue) {
                 //prevents calling obscure tokens until we decide what to do with those
@@ -85,9 +91,6 @@ contract BalancerV2PriceFeed {
         )
     {
         (tokens, balances, lastChangeBlock) = vault.getPoolTokens(_poolId);
-        for (uint256 i = 0; i < tokens.length; i++) {
-            console.log("TOKEN", address(tokens[i]), "BALANCE", uint256(balances[i]));
-        }
         return (tokens, balances, lastChangeBlock);
     }
 
@@ -101,18 +104,38 @@ contract BalancerV2PriceFeed {
     }
 
     function calcUnderlyingValues(bytes32 _poolId)
-        external
+        public
         returns (address[] memory underlyingTokens_, uint256[] memory underlyingValues_)
     {
         (IERC20[] memory tokens, uint256[] memory balances, ) = getPoolInfoFromPool(_poolId);
         uint256[] memory prices = getAllPrices(tokens);
-
+        underlyingTokens_ = new address[](tokens.length);
+        underlyingValues_ = new uint256[](tokens.length);
         for (uint256 i = 0; i < tokens.length; i++) {
             underlyingValues_[i] = balances[i] * prices[i];
             underlyingTokens_[i] = address(tokens[i]);
         }
-
         return (underlyingTokens_, underlyingValues_);
+    }
+
+    function getPoolTotalSupply(address _poolAddress) public returns (uint256 totalSupply) {
+        IBalancerV2Pool pool = IBalancerV2Pool(_poolAddress);
+        totalSupply = pool.totalSupply();
+    }
+
+    function calcBPTValue(bytes32 _poolId) public returns (uint256 totalSupply, uint256 BPTValue) {
+        address _poolAddress = getAddress(_poolId);
+        totalSupply = getPoolTotalSupply(_poolAddress);
+        uint256 totalTokenValue;
+        (, uint256[] memory underlyingValues_) = calcUnderlyingValues(_poolId);
+        for (uint256 i = 0; i < underlyingValues_.length; i++) {
+            totalTokenValue += underlyingValues_[i];
+        }
+        BPTValue = totalTokenValue / totalSupply;
+    }
+
+    function getAddress(bytes32 data) public returns (address) {
+        return address(bytes20(data));
     }
 }
 
