@@ -121,4 +121,11 @@ interface IBalancerV2Vault {
             uint256[] memory balances,
             uint256 lastChangeBlock
         );
+    enum PoolSpecialization {
+        GENERAL,
+        MINIMAL_SWAP_INFO,
+        TWO_TOKEN
+    }
+
+    function getPool(bytes32 poolId) external view returns (address, PoolSpecialization);
 }

@@ -8,7 +8,6 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "@enzymefinance/contracts/release/extensions/integration-manager/integrations/utils/AdapterBase2.sol";
-import "hardhat/console.sol";
 import "./BalancerV2ActionsMixin.sol";
 import "./interfaces/IBalancerV2Vault.sol";
 
@@ -50,7 +49,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             uint256 deadline
         ) = __decodeTakeOrderCallArgs(_encodedCallArgs);
         IBalancerV2Vault.FundManagement memory funds = IBalancerV2Vault.FundManagement(
-            msg.sender,
+            address(this),
             false, // fromInternalBalance
             payable(_vaultProxy),
             false // toInternalBalance
@@ -84,7 +83,6 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
 
         return __parseAssetsForSwap(_encodedCallArgs);
         }else if (_selector == LEND_SELECTOR){
-            console.log("Lend selector");
             return __parseAssetsForLend(_encodedCallArgs);
         }
 
@@ -120,7 +118,6 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
 
         minIncomingAssetAmounts_ = new uint256[](1);
         minIncomingAssetAmounts_[0] = 0;
-        console.log("inside me ");
 
         return (
             IIntegrationManager.SpendAssetsHandleType.Transfer,

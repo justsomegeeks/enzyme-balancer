@@ -382,7 +382,7 @@ describe('BalancerV2Adapter', function () {
       });
       console.log(transferArgs);
 
-      await expect(balancerV2Adapter.lend(enzymeFundAddress, lendSelector, transferArgs)).to.be.revertedWith(
+      await expect(balancerV2Adapter.lend(enzymeFundAddress, lendSelector, lendArgs)).to.be.revertedWith(
         'Only the IntegrationManager can call this function',
       );
     });
