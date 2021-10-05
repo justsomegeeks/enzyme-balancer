@@ -8,6 +8,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "@enzymefinance/contracts/release/extensions/integration-manager/integrations/utils/AdapterBase2.sol";
+import "hardhat/console.sol";
 import "./BalancerV2ActionsMixin.sol";
 import "./interfaces/IBalancerV2Vault.sol";
 
@@ -17,12 +18,15 @@ import "./interfaces/IBalancerV2Vault.sol";
 /// @dev Does not allow any protocol that collects protocol fees in ETH, e.g., 0x v3
 contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
     using SafeMath for uint256;
+    address private immutable BALANCER_V2_VAULT;
 
     constructor(address _integrationManager, address _balancerV2Vault)
         public
         AdapterBase2(_integrationManager)
         BalancerV2ActionsMixin(_balancerV2Vault)
-    {}
+    {
+        BALANCER_V2_VAULT = _balancerV2Vault;
+    }
 
     // EXTERNAL FUNCTIONS
 
@@ -80,14 +84,11 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         )
     {
         if (_selector == TAKE_ORDER_SELECTOR){
-
         return __parseAssetsForSwap(_encodedCallArgs);
         }else if (_selector == LEND_SELECTOR){
             return __parseAssetsForLend(_encodedCallArgs);
         }
-
         revert("parseAssetsForMethod: _selector invalid");
-
     }
     function __parseAssetsForLend(bytes calldata _encodedCallArgs)
         private
@@ -102,20 +103,30 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
     {
         (
             bytes32 poolId,
-            address recipient,
+            ,
             IBalancerV2Vault.JoinPoolRequest memory request
         ) = __decodeLendCallArgs(_encodedCallArgs);
 
+        require(request.assets.length == request.maxAmountsIn.length, "length of request.assets and request.maxAmountsIn must be equal");
+        uint256 assetsLength = request.assets.length;
 
-        spendAssets_ = new address[](1);
-        spendAssets_[0] = address(0);
+        spendAssets_ = new address[](assetsLength);
+        for (uint i = 0; i < assetsLength; i++){
+         spendAssets_[i] = request.assets[i];
+        }
 
-        spendAssetAmounts_ = new uint256[](1);
-        spendAssetAmounts_[0] = 0;
+        spendAssetAmounts_ = new uint256[](assetsLength);
+        for (uint i = 0; i < assetsLength; i++){
+         spendAssetAmounts_[i] = request.maxAmountsIn[i];
+        }
 
+
+
+        (address _bpt, ) = IBalancerV2Vault(BALANCER_V2_VAULT).getPool(poolId);
         incomingAssets_ = new address[](1);
-        incomingAssets_[0] = address(0);
+        incomingAssets_[0] = _bpt;
 
+        // TODO: How can I calculate minimum incoming _bpt Amount token?
         minIncomingAssetAmounts_ = new uint256[](1);
         minIncomingAssetAmounts_[0] = 0;
 

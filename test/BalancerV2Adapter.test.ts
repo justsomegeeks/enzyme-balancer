@@ -177,7 +177,10 @@ describe('BalancerV2Adapter', function () {
         request,
       } as BalancerV2Lend);
 
-      expect(await balancerV2Adapter.parseAssetsForMethod(lendSelector, args)).to.have.length(5);
+      const parsedLendArgs = await balancerV2Adapter.parseAssetsForMethod(lendSelector, args);
+
+      // TODO: verify return value of parseAssetsForMethod to be equal to what was sent
+      expect(parsedLendArgs).to.have.length(5);
     });
 
     xit('generates expected output for redeeming', async function () {

@@ -71,7 +71,7 @@ const lendV2JoinPoolRequest = utils.ParamType.fromString(
 );
 
 export function balancerV2LendArgs({ poolId, recipient, request }: BalancerV2Lend) {
-  return encodeArgs(['bytes', 'address', lendV2JoinPoolRequest], [poolId, recipient, request]);
+  return encodeArgs(['bytes32', 'address', lendV2JoinPoolRequest], [poolId, recipient, request]);
 }
 export interface BalancerV2Lend {
   poolId: string;
