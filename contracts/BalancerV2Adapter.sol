@@ -233,24 +233,30 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         )
     {
         (
-            bytes32 balancerPoolId,
-            uint256[] memory outgoingAssetAmounts,
-            uint256[] memory minIncomingAssetAmounts
-        ) = __decodeCallArgs(_encodedCallArgs);
+            bytes32 balancerPoolId_,
+            uint256[] memory outgoingAssetAmounts_,
+            uint256[] memory minIncomingAssetAmounts,
+            ,
 
-        address[] memory poolTokens = BalancerV2PriceFeed(BALANCER_V2_PRICE_FEED)
-            .getTokensFromPool(balancerPoolId);
+        ) = __decodeCallArgsForRedeem(_encodedCallArgs);
+
+        (IERC20[] memory poolTokens, , ) = IBalancerV2Vault(BALANCER_V2_VAULT).getPoolTokens(
+            balancerPoolId_
+        );
 
         // Check that the target pool was previously whitelisted
-        require(poolTokens[0] != address(0), "__parseAssetsForRedeem: Unsupported derivative");
+        require(
+            address(poolTokens[0]) != address(0),
+            "__parseAssetsForRedeem: Unsupported derivative"
+        );
 
         spendAssets_ = new address[](1);
-        spendAssets_[0] = address(bytes20(balancerPoolId));
-        spendAssetAmounts_ = outgoingAssetAmounts;
+        spendAssets_[0] = address(bytes20(balancerPoolId_));
+        spendAssetAmounts_ = outgoingAssetAmounts_;
 
         incomingAssets_ = new address[](2);
-        incomingAssets_[0] = poolTokens[0];
-        incomingAssets_[1] = poolTokens[1];
+        incomingAssets_[0] = address(poolTokens[0]);
+        incomingAssets_[1] = address(poolTokens[1]);
 
         minIncomingAssetAmounts_ = minIncomingAssetAmounts;
 
@@ -289,7 +295,6 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
 
         address[] memory assets = new address[](outgoingAssetAmounts_.length);
         uint256[] memory minAmountsOut = new uint256[](minIncomingAssetAmounts_.length);
-
         minAmountsOut = minIncomingAssetAmounts_;
         assets[0] = address(bytes20(balancerPoolId_));
 
