@@ -14,8 +14,8 @@ import { scale, SOR, SwapTypes } from '@balancer-labs/sor';
 import { encodeArgs } from '@enzymefinance/protocol';
 import type { BaseProvider } from '@ethersproject/providers';
 import { BigNumber as BN } from 'bignumber.js';
-import type { BytesLike } from 'ethers';
-import { BigNumber, utils } from 'ethers';
+import { BigNumber, utils, Bytes } from 'ethers';
+import { Address } from 'hardhat-deploy/dist/types';
 
 import type { BalancerV2Adapter } from '../../typechain';
 import type { Balances, SupportedTokens, TokenDescriptor } from '../env-helper';
@@ -31,6 +31,20 @@ export interface FundManagement {
   sender: string;
   recipient: string;
   fromInternalBalance: boolean;
+  toInternalBalance: boolean;
+}
+
+export interface poolExit {
+  poolId: BigNumber;
+  sender: Address;
+  recipient: Address;
+  exitRequest: exitRequest;
+}
+
+export interface exitRequest {
+  assets: Address[];
+  minAmountsOut: BigNumber[];
+  userData: Bytes;
   toInternalBalance: boolean;
 }
 
@@ -146,6 +160,12 @@ export function calculateLimits(swapType: SwapTypes, swapInfo: SwapInfo): string
   return limits;
 }
 
+export function calculateMinTokensOut(exitInfo: poolExit): BigNumber[] {
+  const minTokensOut: BigNumber[] = [];
+  //userPercentage = userBPTTokens / pool.totalSupply();
+  //minTokensOut = poolTokenAmounts.map(el=> el*userPercentage);
+  return minTokensOut;
+}
 //
 // hand rolled version of:
 //   https://github.com/enzymefinance/protocol/blob/current/packages/protocol/src/utils/integrations/common.ts#L52-L72

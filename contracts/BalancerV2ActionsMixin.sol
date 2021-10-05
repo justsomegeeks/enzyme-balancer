@@ -51,6 +51,13 @@ abstract contract BalancerV2ActionsMixin is AssetHelpers {
         IBalancerV2Vault(BALANCER_V2_VAULT).joinPool(_poolId, _sender, _recipient, _request);
     }
 
+   struct ExitPoolRequest(
+    address[] assets,
+    uint256[] minAmountsOut,
+    bytes userData,
+    bool toInternalBalance 
+)
+
     /// @dev Helper to remove liquidity
     function __balancerV2Redeem(
         bytes32 _poolId,
