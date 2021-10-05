@@ -233,19 +233,19 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         )
     {
         (
-            address balancerPoolToken,
+            bytes32 balancerPoolId,
             uint256[] memory outgoingAssetAmounts,
             uint256[] memory minIncomingAssetAmounts
         ) = __decodeCallArgs(_encodedCallArgs);
 
         address[] memory poolTokens = BalancerV2PriceFeed(BALANCER_V2_PRICE_FEED)
-            .getTokensFromPool(balancerPoolToken);
+            .getTokensFromPool(balancerPoolId);
 
         // Check that the target pool was previously whitelisted
         require(poolTokens[0] != address(0), "__parseAssetsForRedeem: Unsupported derivative");
 
         spendAssets_ = new address[](1);
-        spendAssets_[0] = balancerPoolToken;
+        spendAssets_[0] = address(bytes20(balancerPoolId));
         spendAssetAmounts_ = outgoingAssetAmounts;
 
         incomingAssets_ = new address[](2);
