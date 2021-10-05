@@ -126,9 +126,10 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         incomingAssets_ = new address[](1);
         incomingAssets_[0] = _bpt;
 
-        // TODO: How can I calculate minimum incoming _bpt Amount token?
-        minIncomingAssetAmounts_ = new uint256[](1);
-        minIncomingAssetAmounts_[0] = 0;
+        // TODO: expectedBPT = totalBPT/totalDAI * amountInDAI
+        uint expectedBPT = 0;
+        minIncomingAssetAmounts_ = new uint256[](1);//minimumBPT = slippageFactor * expectedBPT
+        minIncomingAssetAmounts_[0] = expectedBPT;
 
         return (
             IIntegrationManager.SpendAssetsHandleType.Transfer,
