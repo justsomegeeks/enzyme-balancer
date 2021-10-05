@@ -8,7 +8,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "@enzymefinance/contracts/release/extensions/integration-manager/integrations/utils/AdapterBase2.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "hardhat/console.sol";
 import "./BalancerV2ActionsMixin.sol";
 import "./interfaces/IBalancerV2Vault.sol";
 
@@ -48,10 +48,9 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             ,
             int256[] memory limits,
             uint256 deadline
-        ) = __decodeCallArgs(_encodedCallArgs);
-
+        ) = __decodeTakeOrderCallArgs(_encodedCallArgs);
         IBalancerV2Vault.FundManagement memory funds = IBalancerV2Vault.FundManagement(
-            address(this),
+            msg.sender,
             false, // fromInternalBalance
             payable(_vaultProxy),
             false // toInternalBalance
@@ -81,10 +80,58 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        require(_selector == TAKE_ORDER_SELECTOR, "parseAssetsForMethod: _selector invalid");
+        if (_selector == TAKE_ORDER_SELECTOR){
 
         return __parseAssetsForSwap(_encodedCallArgs);
+        }else if (_selector == LEND_SELECTOR){
+            console.log("Lend selector");
+            return __parseAssetsForLend(_encodedCallArgs);
+        }
+
+        revert("parseAssetsForMethod: _selector invalid");
+
     }
+    function __parseAssetsForLend(bytes calldata _encodedCallArgs)
+        private
+        view
+        returns (
+            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
+            address[] memory spendAssets_,
+            uint256[] memory spendAssetAmounts_,
+            address[] memory incomingAssets_,
+            uint256[] memory minIncomingAssetAmounts_
+        )
+    {
+        (
+            bytes32 poolId,
+            address recipient,
+            IBalancerV2Vault.JoinPoolRequest memory request
+        ) = __decodeLendCallArgs(_encodedCallArgs);
+
+
+        spendAssets_ = new address[](1);
+        spendAssets_[0] = address(0);
+
+        spendAssetAmounts_ = new uint256[](1);
+        spendAssetAmounts_[0] = 0;
+
+        incomingAssets_ = new address[](1);
+        incomingAssets_[0] = address(0);
+
+        minIncomingAssetAmounts_ = new uint256[](1);
+        minIncomingAssetAmounts_[0] = 0;
+        console.log("inside me ");
+
+        return (
+            IIntegrationManager.SpendAssetsHandleType.Transfer,
+            spendAssets_,
+            spendAssetAmounts_,
+            incomingAssets_,
+            minIncomingAssetAmounts_
+        );
+    }
+    
+    
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
     /// during swap() calls
@@ -106,7 +153,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             uint256 tokenOutAmount,
             ,
 
-        ) = __decodeCallArgs(_encodedCallArgs);
+        ) = __decodeTakeOrderCallArgs(_encodedCallArgs);
 
         spendAssets_ = new address[](1);
         spendAssets_[0] = assets[0];
@@ -130,7 +177,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
     }
 
     /// @dev Helper to decode the encoded callOnIntegration call arguments
-    function __decodeCallArgs(bytes memory _encodedCallArgs)
+    function __decodeTakeOrderCallArgs(bytes memory _encodedCallArgs)
         private
         pure
         returns (
@@ -154,5 +201,35 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
                     uint256
                 )
             );
+    }
+
+    /// @dev Helper to decode the lend encoded call arguments
+    function __decodeLendCallArgs(bytes memory _encodedCallArgs)
+        private
+        pure
+        returns (
+            bytes32 poolId_,
+            address recipient_,
+            IBalancerV2Vault.JoinPoolRequest memory request_
+        )
+    {
+        return abi.decode(_encodedCallArgs, (bytes32, address, IBalancerV2Vault.JoinPoolRequest));
+    }
+
+    /// @notice Deposits an amount of an underlying asset into a pool
+    /// @param _vaultProxy The VaultProxy of the calling fund
+    /// @param _encodedCallArgs Encoded order parameters
+    function lend(
+        address _vaultProxy,
+        bytes calldata _encodedCallArgs,
+        bytes calldata
+    ) external onlyIntegrationManager fundAssetsTransferHandler(_vaultProxy, _encodedCallArgs) {
+        (
+            bytes32 poolId,
+            address recipient,
+            IBalancerV2Vault.JoinPoolRequest memory request
+        ) = __decodeLendCallArgs(_encodedCallArgs);
+
+        __balancerV2Lend(poolId, msg.sender, recipient, request);
     }
 }
