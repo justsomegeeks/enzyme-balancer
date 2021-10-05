@@ -288,6 +288,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
 
         address[] memory assets = new address[](outgoingAssetAmounts_.length);
         uint256[] memory minAmountsOut = new uint256[](minIncomingAssetAmounts_.length);
+
         minAmountsOut = minIncomingAssetAmounts_;
         assets[0] = address(bytes20(balancerPoolId_));
 
