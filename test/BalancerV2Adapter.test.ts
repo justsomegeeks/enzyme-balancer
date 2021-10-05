@@ -1,7 +1,7 @@
 import type { SwapInfo } from '@balancer-labs/sor';
 import { SwapTypes } from '@balancer-labs/sor';
 import { JoinPoolRequest } from '@balancer-labs/balancer-js';
-import { IntegrationManager, takeOrderSelector, lendSelector, VaultLib, ComptrollerLib } from '@enzymefinance/protocol';
+import { IntegrationManager, takeOrderSelector, lendSelector,  ComptrollerLib } from '@enzymefinance/protocol';
 import type { BaseProvider } from '@ethersproject/providers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber as BN } from 'bignumber.js';
@@ -122,7 +122,30 @@ describe('BalancerV2Adapter', function () {
     });
 
     xit('generates expected output for lending', async function () {
-      return;
+      let request: JoinPoolRequest;
+      let poolId: string;
+      let recipient: string;
+      poolId = '0x01abc00e86c7e258823b9a055fd62ca6cf61a16300010000000000000000003b';
+      recipient = enzymeCouncil.address;
+
+      const tokens = networkDescriptor.tokens;
+      const initialBalances = [0 , 1];
+      const initUserData =
+      hre.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256[]'],[0, initialBalances]);
+
+      console.log('3');
+      request = {
+        assets: [tokens.DAI.address, tokens.USDC.address],//TODO use the correct tokens for the pool being used
+        maxAmountsIn: [0, 1],
+        userData: initUserData,
+        fromInternalBalance: false,
+      };
+      console.log('2');
+      args = BalancerV2LendArgs({
+          poolId, recipient, request
+      } as BalancerV2Lend);
+      
+      expect(await balancerV2Adapter.parseAssetsForMethod(lendSelector, args)).to.have.length(5);
     });
 
     xit('generates expected output for redeeming', async function () {
@@ -145,7 +168,6 @@ describe('BalancerV2Adapter', function () {
     let lendArgs: any;
     let enzymeFundAddress: string;
     let enzymeFundOwner: SignerWithAddress;
-    let fundOwner: VaultLib;
     let request: JoinPoolRequest;
     let poolId: string;
     let recipient: string;
@@ -153,10 +175,11 @@ describe('BalancerV2Adapter', function () {
     let enzymeComptrollerAddress: string;
     
     before(async function () {
+
       enzymeComptrollerAddress = networkDescriptor.contracts.EnyzmeComptroller;
       enzymeFundAddress = networkDescriptor.contracts.EnzymeVaultProxy;
       enzymeFundOwner = await hre.ethers.getSigner(networkDescriptor.contracts.FundOwner);
-      fundOwner = new VaultLib(enzymeFundAddress, enzymeFundOwner);
+
       comptrollerProxy = new ComptrollerLib(enzymeComptrollerAddress, enzymeFundOwner);
 
       balancerV2Adapter = (await balancerV2AdapterFactory.deploy(
@@ -167,8 +190,8 @@ describe('BalancerV2Adapter', function () {
       await balancerV2Adapter.deployed();
 
       await integrationManager.registerAdapters([balancerV2Adapter.address]);
-
-      poolId = '0x01abc00e86c7e258823b9a055fd62ca6cf61a16300010000000000000000003b';
+      //await  integrationManager.addAuthUserForFund(balancerV2Adapter, enzymeFundOwner);
+      poolId = '0xa660ba113f9aabaeb4bcd28a4a1705f4997d5432000200000000000000000022';
       recipient = enzymeCouncil.address;
 
       const tokens = networkDescriptor.tokens;
@@ -176,14 +199,13 @@ describe('BalancerV2Adapter', function () {
       const initUserData =
       hre.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256[]'],[0, initialBalances]);
 
-
       request = {
         assets: [tokens.DAI.address, tokens.USDC.address],//TODO use the correct tokens for the pool being used
         maxAmountsIn: [0, 1],
         userData: initUserData,
         fromInternalBalance: false,
       };
-      
+
       lendArgs = BalancerV2LendArgs({
           poolId, recipient, request
       } as BalancerV2Lend);
@@ -203,18 +225,17 @@ describe('BalancerV2Adapter', function () {
         lendSelector,
         transferArgs)
         ).to.be.revertedWith(
-        'Only the IntegrationManager can call this function',
+        '_selector invalid',
       );
     });
 
     it('works as expected when called by a fund', async function () {
-
       expect(lendArgs).to.not.be.undefined;
-      //const receipt = await balancerV2Adapter.lend(enzymeFundAddress, lendSelector, lendArgs);  
+
       const receipt = await balancerV2Lend({
         comptrollerProxy,
         integrationManager,
-        fundOwner,
+        enzymeFundOwner,
         balancerV2Adapter: balancerV2Adapter.address,
         poolId, 
         recipient, 

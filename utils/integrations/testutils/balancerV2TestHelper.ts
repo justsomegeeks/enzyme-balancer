@@ -70,7 +70,7 @@ export async function balancerV2TakeOrder({
 export async function balancerV2Lend({
   comptrollerProxy,
   integrationManager,
-  fundOwner,
+  enzymeFundOwner,
   balancerV2Adapter,
   poolId, 
   recipient, 
@@ -78,17 +78,15 @@ export async function balancerV2Lend({
 }: {
   comptrollerProxy: ComptrollerLib;
   integrationManager: IntegrationManager;
-  fundOwner: SignerWithAddress;
+  enzymeFundOwner: SignerWithAddress;
   balancerV2Adapter: AddressLike;
   poolId: string;
   recipient: string;
   request: JoinPoolRequest;  
 }) {
-
   const lendArgs = BalancerV2LendArgs({
     poolId, recipient, request
   } as BalancerV2Lend);
-
   const callArgs = callOnIntegrationArgs({
     adapter: balancerV2Adapter,
     encodedCallArgs: lendArgs,
@@ -96,6 +94,6 @@ export async function balancerV2Lend({
   });
 
   return comptrollerProxy
-    .connect(fundOwner)
+    .connect(enzymeFundOwner)
     .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 }
