@@ -243,15 +243,7 @@ export async function adjustAllowanceIfNeeded(
   }
 }
 
-// export async function getBalance(address: string, token: TokenDescriptor) {
-//   const provider = hre.ethers.getDefaultProvider();
-
-//   return isETH(token.address)
-//     ? hre.ethers.utils.formatEther(await provider.getBalance(address))
-//     : hre.ethers.utils.formatUnits(await token.contract?.balanceOf(address), token.decimals);
-// }
-
-export async function getBalance(address: string, token: TokenDescriptor) {
+export async function getBalance(address: string, token: TokenDescriptor): Promise<BigNumber> {
   const provider = hre.ethers.getDefaultProvider();
 
   return isETH(token.address) ? await provider.getBalance(address) : await token.contract?.balanceOf(address);
@@ -275,4 +267,8 @@ export async function getBalances(
   } as Balances;
 
   return balances;
+}
+
+export function bnToBigNumber(value: BN, decimals = BigNumber.from('0')): BigNumber {
+  return hre.ethers.utils.parseUnits(value.toString(), decimals);
 }
