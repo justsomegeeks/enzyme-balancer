@@ -13,8 +13,10 @@ import { scale, SOR, SwapTypes } from '@balancer-labs/sor';
 import { encodeArgs } from '@enzymefinance/protocol';
 import type { BaseProvider } from '@ethersproject/providers';
 import { BigNumber as BN } from 'bignumber.js';
+import type { BytesLike } from 'ethers';
 import { BigNumber, utils } from 'ethers';
 
+import type { BalancerV2Adapter } from '../../typechain';
 import type { Balances, SupportedTokens, TokenDescriptor } from '../env-helper';
 import { getNetworkDescriptor } from '../env-helper';
 
@@ -134,27 +136,27 @@ export function calculateLimits(swapType: SwapTypes, swapInfo: SwapInfo): string
 // hand rolled version of:
 //   https://github.com/enzymefinance/protocol/blob/current/packages/protocol/src/utils/integrations/common.ts#L52-L72
 //
-// export async function assetTransferArgs({
-//   adapter,
-//   selector,
-//   encodedCallArgs,
-// }: {
-//   adapter: BalancerV2Adapter;
-//   selector: BytesLike;
-//   encodedCallArgs: BytesLike;
-// }) {
-//   const {
-//     0: spendAssetsHandleType,
-//     1: spendAssets,
-//     2: spendAssetAmounts,
-//     3: expectedIncomingAssets,
-//   } = await adapter.parseAssetsForMethod(selector, encodedCallArgs);
+export async function assetTransferArgs({
+  adapter,
+  selector,
+  encodedCallArgs,
+}: {
+  adapter: BalancerV2Adapter;
+  selector: BytesLike;
+  encodedCallArgs: BytesLike;
+}) {
+  const {
+    0: spendAssetsHandleType,
+    1: spendAssets,
+    2: spendAssetAmounts,
+    3: expectedIncomingAssets,
+  } = await adapter.parseAssetsForMethod(selector, encodedCallArgs);
 
-//   return encodeArgs(
-//     ['uint', 'address[]', 'uint[]', 'address[]'],
-//     [spendAssetsHandleType, spendAssets, spendAssetAmounts, expectedIncomingAssets],
-//   );
-// }
+  return encodeArgs(
+    ['uint', 'address[]', 'uint[]', 'address[]'],
+    [spendAssetsHandleType, spendAssets, spendAssetAmounts, expectedIncomingAssets],
+  );
+}
 
 export function printSwapDetails(
   swapType: SwapTypes,
@@ -165,7 +167,8 @@ export function printSwapDetails(
   tokenOut: TokenDescriptor,
   swapAmount: BN,
   cost: string,
-  balances: Balances,
+  preSwapBalances: Balances,
+  postSwapBalances: Balances,
 ) {
   const amtInScaled =
     swapType === SwapTypes.SwapExactIn
@@ -189,12 +192,12 @@ export function printSwapDetails(
   console.log(`Cost to swap in ${tokenIn.symbol}: ${cost} ${tokenIn.symbol}`);
 
   console.log(`Balances before swap:`);
-  console.log(`  ${tokenIn.symbol}: ${balances.tokenIn.before}`);
-  console.log(`  ${tokenOut.symbol}: ${balances.tokenOut.before}`);
+  console.log(`  ${tokenIn.symbol}: ${preSwapBalances.tokenIn.balance}`);
+  console.log(`  ${tokenOut.symbol}: ${preSwapBalances.tokenOut.balance}`);
 
   console.log(`Balances after swap:`);
-  console.log(`  ${tokenIn.symbol}: ${balances.tokenIn.after}`);
-  console.log(`  ${tokenOut.symbol}: ${balances.tokenOut.after}`);
+  console.log(`  ${tokenIn.symbol}: ${postSwapBalances.tokenIn.balance}`);
+  console.log(`  ${tokenOut.symbol}: ${postSwapBalances.tokenOut.balance}`);
 
   console.log(`================================================\n`);
 }

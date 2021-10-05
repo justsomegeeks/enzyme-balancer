@@ -29,6 +29,8 @@ abstract contract BalancerV2ActionsMixin is AssetHelpers {
         int256[] memory _limits,
         uint256 _deadline
     ) internal {
+        __approveAssetMaxAsNeeded(_assets[0], BALANCER_V2_VAULT, _swaps[0].amount);
+
         IBalancerV2Vault(BALANCER_V2_VAULT).batchSwap(
             _swapKind,
             _swaps,

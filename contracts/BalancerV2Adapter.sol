@@ -8,6 +8,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "@enzymefinance/contracts/release/extensions/integration-manager/integrations/utils/AdapterBase2.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./BalancerV2ActionsMixin.sol";
 import "./interfaces/IBalancerV2Vault.sol";
 
@@ -48,8 +49,9 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             int256[] memory limits,
             uint256 deadline
         ) = __decodeCallArgs(_encodedCallArgs);
+
         IBalancerV2Vault.FundManagement memory funds = IBalancerV2Vault.FundManagement(
-            msg.sender,
+            address(this),
             false, // fromInternalBalance
             payable(_vaultProxy),
             false // toInternalBalance

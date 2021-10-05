@@ -15,29 +15,22 @@ import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { balancerV2TakeOrderArgs, calculateLimits } from '../balancerV2';
 
 export async function balancerV2TakeOrder({
-  comptrollerProxy,
+  enzymeComptroller,
   integrationManager,
-  fundOwner,
+  enzymeFundOwner,
   balancerV2Adapter,
   swapType,
   swapInfo,
   deadline,
-  seedFund = false,
 }: {
-  comptrollerProxy: ComptrollerLib;
+  enzymeComptroller: ComptrollerLib;
   integrationManager: IntegrationManager;
-  fundOwner: SignerWithAddress;
+  enzymeFundOwner: SignerWithAddress;
   balancerV2Adapter: AddressLike;
   swapType: SwapTypes;
   swapInfo: SwapInfo;
   deadline: BigNumber;
-  seedFund?: boolean;
 }) {
-  if (seedFund) {
-    // Seed the VaultProxy with enough outgoingAsset for the tx
-    // await pathAddresses[0].transfer(await comptrollerProxy.getVaultProxy(), outgoingAssetAmount);
-  }
-
   const limits = calculateLimits(swapType, swapInfo);
 
   const takeOrderArgs = balancerV2TakeOrderArgs({
@@ -45,15 +38,9 @@ export async function balancerV2TakeOrder({
     limits,
     swapType,
     swaps: swapInfo.swaps,
-    tokenAddresses: [swapInfo.tokenIn, swapInfo.tokenIn],
+    tokenAddresses: [swapInfo.tokenIn, swapInfo.tokenOut],
     tokenOutAmount: swapInfo.returnAmount,
   });
-
-  //   const transferArgs = await assetTransferArgs({
-  //     adapter: balancerV2Adapter,
-  //     encodedCallArgs: takeOrderArgs,
-  //     selector: takeOrderSelector,
-  //   });
 
   const callArgs = callOnIntegrationArgs({
     adapter: balancerV2Adapter,
@@ -61,7 +48,7 @@ export async function balancerV2TakeOrder({
     selector: takeOrderSelector,
   });
 
-  return comptrollerProxy
-    .connect(fundOwner)
+  return enzymeComptroller
+    .connect(enzymeFundOwner)
     .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 }
