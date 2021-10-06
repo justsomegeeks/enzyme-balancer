@@ -14,8 +14,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const networkDescriptor = await getNetworkDescriptor(hre.ethers.getDefaultProvider());
 
+  const balancerV2PriceFeed = await deploy('BalancerV2PriceFeed', {
+    args: [networkDescriptor.contracts.BalancerV2WBTCWETHVault],
+    from: deployer,
+    log: true,
+  });
+
   await deploy('BalancerV2Adapter', {
-    args: [networkDescriptor.contracts.IntegrationManager, networkDescriptor.contracts.BalancerV2WBTCWETHVault],
+    args: [
+      networkDescriptor.contracts.IntegrationManager,
+      networkDescriptor.contracts.BalancerV2WBTCWETHVault,
+      balancerV2PriceFeed.address,
+    ],
     from: deployer,
     log: true,
   });
