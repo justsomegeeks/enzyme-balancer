@@ -20,7 +20,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @dev Does not allow any protocol that collects protocol fees in ETH, e.g., 0x v3
 contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
     using SafeMath for uint256;
-    address private immutable BALANCER_V2_VAULT;
     address private immutable BALANCER_V2_PRICE_FEED;
 
     constructor(
@@ -28,7 +27,6 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         address _balancerV2Vault,
         address _balancerV2PriceFeed
     ) public AdapterBase2(_integrationManager) BalancerV2ActionsMixin(_balancerV2Vault) {
-        BALANCER_V2_VAULT = _balancerV2Vault;
         BALANCER_V2_PRICE_FEED = _balancerV2PriceFeed;
     }
 
@@ -56,6 +54,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             int256[] memory limits,
             uint256 deadline
         ) = __decodeTakeOrderCallArgs(_encodedCallArgs);
+
         IBalancerV2Vault.FundManagement memory funds = IBalancerV2Vault.FundManagement(
             address(this),
             false, // fromInternalBalance
@@ -97,7 +96,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
 
     function __parseAssetsForLend(bytes calldata _encodedCallArgs)
         private
-        view
+        pure
         returns (
             IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
             address[] memory spendAssets_,
@@ -241,5 +240,15 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         ) = __decodeLendCallArgs(_encodedCallArgs);
 
         __balancerV2Lend(poolId, msg.sender, recipient, request);
+    }
+
+    ///////////////////
+    // STATE GETTERS //
+    ///////////////////
+
+    /// @notice Gets the `BALANCER_V2_PRICE_FEED` variable
+    /// @return balancerPriceFeed_ The `BALANCER_V2_PRICE_FEED` variable value
+    function getBalancerPriceFeed() external view returns (address balancerPriceFeed_) {
+        return BALANCER_V2_PRICE_FEED;
     }
 }
