@@ -1,70 +1,110 @@
 import type { BaseProvider } from '@ethersproject/providers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { expect } from 'chai';
+import type { ContractFactory } from 'ethers';
 import hre from 'hardhat';
 
+import type { BalancerV2PriceFeed } from '../typechain';
 import type { NetworkDescriptor } from '../utils/env-helper';
-import { getNetworkDescriptor, priceFeedContractArgsFromNetworkDescriptor } from '../utils/env-helper';
+import {
+  getNetworkDescriptor,
+  initializeEnvHelper,
+  priceFeedContractArgsFromNetworkDescriptor,
+} from '../utils/env-helper';
 
 describe('BalancerV2PriceFeed', function () {
-  let enzymeCouncil: SignerWithAddress;
-  let balancerV2PriceFeed: any;
-
   let provider: BaseProvider;
   let networkDescriptor: NetworkDescriptor;
+
+  let enzymeCouncil: SignerWithAddress;
+
+  let balancerV2PriceFeedFactory: ContractFactory;
+  let balancerV2PriceFeed: BalancerV2PriceFeed;
   let balancerV2PriceFeedArgs: [string, string[], string[], boolean[]];
 
-  before(async () => {
+  before(async function () {
+    initializeEnvHelper(hre);
+
     provider = hre.ethers.getDefaultProvider();
 
     networkDescriptor = await getNetworkDescriptor(provider);
     balancerV2PriceFeedArgs = priceFeedContractArgsFromNetworkDescriptor(networkDescriptor);
 
-    const balancerV2PriceFeedFactory = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
-
-    balancerV2PriceFeed = await balancerV2PriceFeedFactory.deploy(...balancerV2PriceFeedArgs);
-    await balancerV2PriceFeed.deployed();
+    balancerV2PriceFeedFactory = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
 
     enzymeCouncil = await hre.ethers.getSigner(networkDescriptor.contracts.enzyme.EnzymeCouncil);
     await hre.network.provider.send('hardhat_impersonateAccount', [enzymeCouncil.address]);
   });
 
-  it('deploys correctly', async function () {
-    expect(await balancerV2PriceFeed.getBalancerV2Vault()).to.equal(
-      networkDescriptor.contracts.balancer.BalancerV2Vault,
-    );
+  describe('constructor', function () {
+    xit('sets state vars', async function () {
+      provider = hre.ethers.getDefaultProvider();
+
+      networkDescriptor = await getNetworkDescriptor(provider);
+
+      balancerV2PriceFeedFactory = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
+
+      balancerV2PriceFeedArgs = priceFeedContractArgsFromNetworkDescriptor(networkDescriptor);
+      balancerV2PriceFeed = (await balancerV2PriceFeedFactory.deploy(
+        ...balancerV2PriceFeedArgs,
+      )) as BalancerV2PriceFeed;
+      await balancerV2PriceFeed.deployed();
+
+      /*
+        TODO: Balancerify the uniswapV2PriceFeed test code below
+
+        expect(await uniswapV2PoolPriceFeed.getFactory()).toMatchAddress(factory);
+        expect(await uniswapV2PoolPriceFeed.getDerivativePriceFeed()).toMatchAddress(aggregatedDerivativePriceFeed);
+        expect(await uniswapV2PoolPriceFeed.getPrimitivePriceFeed()).toMatchAddress(chainlinkPriceFeed);
+        expect(await uniswapV2PoolPriceFeed.getValueInterpreter()).toMatchAddress(valueInterpreter);
+
+        for (const poolToken of Object.values(pools)) {
+          const pairContract = new IUniswapV2Pair(poolToken, provider);
+          const token0 = await pairContract.token0();
+          const token1 = await pairContract.token1();
+          expect(await uniswapV2PoolPriceFeed.getPoolTokenInfo(poolToken)).toMatchFunctionOutput(
+            uniswapV2PoolPriceFeed.getPoolTokenInfo,
+            {
+              token0,
+              token1,
+              token0Decimals: await new StandardToken(token0, provider).decimals(),
+              token1Decimals: await new StandardToken(token1, provider).decimals(),
+            },
+          );
+        }
+      });
+      */
+    });
   });
 
-  it('should return accurate total supply', async () => {
-    const supply = await balancerV2PriceFeed.getPoolTotalSupply(
-      networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
-    );
+  describe('calcUnderlyingValues', function () {
+    xit('returns rate for 18 decimals underlying assets', function () {
+      return;
+    });
 
-    const graphSupply = await hre.run('bal_getTotalSupply');
-    expect(graphSupply === supply);
+    it('returns rate for non-18 decimals underlying assets', function () {
+      return;
+    });
   });
 
-  it('should return total underlying tokens and their values', async () => {
-    const [tokens] = await balancerV2PriceFeed.callStatic.calcUnderlyingValues(
-      networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolId,
-    );
-    const graphTokens = await hre.run('bal_getPool');
-    //const graphSupply = await hre.run('bal_getTotalSupply');
-    expect(tokens.filter((el: number, i: number) => el === graphTokens[0].tokensList[i]).length === 2);
-  });
+  describe('addPoolTokens', function () {
+    xit('does not allow a random caller', function () {
+      return;
+    });
 
-  it('should return total value of supply in pool and total BPTValue', async () => {
-    const [totalSupply, BPTValue] = await balancerV2PriceFeed.callStatic.calcBPTValue(
-      networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolId,
-    );
-    //const graphSupply = await hre.run('bal_getTotalSupply');    // BPTValue);
-    expect(BPTValue, totalSupply);
+    xit('does not allow an empty _poolTokens param', function () {
+      return;
+    });
+
+    xit('does not allow an already-set poolToken', function () {
+      return;
+    });
+
+    xit('does not allow unsupportable pool tokens', function () {
+      return;
+    });
+
+    xit('adds pool tokens and emits an event per added pool token', function () {
+      return;
+    });
   });
-  // it('should return the value of the token passed in', async function () {
-  //   //not sure why this is reverting.  I'll work on it more after redeem is working.
-  //   const WETH = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
-  //   const WETHPrice = await balancerV2PriceFeed.callStatic.getLatestPrice(WETH);
-  //   console.log('WETH', WETHPrice);
-  //   expect(WETHPrice);
-  // });
 });
