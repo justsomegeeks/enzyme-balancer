@@ -317,7 +317,8 @@ contract BalancerV2PriceFeed is
         uint256 totalBPT = poolContract.totalSupply();
         uint256 BPTPercentage = _derivativeAmount / totalBPT;
         (IERC20[] memory tokens, uint256[] memory balances, ) = getPoolInfoFromPool(poolId);
-
+        underlyingAmounts_ = new uint256[](tokens.length);
+        underlyings_ = new address[](tokens.length);
         for (uint256 i = 0; i < tokens.length; ) {
             underlyingAmounts_[i] = balances[i] * BPTPercentage;
             underlyings_[i] = address(tokens[i]);
