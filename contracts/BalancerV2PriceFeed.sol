@@ -88,22 +88,31 @@ contract BalancerV2PriceFeed {
         return tokens;
     }
 
-    function calcUnderlyingValues(bytes32 _poolId)
-        public
-        returns (address[] memory underlyingTokens_, uint256[] memory underlyingValues_)
-    {
+    function calcPoolValues(bytes32 _poolId) public returns (uint256[] memory underlyingValues_) {
         (IERC20[] memory tokens, uint256[] memory balances, ) = getPoolInfoFromPool(_poolId);
-        for (uint256 i = 0; i < tokens.length; i++) {
-            console.log("CALCUNDER Tokens", address(tokens[i]));
-        }
         uint256[] memory prices = getAllPrices(tokens);
-        underlyingTokens_ = new address[](tokens.length);
         underlyingValues_ = new uint256[](tokens.length);
         for (uint256 i = 0; i < tokens.length; i++) {
             underlyingValues_[i] = balances[i] * prices[i];
-            underlyingTokens_[i] = address(tokens[i]);
         }
-        return (underlyingTokens_, underlyingValues_);
+        return (underlyingValues_);
+    }
+
+    //_derivative is the BPT token address, _derivativeAmount is the number of bpts
+    function calcUnderlyingValues(address _derivative, uint256 _derivativeAmount)
+        external
+        returns (address[] memory underlyings_, uint256[] memory underlyingAmounts_)
+    {
+        IBalancerV2Pool poolContract = IBalancerV2Pool(_derivative);
+        bytes32 poolId = poolContract.getPoolId();
+        uint256 totalBPT = poolContract.totalSupply();
+        uint256 BPTPercentage = _derivativeAmount / totalBPT;
+        (IERC20[] memory tokens, uint256[] memory balances, ) = getPoolInfoFromPool(poolId);
+
+        for (uint256 i = 0; i < tokens.length; ) {
+            underlyingAmounts_[i] = balances[i] * BPTPercentage;
+            underlyings_[i] = address(tokens[i]);
+        }
     }
 
     function getPoolTotalSupply(address _poolAddress) public view returns (uint256 totalSupply) {
@@ -115,7 +124,7 @@ contract BalancerV2PriceFeed {
         address _poolAddress = getAddress(_poolId);
         totalSupply = getPoolTotalSupply(_poolAddress);
         uint256 totalTokenValue;
-        (, uint256[] memory underlyingValues_) = calcUnderlyingValues(_poolId);
+        uint256[] memory underlyingValues_ = calcPoolValues(_poolId);
         for (uint256 i = 0; i < underlyingValues_.length; i++) {
             totalTokenValue += underlyingValues_[i];
         }

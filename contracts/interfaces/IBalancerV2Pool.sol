@@ -10,6 +10,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @notice An Enzyme Balancer V2 Pool Interface
 /// @dev Provides a subset of the functionality copied from and provided by Balancer
 /// @dev Full documentation of structs and functions can be found in Balancer's code
-interface IBalancerV2Pool is IERC20 {
-    function totalSupply(address _poolAddress) external view returns (uint256);
+interface IBalancerV2Pool {
+    function totalSupply() external view returns (uint256);
+
+    function getPoolId() external view returns (bytes32);
 }
