@@ -8,7 +8,28 @@ import { BigNumber as BN } from 'bignumber.js';
 import { BigNumber } from 'ethers';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-const SUPPORTED_TOKENS = [/*'AAVE', 'ETH', 'BAL', 'COMP', 'USDC', 'DAI',*/ 'WBTC', 'WETH'] as const;
+/**
+ * Network: Kovan
+ * Aggregator: ETH/USD
+ * Address: 0x9326BFA02ADD2366b30bacB125260Af641031331
+ */
+//chainlink oracle addresses.
+// address ETH_USD = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+// address BTC_USD = 0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c;
+// address CRV_USD = 0xCd627aA160A6fA45Eb793D19Ef54f5062F20f33f;
+// address YFI_USD = 0xA027702dbb89fbd58938e4324ac03B58d812b0E1;
+// address UNI_ETH = 0xD6aA3D25116d8dA79Ea0246c4826EB951872e02e;
+// balancer smart contract addresses on mainnet.
+//     Vault: 0xBA12222222228d8Ba445958a75a0704d566BF2C8
+// Authorizer: 0xA331D84eC860Bf466b4CdCcFb4aC09a1B43F3aE6
+// WeightedPoolFactory: 0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9
+// WeightedPool2TokensFactory: 0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0
+// StablePoolFactory: 0xc66Ba2B6595D3613CCab350C886aCE23866EDe24
+// LiquidityBootstrappingPoolFactory: 0x751A0bC0e3f75b38e01Cf25bFCE7fF36DE1C87DE
+// MetastablePoolFactory: 0x67d27634E44793fE63c467035E31ea8635117cd4
+// InvestmentPoolFactory: 0x48767F9F868a4A7b86A90736632F6E44C2df7fa9
+
+const SUPPORTED_TOKENS = ['WBTC', 'WETH'] as const;
 export type SupportedTokens = typeof SUPPORTED_TOKENS[number];
 
 const SUPPORTED_NETWORKS = ['mainnet'] as const;
@@ -24,6 +45,11 @@ interface ExpectedTrade {
   tokenOutAmount: BN;
 }
 
+interface PriceAggregatorDescriptor {
+  address: string;
+  isValue: boolean;
+}
+
 export interface TokenDescriptor {
   address: string;
   contract: Contract | undefined;
@@ -31,6 +57,7 @@ export interface TokenDescriptor {
   // temporary hack to get around testing on pinned mainnet, while using 'live' mainnet chainlink feeds and
   // mainnet subgrah
   mainnetPinnedBlockTradeCache?: ExpectedTrade;
+  priceAggregatorDescriptor: PriceAggregatorDescriptor;
   symbol: string;
   whaleAddress: string;
 }
@@ -41,6 +68,7 @@ type TokenDescriptors = {
     contract: Contract | undefined;
     decimals: BigNumber;
     mainnetPinnedBlockTradeCache?: ExpectedTrade;
+    priceAggregatorDescriptor: PriceAggregatorDescriptor;
     symbol: key;
     whaleAddress: string;
   };
@@ -49,9 +77,14 @@ type TokenDescriptors = {
 interface ContractDescriptor {
   [key: string]: string;
 }
+
+type ContractDescriptors = {
+  [key in 'balancer' | 'enzyme']: ContractDescriptor;
+};
+
 export interface NetworkDescriptor {
   chainId: number;
-  contracts: ContractDescriptor;
+  contracts: ContractDescriptors;
   name: SupportedNetworks;
   subgraphURL: string;
   tokens: TokenDescriptors;
@@ -60,7 +93,7 @@ export interface NetworkDescriptor {
 type NetworkDescriptors = {
   [key in SupportedNetworks]: {
     chainId: number;
-    contracts: ContractDescriptor;
+    contracts: ContractDescriptors;
     name: key;
     subgraphURL: string;
     tokens: TokenDescriptors;
@@ -76,60 +109,22 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
     mainnet: {
       chainId: 1,
       contracts: {
-        BalancerV2WBTCWETHVault: '0xBA12222222228d8Ba445958a75a0704d566BF2C8',
-        EnyzmeComptroller: '0xe0dcf68b0b2fd1097442f2134e57339404a00639',
-        EnzymeCouncil: '0xb270fe91e8e4b80452fbf1b4704208792a350f53',
-        EnzymeVaultProxy: '0x24f3b37934D1AB26B7bda7F86781c90949aE3a79', // Rhino Fund
-        FundOwner: '0x978cc856357946f980fba68db3b7f0d72e570da8', // Rhino Fund Manager
-        IntegrationManager: '0x965ca477106476B4600562a2eBe13536581883A6',
+        balancer: {
+          BalancerV2Vault: '0xBA12222222228d8Ba445958a75a0704d566BF2C8',
+          BalancerV2WBTCWETHPoolAddress: '0xA6F548DF93de924d73be7D25dC02554c6bD66dB5',
+          BalancerV2WBTCWETHPoolId: '0xa6f548df93de924d73be7d25dc02554c6bd66db500020000000000000000000e',
+        },
+        enzyme: {
+          EnyzmeComptroller: '0xe0dcf68b0b2fd1097442f2134e57339404a00639',
+          EnzymeCouncil: '0xb270fe91e8e4b80452fbf1b4704208792a350f53',
+          EnzymeVaultProxy: '0x24f3b37934D1AB26B7bda7F86781c90949aE3a79', // Rhino Fund
+          FundOwner: '0x978cc856357946f980fba68db3b7f0d72e570da8', // Rhino Fund Manager
+          IntegrationManager: '0x965ca477106476B4600562a2eBe13536581883A6',
+        },
       },
       name: 'mainnet',
       subgraphURL: 'https://api.thegraph.com/subgraphs/name/balancer-labs/balancer-v2',
       tokens: {
-        /*
-        AAVE: {
-          address: '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9',
-          contract: await hre.ethers.getContractAt(IERC20Artifact.abi, '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9'),
-          decimals: BigNumber.from(18),
-          symbol: 'AAVE',
-          whaleAddress: '0xF977814e90dA44bFA03b6295A0616a897441aceC',
-        },
-        BAL: {
-          address: '0xba100000625a3754423978a60c9317c58a424e3d',
-          contract: await hre.ethers.getContractAt(IERC20Artifact.abi, '0xba100000625a3754423978a60c9317c58a424e3d'),
-          decimals: BigNumber.from(18),
-          symbol: 'BAL',
-          whaleAddress: '0x876EabF441B2EE5B5b0554Fd502a8E0600950cFa',
-        },
-        COMP: {
-          address: '0xc00e94cb662c3520282e6f5717214004a7f26888',
-          contract: await hre.ethers.getContractAt(IERC20Artifact.abi, '0xc00e94cb662c3520282e6f5717214004a7f26888'),
-          decimals: BigNumber.from(18),
-          symbol: 'COMP',
-          whaleAddress: '0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8',
-        },
-        DAI: {
-          address: '0x6b175474e89094c44da98b954eedeac495271d0f',
-          contract: await hre.ethers.getContractAt(IERC20Artifact.abi, '0x6b175474e89094c44da98b954eedeac495271d0f'),
-          decimals: BigNumber.from(18),
-          symbol: 'DAI',
-          whaleAddress: '0x28C6c06298d514Db089934071355E5743bf21d60',
-        },
-        ETH: {
-          address: AddressZero,
-          contract: undefined,
-          decimals: BigNumber.from(18),
-          symbol: 'ETH',
-          whaleAddress: '0xf66852bC122fD40bFECc63CD48217E88bda12109',
-        },
-        USDC: {
-          address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-          contract: await hre.ethers.getContractAt(IERC20Artifact.abi, '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'),
-          decimals: BigNumber.from(6),
-          symbol: 'USDC',
-          whaleAddress: '0xae2d4617c862309a3d75a0ffb358c7a5009c673f',
-        },
-        */
         WBTC: {
           address: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
           contract: await hre.ethers.getContractAt(IERC20Artifact.abi, '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599'),
@@ -138,6 +133,10 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
             tokenInAmount: new BN('1'),
             tokenOut: 'WETH',
             tokenOutAmount: new BN('14048180065889770850'),
+          },
+          priceAggregatorDescriptor: {
+            address: '0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c',
+            isValue: true,
           },
           symbol: 'WBTC',
           whaleAddress: '0xe08A8b19e5722a201EaF20A6BC595eF655397bd5',
@@ -150,6 +149,10 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
             tokenInAmount: new BN('14048180065889770850'),
             tokenOut: 'WBTC',
             tokenOutAmount: new BN('1'),
+          },
+          priceAggregatorDescriptor: {
+            address: '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419',
+            isValue: true,
           },
           symbol: 'WETH',
           whaleAddress: '0x56178a0d5F301bAf6CF3e1Cd53d9863437345Bf9',
@@ -271,4 +274,15 @@ export async function getBalances(
 
 export function bnToBigNumber(value: BN, decimals = BigNumber.from('0')): BigNumber {
   return hre.ethers.utils.parseUnits(value.toString(), decimals);
+}
+
+export function priceFeedContractArgsFromNetworkDescriptor(
+  networkDescriptor: NetworkDescriptor,
+): [string, string[], string[], boolean[]] {
+  return [
+    networkDescriptor.contracts.balancer.BalancerV2Vault,
+    Object.values(networkDescriptor.tokens).map((tokenDescriptor) => tokenDescriptor.address),
+    Object.values(networkDescriptor.tokens).map((tokenDescriptor) => tokenDescriptor.priceAggregatorDescriptor.address),
+    Object.values(networkDescriptor.tokens).map((tokenDescriptor) => tokenDescriptor.priceAggregatorDescriptor.isValue),
+  ];
 }

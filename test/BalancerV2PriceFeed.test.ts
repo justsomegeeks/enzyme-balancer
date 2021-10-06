@@ -1,52 +1,62 @@
-// import { IntegrationManager } from '@enzymefinance/protocol';
+import type { BaseProvider } from '@ethersproject/providers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import hre from 'hardhat';
-// import { fetchSubgraphPools } from '../tasks/bal_poolCaching';
+
+import type { NetworkDescriptor } from '../utils/env-helper';
+import { getNetworkDescriptor, priceFeedContractArgsFromNetworkDescriptor } from '../utils/env-helper';
 
 describe('BalancerV2PriceFeed', function () {
-  const addresses = {
-    BalancerV2Vault: '0xBA12222222228d8Ba445958a75a0704d566BF2C8',
-    EnzymeCouncil: '0xb270fe91e8e4b80452fbf1b4704208792a350f53',
-    IntegrationManager: '0x965ca477106476B4600562a2eBe13536581883A6',
-  };
-  const WETH_BTCPoolId = '0xa6f548df93de924d73be7d25dc02554c6bd66db500020000000000000000000e';
-  const WETH_BTCPoolAddress = '0xa6f548df93de924d73be7d25dc02554c6bd66db5';
-
   let enzymeCouncil: SignerWithAddress;
   let balancerV2PriceFeed: any;
-  // let integrationManager: IntegrationManager;
+
+  let provider: BaseProvider;
+  let networkDescriptor: NetworkDescriptor;
+  let balancerV2PriceFeedArgs: [string, string[], string[], boolean[]];
 
   before(async () => {
-    enzymeCouncil = await hre.ethers.getSigner(addresses.EnzymeCouncil);
+    provider = hre.ethers.getDefaultProvider();
+
+    networkDescriptor = await getNetworkDescriptor(provider);
+    balancerV2PriceFeedArgs = priceFeedContractArgsFromNetworkDescriptor(networkDescriptor);
+
+    const balancerV2PriceFeedFactory = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
+
+    balancerV2PriceFeed = await balancerV2PriceFeedFactory.deploy(...balancerV2PriceFeedArgs);
+    await balancerV2PriceFeed.deployed();
+
+    enzymeCouncil = await hre.ethers.getSigner(networkDescriptor.contracts.enzyme.EnzymeCouncil);
     await hre.network.provider.send('hardhat_impersonateAccount', [enzymeCouncil.address]);
-
-    const BalancerV2PriceFeed = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
-    balancerV2PriceFeed = await BalancerV2PriceFeed.deploy(addresses.BalancerV2Vault);
-
-    // integrationManager = new IntegrationManager(addresses.IntegrationManager, enzymeCouncil);
-    // await integrationManager.registerAdapters([balancerV2PriceFeed.address]);
   });
 
   it('deploys correctly', async function () {
-    expect(await balancerV2PriceFeed.getBalancerV2Vault()).to.equal(addresses.BalancerV2Vault);
+    expect(await balancerV2PriceFeed.getBalancerV2Vault()).to.equal(
+      networkDescriptor.contracts.balancer.BalancerV2Vault,
+    );
   });
 
   it('should return accurate total supply', async () => {
-    const supply = await balancerV2PriceFeed.getPoolTotalSupply(WETH_BTCPoolAddress);
+    const supply = await balancerV2PriceFeed.getPoolTotalSupply(
+      networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
+    );
+
     const graphSupply = await hre.run('bal_getTotalSupply');
     expect(graphSupply === supply);
   });
 
   it('should return total underlying tokens and their values', async () => {
-    const [tokens] = await balancerV2PriceFeed.callStatic.calcUnderlyingValues(WETH_BTCPoolId);
+    const [tokens] = await balancerV2PriceFeed.callStatic.calcUnderlyingValues(
+      networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolId,
+    );
     const graphTokens = await hre.run('bal_getPool');
     //const graphSupply = await hre.run('bal_getTotalSupply');
     expect(tokens.filter((el: number, i: number) => el === graphTokens[0].tokensList[i]).length === 2);
   });
 
   it('should return total value of supply in pool and total BPTValue', async () => {
-    const [totalSupply, BPTValue] = await balancerV2PriceFeed.callStatic.calcBPTValue(WETH_BTCPoolId);
+    const [totalSupply, BPTValue] = await balancerV2PriceFeed.callStatic.calcBPTValue(
+      networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolId,
+    );
     //const graphSupply = await hre.run('bal_getTotalSupply');    // BPTValue);
     expect(BPTValue, totalSupply);
   });

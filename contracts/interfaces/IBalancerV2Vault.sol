@@ -16,6 +16,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @dev Provides a subset of the functionality copied from and provided by Balancer
 /// @dev Full documentation of structs and functions can be found in Balancer's code
 interface IBalancerV2Vault {
+
     function joinPool(
         bytes32 poolId,
         address sender,
@@ -120,5 +121,22 @@ interface IBalancerV2Vault {
             IERC20[] memory tokens,
             uint256[] memory balances,
             uint256 lastChangeBlock
+        );
+    enum PoolSpecialization {
+        GENERAL,
+        MINIMAL_SWAP_INFO,
+        TWO_TOKEN
+    }
+
+    function getPool(bytes32 poolId) external view returns (address, PoolSpecialization);
+
+     function getPoolTokenInfo(bytes32 poolId, IERC20 token)
+        external
+        view        
+        returns (
+            uint256 cash,
+            uint256 managed,
+            uint256 lastChangeBlock,
+            address assetManager
         );
 }

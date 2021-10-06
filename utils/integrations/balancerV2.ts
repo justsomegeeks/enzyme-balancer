@@ -8,6 +8,7 @@
   The code here is heavily inspired by: https://github.com/balancer-labs/balancer-sor/blob/master/test/testScripts/swapExample.ts
 */
 
+import type { JoinPoolRequest } from '@balancer-labs/balancer-js';
 import type { SwapInfo, SwapV2 } from '@balancer-labs/sor';
 import { scale, SOR, SwapTypes } from '@balancer-labs/sor';
 import { encodeArgs } from '@enzymefinance/protocol';
@@ -63,6 +64,19 @@ export function balancerV2TakeOrderArgs({
     ['uint8', swapV2TupleArray, 'address[]', 'uint256', 'int256[]', 'uint256'],
     [swapType, swaps, tokenAddresses, _tokenOutAmount, limits, deadline],
   );
+}
+
+const lendV2JoinPoolRequest = utils.ParamType.fromString(
+  'tuple(address[] assets, uint256[] maxAmountsIn, bytes userData, bool fromInternalBalance)',
+);
+
+export function balancerV2LendArgs({ poolId, recipient, request }: BalancerV2Lend) {
+  return encodeArgs(['bytes32', 'address', lendV2JoinPoolRequest], [poolId, recipient, request]);
+}
+export interface BalancerV2Lend {
+  poolId: string;
+  recipient: string;
+  request: JoinPoolRequest;
 }
 
 export async function getSwap(
