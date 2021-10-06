@@ -87,6 +87,7 @@ contract BalancerV2PriceFeed {
 
     function getPoolInfoFromPool(bytes32 _poolId)
         public
+        view
         returns (
             IERC20[] memory tokens,
             uint256[] memory balances,
@@ -124,7 +125,7 @@ contract BalancerV2PriceFeed {
         return (underlyingTokens_, underlyingValues_);
     }
 
-    function getPoolTotalSupply(address _poolAddress) public returns (uint256 totalSupply) {
+    function getPoolTotalSupply(address _poolAddress) public view returns (uint256 totalSupply) {
         IBalancerV2Pool pool = IBalancerV2Pool(_poolAddress);
         totalSupply = pool.totalSupply();
     }
@@ -140,7 +141,7 @@ contract BalancerV2PriceFeed {
         BPTValue = totalTokenValue / totalSupply;
     }
 
-    function getAddress(bytes32 data) public returns (address) {
+    function getAddress(bytes32 data) public pure returns (address) {
         return address(bytes20(data));
     }
 }

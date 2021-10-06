@@ -75,5 +75,7 @@
   "eslintConfig": {
     "extends": "@enzymefinance/eslint-config"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@balancer-labs/v2-solidity-utils": "^2.0.0"
+  }
 }

@@ -11,7 +11,8 @@ import "@enzymefinance/contracts/release/extensions/integration-manager/integrat
 import "hardhat/console.sol";
 import "./BalancerV2ActionsMixin.sol";
 import "./interfaces/IBalancerV2Vault.sol";
-
+import "./BalancerV2PriceFeed.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @title BalancerV2Adapter Contract
 /// @author JustSomeGeeks Hackathon Team <https://github.com/justsomegeeks>
 /// @notice Adapter for interacting with Balancer (v2)
@@ -19,13 +20,15 @@ import "./interfaces/IBalancerV2Vault.sol";
 contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
     using SafeMath for uint256;
     address private immutable BALANCER_V2_VAULT;
+    address private immutable BALANCER_V2_PRICE_FEED;
 
-    constructor(address _integrationManager, address _balancerV2Vault)
+    constructor(address _integrationManager, address _balancerV2Vault, address _balancerV2PriceFeed)
         public
         AdapterBase2(_integrationManager)
         BalancerV2ActionsMixin(_balancerV2Vault)
     {
         BALANCER_V2_VAULT = _balancerV2Vault;
+        BALANCER_V2_PRICE_FEED = _balancerV2PriceFeed;
     }
 
     // EXTERNAL FUNCTIONS
@@ -74,7 +77,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
     function parseAssetsForMethod(bytes4 _selector, bytes calldata _encodedCallArgs)
         external
         view
-        override
+        override  
         returns (
             IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
             address[] memory spendAssets_,
@@ -90,9 +93,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         }
         revert("parseAssetsForMethod: _selector invalid");
     }
-    function __parseAssetsForLend(bytes calldata _encodedCallArgs)
-        private
-        view
+    function __parseAssetsForLend(bytes calldata _encodedCallArgs) private view
         returns (
             IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
             address[] memory spendAssets_,
@@ -111,25 +112,22 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         uint256 assetsLength = request.assets.length;
 
         spendAssets_ = new address[](assetsLength);
-        for (uint i = 0; i < assetsLength; i++){
-         spendAssets_[i] = request.assets[i];
-        }
-
         spendAssetAmounts_ = new uint256[](assetsLength);
+        minIncomingAssetAmounts_ = new uint256[](1);
+        uint totalBPT = BalancerV2PriceFeed(BALANCER_V2_PRICE_FEED).getPoolTotalSupply(address(bytes20(poolId)));
+       
         for (uint i = 0; i < assetsLength; i++){
-         spendAssetAmounts_[i] = request.maxAmountsIn[i];
+            spendAssetAmounts_[i] = request.maxAmountsIn[i];
+            spendAssets_[i] = request.assets[i];
+            (uint256 totalToken,,,) = IBalancerV2Vault(BALANCER_V2_VAULT).getPoolTokenInfo(poolId,IERC20(spendAssets_[i]));
+            uint256 expectedBPT = totalBPT/totalToken * request.maxAmountsIn[i];        
+            minIncomingAssetAmounts_[i] = expectedBPT;
         }
-
-
 
         (address _bpt, ) = IBalancerV2Vault(BALANCER_V2_VAULT).getPool(poolId);
         incomingAssets_ = new address[](1);
         incomingAssets_[0] = _bpt;
-
-        // TODO: expectedBPT = totalBPT/totalDAI * amountInDAI
-        uint expectedBPT = 0;
-        minIncomingAssetAmounts_ = new uint256[](1);//minimumBPT = slippageFactor * expectedBPT
-        minIncomingAssetAmounts_[0] = expectedBPT;
+        
 
         return (
             IIntegrationManager.SpendAssetsHandleType.Transfer,
