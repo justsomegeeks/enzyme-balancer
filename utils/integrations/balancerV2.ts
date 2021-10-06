@@ -11,7 +11,7 @@
 import type { JoinPoolRequest } from '@balancer-labs/balancer-js';
 import type { SwapInfo, SwapV2 } from '@balancer-labs/sor';
 import { scale, SOR, SwapTypes } from '@balancer-labs/sor';
-import { encodeArgs } from '@enzymefinance/protocol';
+import { encodeArgs, redeemFragment } from '@enzymefinance/protocol';
 import type { BaseProvider } from '@ethersproject/providers';
 import { BigNumber as BN } from 'bignumber.js';
 import { BigNumber, utils, Bytes } from 'ethers';
@@ -160,11 +160,15 @@ export function calculateLimits(swapType: SwapTypes, swapInfo: SwapInfo): string
   return limits;
 }
 
-export function calculateMinTokensOut(exitInfo: poolExit): BigNumber[] {
+export function calcMinTokensOut(exitInfo: poolExit): BigNumber[] {
   const minTokensOut: BigNumber[] = [];
   //userPercentage = userBPTTokens / pool.totalSupply();
   //minTokensOut = poolTokenAmounts.map(el=> el*userPercentage);
   return minTokensOut;
+}
+
+export async function balancerV2Redeem(poolId: Address) {
+  //TODO:  calcMinTokensOut, encode call args, make call.
 }
 //
 // hand rolled version of:
