@@ -16,7 +16,7 @@ import { expect } from 'chai';
 import type { ContractFactory } from 'ethers';
 import hre from 'hardhat';
 
-import type { BalancerV2PriceFeed } from '../typechain';
+import type { BalancerV2Adapter, BalancerV2PriceFeed } from '../typechain';
 import type { NetworkDescriptor, TokenDescriptor } from '../utils/env-helper';
 import {
   bnToBigNumber,
@@ -65,8 +65,6 @@ describe('BalancerV2Adapter', function () {
     balancerV2PriceFeed = (await balancerV2PriceFeedFactory.deploy(...balancerV2PriceFeedArgs)) as BalancerV2PriceFeed;
     await balancerV2PriceFeed.deployed();
 
-    console.log(`balancerV2PriceFeed.address = ${balancerV2PriceFeed.address}`);
-
     balancerV2AdapterFactory = await hre.ethers.getContractFactory('BalancerV2Adapter');
   });
 
@@ -105,7 +103,7 @@ describe('BalancerV2Adapter', function () {
 
     const deadline = hre.ethers.constants.MaxUint256;
 
-    let balancerV2Adapter: any;
+    let balancerV2Adapter: BalancerV2Adapter;
     let swapInfo: SwapInfo;
     let limits: string[];
     let args: string;
@@ -126,7 +124,7 @@ describe('BalancerV2Adapter', function () {
         networkDescriptor.contracts.enzyme.IntegrationManager,
         networkDescriptor.contracts.balancer.BalancerV2Vault,
         balancerV2PriceFeed.address,
-      )) as any;
+      )) as BalancerV2Adapter;
 
       await balancerV2Adapter.deployed();
 
