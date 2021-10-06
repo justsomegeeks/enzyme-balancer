@@ -37,8 +37,8 @@ import { balancerV2Lend, balancerV2TakeOrder } from '../utils/integrations/testu
 
 describe('BalancerV2Adapter', function () {
   let provider: BaseProvider;
-
   let networkDescriptor: NetworkDescriptor;
+
   let enzymeCouncil: SignerWithAddress;
   let integrationManager: IntegrationManager;
 
