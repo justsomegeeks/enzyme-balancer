@@ -397,7 +397,7 @@ describe('BalancerV2Adapter', function () {
 
       await integrationManager.registerAdapters([balancerV2Adapter.address]);
       //await  integrationManager.addAuthUserForFund(balancerV2Adapter, enzymeFundOwner);
-      poolId = '0xa660ba113f9aabaeb4bcd28a4a1705f4997d5432000200000000000000000022';
+      poolId = '0x01abc00e86c7e258823b9a055fd62ca6cf61a16300010000000000000000003b';
       recipient = enzymeCouncil.address;
 
       const tokens = networkDescriptor.tokens;
