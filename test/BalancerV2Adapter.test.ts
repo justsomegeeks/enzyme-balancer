@@ -191,10 +191,10 @@ describe('BalancerV2Adapter', function () {
       const initUserData = hre.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256[]'], [0, initialBalances]);
 
       const request: JoinPoolRequest = {
-        assets: [tokens.WBTC.address, tokens.WETH.address],
+        assets: [tokens.WETH.address],
         fromInternalBalance: false,
         //TODO use the correct tokens for the pool being used
-        maxAmountsIn: [0, 1],
+        maxAmountsIn: [1],
         userData: initUserData,
       };
 
@@ -405,10 +405,10 @@ describe('BalancerV2Adapter', function () {
       const initUserData = hre.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256[]'], [0, initialBalances]);
 
       request = {
-        assets: [tokens.WBTC.address, tokens.WETH.address],
+        assets: [tokens.WETH.address],
         fromInternalBalance: false,
         //TODO use the correct tokens for the pool being used
-        maxAmountsIn: [0, 1],
+        maxAmountsIn: [1],
         userData: initUserData,
       };
 

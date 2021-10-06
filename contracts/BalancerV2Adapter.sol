@@ -125,7 +125,10 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         for (uint256 i = 0; i < assetsLength; i++) {
             spendAssetAmounts_[i] = request.maxAmountsIn[i];
             spendAssets_[i] = request.assets[i];
-            (uint256 totalToken,,,) = IBalancerV2Vault(BALANCER_V2_VAULT).getPoolTokenInfo(poolId,IERC20(spendAssets_[i]));
+            console.log('before',spendAssets_[i]);
+            console.logBytes32(poolId);
+            (uint256 totalToken,,,) = IBalancerV2Vault(BALANCER_V2_VAULT).getPoolTokenInfo(poolId, IERC20(spendAssets_[i]));
+            console.log('after');
             uint256 expectedBPT = totalBPT/totalToken * request.maxAmountsIn[i];
             minIncomingAssetAmounts_[i] = expectedBPT;
         }
