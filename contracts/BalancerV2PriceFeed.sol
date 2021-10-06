@@ -288,19 +288,40 @@ contract BalancerV2PriceFeed is
         return (tokens, balances, lastChangeBlock);
     }
 
-    /// @notice Gets the underlyings for a given pool token
-    /// @param _poolToken The pool token for which to get its underlyings
-    /// @return token0_ The Balancer V2 token0 value
-    /// @return token1_ The Balancer V2 token1 value
-    function getPoolTokenUnderlyings(address _poolToken)
+    function getBalancerV2Vault() public view returns (address) {
+        return address(vault);
+    }
+
+    function getTokensFromPool(bytes32 _poolId) public view returns (IERC20[] memory tokens) {
+        (tokens, , ) = vault.getPoolTokens(_poolId);
+        return tokens;
+    }
+
+    function calcPoolValues(bytes32 _poolId) public returns (uint256[] memory underlyingValues_) {
+        (IERC20[] memory tokens, uint256[] memory balances, ) = getPoolInfoFromPool(_poolId);
+        uint256[] memory prices = getAllPrices(tokens);
+        underlyingValues_ = new uint256[](tokens.length);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            underlyingValues_[i] = balances[i] * prices[i];
+        }
+        return (underlyingValues_);
+    }
+
+    //_derivative is the BPT token address, _derivativeAmount is the number of bpts
+    function calcUnderlyingValues(address _derivative, uint256 _derivativeAmount)
         external
-        view
-        returns (address token0_, address token1_)
+        returns (address[] memory underlyings_, uint256[] memory underlyingAmounts_)
     {
-        return (
-            poolTokenToPoolDescriptor[_poolToken].poolTokenDescriptor.token0,
-            poolTokenToPoolDescriptor[_poolToken].poolTokenDescriptor.token1
-        );
+        IBalancerV2Pool poolContract = IBalancerV2Pool(_derivative);
+        bytes32 poolId = poolContract.getPoolId();
+        uint256 totalBPT = poolContract.totalSupply();
+        uint256 BPTPercentage = _derivativeAmount / totalBPT;
+        (IERC20[] memory tokens, uint256[] memory balances, ) = getPoolInfoFromPool(poolId);
+
+        for (uint256 i = 0; i < tokens.length; ) {
+            underlyingAmounts_[i] = balances[i] * BPTPercentage;
+            underlyings_[i] = address(tokens[i]);
+        }
     }
 
     /// @notice Gets the `PRIMITIVE_PRICE_FEED` variable value
@@ -313,6 +334,17 @@ contract BalancerV2PriceFeed is
     /// @return valueInterpreter_ The `VALUE_INTERPRETER` variable value
     function getValueInterpreter() external view returns (address valueInterpreter_) {
         return VALUE_INTERPRETER;
+    }
+
+    function calcBPTValue(bytes32 _poolId) public returns (uint256 totalSupply, uint256 BPTValue) {
+        address _poolAddress = getAddress(_poolId);
+        totalSupply = getPoolTotalSupply(_poolAddress);
+        uint256 totalTokenValue;
+        uint256[] memory underlyingValues_ = calcPoolValues(_poolId);
+        for (uint256 i = 0; i < underlyingValues_.length; i++) {
+            totalTokenValue += underlyingValues_[i];
+        }
+        BPTValue = totalTokenValue / totalSupply;
     }
 
     function getPoolTotalSupply(address _poolAddress) public view returns (uint256) {
