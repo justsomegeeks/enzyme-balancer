@@ -16,7 +16,7 @@ import { expect } from 'chai';
 import type { ContractFactory } from 'ethers';
 import hre from 'hardhat';
 
-import type { BalancerV2Adapter, BalancerV2PriceFeed } from '../typechain';
+// import type { BalancerV2Adapter, BalancerV2PriceFeed } from '../typechain';
 import type { NetworkDescriptor, TokenDescriptor } from '../utils/env-helper';
 import {
   bnToBigNumber,
@@ -43,7 +43,7 @@ describe('BalancerV2Adapter', function () {
   let integrationManager: IntegrationManager;
 
   let balancerV2PriceFeedFactory: ContractFactory;
-  let balancerV2PriceFeed: BalancerV2PriceFeed;
+  let balancerV2PriceFeed: any;
   let balancerV2PriceFeedArgs: [string, string[], string[], boolean[]];
 
   let balancerV2AdapterFactory: ContractFactory;
@@ -66,9 +66,7 @@ describe('BalancerV2Adapter', function () {
 
   describe('constructor', function () {
     it('deploys correctly', async function () {
-      balancerV2PriceFeed = (await balancerV2PriceFeedFactory.deploy(
-        ...balancerV2PriceFeedArgs,
-      )) as BalancerV2PriceFeed;
+      balancerV2PriceFeed = (await balancerV2PriceFeedFactory.deploy(...balancerV2PriceFeedArgs)) as any;
       await balancerV2PriceFeed.deployed();
 
       const balancerV2Adapter = await balancerV2AdapterFactory.deploy(
@@ -101,7 +99,7 @@ describe('BalancerV2Adapter', function () {
 
     const deadline = hre.ethers.constants.MaxUint256;
 
-    let balancerV2Adapter: BalancerV2Adapter;
+    let balancerV2Adapter: any;
     let swapInfo: SwapInfo;
     let limits: string[];
     let args: string;
@@ -124,7 +122,7 @@ describe('BalancerV2Adapter', function () {
         networkDescriptor.contracts.enzyme.IntegrationManager,
         networkDescriptor.contracts.balancer.BalancerV2Vault,
         balancerV2PriceFeed.address,
-      )) as BalancerV2Adapter;
+      )) as any;
 
       await balancerV2Adapter.deployed();
 
@@ -227,7 +225,7 @@ describe('BalancerV2Adapter', function () {
 
     let enzymeComptroller: ComptrollerLib;
 
-    let balancerV2Adapter: BalancerV2Adapter;
+    let balancerV2Adapter: any;
     let swapInfo: SwapInfo;
     let limits: string[];
     let args: string;
@@ -258,7 +256,7 @@ describe('BalancerV2Adapter', function () {
         networkDescriptor.contracts.enzyme.IntegrationManager,
         networkDescriptor.contracts.balancer.BalancerV2Vault,
         balancerV2PriceFeed.address,
-      )) as BalancerV2Adapter;
+      )) as any;
 
       await balancerV2Adapter.deployed();
 
@@ -364,7 +362,7 @@ describe('BalancerV2Adapter', function () {
   });
 
   describe('lend', function () {
-    let balancerV2Adapter: BalancerV2Adapter;
+    let balancerV2Adapter: any;
     let lendArgs: any;
     let enzymeFundAddress: string;
     let enzymeFundOwner: SignerWithAddress;
@@ -391,7 +389,7 @@ describe('BalancerV2Adapter', function () {
         networkDescriptor.contracts.enzyme.IntegrationManager,
         networkDescriptor.contracts.balancer.BalancerV2Vault,
         balancerV2PriceFeed.address,
-      )) as BalancerV2Adapter;
+      )) as any;
 
       await balancerV2Adapter.deployed();
 
@@ -435,7 +433,12 @@ describe('BalancerV2Adapter', function () {
     xit('works as expected when called by a fund', async function () {
       expect(lendArgs).to.not.be.undefined;
 
-      const receipt = await balancerV2Lend({
+      // const preTradeBalances = await getBalances(
+      //   enzymeFundAddress,
+      //   networkDescriptor.tokens.WBTC.address,
+      //   networkDescriptor.tokens.WETH.address,
+      // );
+      const lendTxnReceipt = await balancerV2Lend({
         balancerV2Adapter: balancerV2Adapter.address,
         comptrollerProxy,
         enzymeFundOwner,
@@ -444,8 +447,18 @@ describe('BalancerV2Adapter', function () {
         recipient,
         request,
       });
-      console.log('getting,', receipt);
-      expect(receipt).to.not.be.undefined;
+
+      // Trade on BalancerV2
+
+      // const postTradeBalances = await getBalances(enzymeFundAddress, tokenIn, tokenOut);
+
+      // expect(preTradeBalances.tokenIn.balance.sub(tokenInAmountBigNumber).eq(postTradeBalances.tokenIn.balance)).to.be
+      //   .true;
+      // expect(postTradeBalances.tokenOut.balance.gte(preTradeBalances.tokenOut.balance.add(returnAmountBigNumber))).to.be
+      //   .true;
+
+      const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
+      assertEvent(lendTxnReceipt, CallOnIntegrationExecutedForFundEvent);
     });
   });
 

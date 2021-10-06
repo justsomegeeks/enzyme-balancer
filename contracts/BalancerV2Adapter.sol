@@ -13,6 +13,7 @@ import "./BalancerV2ActionsMixin.sol";
 import "./interfaces/IBalancerV2Vault.sol";
 import "./BalancerV2PriceFeed.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 /// @title BalancerV2Adapter Contract
 /// @author JustSomeGeeks Hackathon Team <https://github.com/justsomegeeks>
 /// @notice Adapter for interacting with Balancer (v2)
@@ -22,11 +23,11 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
     address private immutable BALANCER_V2_VAULT;
     address private immutable BALANCER_V2_PRICE_FEED;
 
-    constructor(address _integrationManager, address _balancerV2Vault, address _balancerV2PriceFeed)
-        public
-        AdapterBase2(_integrationManager)
-        BalancerV2ActionsMixin(_balancerV2Vault)
-    {
+    constructor(
+        address _integrationManager,
+        address _balancerV2Vault,
+        address _balancerV2PriceFeed
+    ) public AdapterBase2(_integrationManager) BalancerV2ActionsMixin(_balancerV2Vault) {
         BALANCER_V2_VAULT = _balancerV2Vault;
         BALANCER_V2_PRICE_FEED = _balancerV2PriceFeed;
     }
@@ -77,7 +78,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
     function parseAssetsForMethod(bytes4 _selector, bytes calldata _encodedCallArgs)
         external
         view
-        override  
+        override
         returns (
             IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
             address[] memory spendAssets_,
@@ -86,14 +87,17 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        if (_selector == TAKE_ORDER_SELECTOR){
-        return __parseAssetsForSwap(_encodedCallArgs);
-        }else if (_selector == LEND_SELECTOR){
+        if (_selector == TAKE_ORDER_SELECTOR) {
+            return __parseAssetsForSwap(_encodedCallArgs);
+        } else if (_selector == LEND_SELECTOR) {
             return __parseAssetsForLend(_encodedCallArgs);
         }
         revert("parseAssetsForMethod: _selector invalid");
     }
-    function __parseAssetsForLend(bytes calldata _encodedCallArgs) private view
+
+    function __parseAssetsForLend(bytes calldata _encodedCallArgs)
+        private
+        view
         returns (
             IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
             address[] memory spendAssets_,
@@ -102,32 +106,33 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        (
-            bytes32 poolId,
-            ,
-            IBalancerV2Vault.JoinPoolRequest memory request
-        ) = __decodeLendCallArgs(_encodedCallArgs);
+        (bytes32 poolId, , IBalancerV2Vault.JoinPoolRequest memory request) = __decodeLendCallArgs(
+            _encodedCallArgs
+        );
 
-        require(request.assets.length == request.maxAmountsIn.length, "length of request.assets and request.maxAmountsIn must be equal");
+        require(
+            request.assets.length == request.maxAmountsIn.length,
+            "length of request.assets and request.maxAmountsIn must be equal"
+        );
         uint256 assetsLength = request.assets.length;
 
         spendAssets_ = new address[](assetsLength);
         spendAssetAmounts_ = new uint256[](assetsLength);
         minIncomingAssetAmounts_ = new uint256[](1);
-        uint totalBPT = BalancerV2PriceFeed(BALANCER_V2_PRICE_FEED).getPoolTotalSupply(address(bytes20(poolId)));
-       
-        for (uint i = 0; i < assetsLength; i++){
+        // uint totalBPT = BalancerV2PriceFeed(BALANCER_V2_PRICE_FEED).getPoolTotalSupply(address(bytes20(poolId)));
+
+        for (uint256 i = 0; i < assetsLength; i++) {
             spendAssetAmounts_[i] = request.maxAmountsIn[i];
             spendAssets_[i] = request.assets[i];
-            (uint256 totalToken,,,) = IBalancerV2Vault(BALANCER_V2_VAULT).getPoolTokenInfo(poolId,IERC20(spendAssets_[i]));
-            uint256 expectedBPT = totalBPT/totalToken * request.maxAmountsIn[i];        
-            minIncomingAssetAmounts_[i] = expectedBPT;
+            // (uint256 totalToken,,,) = IBalancerV2Vault(BALANCER_V2_VAULT).getPoolTokenInfo(poolId,IERC20(spendAssets_[i]));
+            // uint256 expectedBPT = totalBPT/totalToken * request.maxAmountsIn[i];
+            // minIncomingAssetAmounts_[i] = expectedBPT;
         }
+        minIncomingAssetAmounts_[0] = 1000;
 
-        (address _bpt, ) = IBalancerV2Vault(BALANCER_V2_VAULT).getPool(poolId);
+        address poolAddress = address(bytes20(poolId));
         incomingAssets_ = new address[](1);
-        incomingAssets_[0] = _bpt;
-        
+        incomingAssets_[0] = poolAddress;
 
         return (
             IIntegrationManager.SpendAssetsHandleType.Transfer,
@@ -137,8 +142,6 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             minIncomingAssetAmounts_
         );
     }
-    
-    
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
     /// during swap() calls
