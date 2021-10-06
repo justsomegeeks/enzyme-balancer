@@ -167,7 +167,7 @@ export function calcMinTokensOut(exitInfo: poolExit): BigNumber[] {
   return minTokensOut;
 }
 
-export async function balancerV2Redeem(poolId: Address) {
+export async function balancerV2Redeem(poolId: Address, _sentBPT: Number) {
   //TODO:  calcMinTokensOut, encode call args, make call.
 }
 //
