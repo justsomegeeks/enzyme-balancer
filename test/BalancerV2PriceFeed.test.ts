@@ -4,11 +4,11 @@ import type { ContractFactory } from 'ethers';
 import hre from 'hardhat';
 
 import type { BalancerV2PriceFeed } from '../typechain';
-import type { NetworkDescriptor } from '../utils/env-helper';
+import type { NetworkDescriptor, PriceFeedDeployArgs } from '../utils/env-helper';
 import {
   getNetworkDescriptor,
   initializeEnvHelper,
-  priceFeedContractArgsFromNetworkDescriptor,
+  priceFeedDeployArgsFromNetworkDescriptor,
 } from '../utils/env-helper';
 
 describe('BalancerV2PriceFeed', function () {
@@ -19,7 +19,7 @@ describe('BalancerV2PriceFeed', function () {
 
   let balancerV2PriceFeedFactory: ContractFactory;
   let balancerV2PriceFeed: BalancerV2PriceFeed;
-  let balancerV2PriceFeedArgs: [string, string[], string[], boolean[]];
+  let balancerV2PriceFeedArgs: PriceFeedDeployArgs;
 
   before(async function () {
     initializeEnvHelper(hre);
@@ -27,7 +27,7 @@ describe('BalancerV2PriceFeed', function () {
     provider = hre.ethers.getDefaultProvider();
 
     networkDescriptor = await getNetworkDescriptor(provider);
-    balancerV2PriceFeedArgs = priceFeedContractArgsFromNetworkDescriptor(networkDescriptor);
+    balancerV2PriceFeedArgs = priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor);
 
     balancerV2PriceFeedFactory = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
 
@@ -43,7 +43,7 @@ describe('BalancerV2PriceFeed', function () {
 
       balancerV2PriceFeedFactory = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
 
-      balancerV2PriceFeedArgs = priceFeedContractArgsFromNetworkDescriptor(networkDescriptor);
+      balancerV2PriceFeedArgs = priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor);
       balancerV2PriceFeed = (await balancerV2PriceFeedFactory.deploy(
         ...balancerV2PriceFeedArgs,
       )) as BalancerV2PriceFeed;
@@ -81,7 +81,7 @@ describe('BalancerV2PriceFeed', function () {
       return;
     });
 
-    it('returns rate for non-18 decimals underlying assets', function () {
+    xit('returns rate for non-18 decimals underlying assets', function () {
       return;
     });
   });

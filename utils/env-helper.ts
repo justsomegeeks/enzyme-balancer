@@ -1,4 +1,5 @@
 import { bnum } from '@balancer-labs/sor';
+import { ChainlinkRateAsset } from '@enzymefinance/protocol';
 import { AddressZero } from '@ethersproject/constants';
 import type { Contract } from '@ethersproject/contracts';
 import type { BaseProvider } from '@ethersproject/providers';
@@ -8,27 +9,6 @@ import { BigNumber as BN } from 'bignumber.js';
 import { BigNumber } from 'ethers';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-/**
- * Network: Kovan
- * Aggregator: ETH/USD
- * Address: 0x9326BFA02ADD2366b30bacB125260Af641031331
- */
-//chainlink oracle addresses.
-// address ETH_USD = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-// address BTC_USD = 0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c;
-// address CRV_USD = 0xCd627aA160A6fA45Eb793D19Ef54f5062F20f33f;
-// address YFI_USD = 0xA027702dbb89fbd58938e4324ac03B58d812b0E1;
-// address UNI_ETH = 0xD6aA3D25116d8dA79Ea0246c4826EB951872e02e;
-// balancer smart contract addresses on mainnet.
-//     Vault: 0xBA12222222228d8Ba445958a75a0704d566BF2C8
-// Authorizer: 0xA331D84eC860Bf466b4CdCcFb4aC09a1B43F3aE6
-// WeightedPoolFactory: 0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9
-// WeightedPool2TokensFactory: 0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0
-// StablePoolFactory: 0xc66Ba2B6595D3613CCab350C886aCE23866EDe24
-// LiquidityBootstrappingPoolFactory: 0x751A0bC0e3f75b38e01Cf25bFCE7fF36DE1C87DE
-// MetastablePoolFactory: 0x67d27634E44793fE63c467035E31ea8635117cd4
-// InvestmentPoolFactory: 0x48767F9F868a4A7b86A90736632F6E44C2df7fa9
-
 const SUPPORTED_TOKENS = ['WBTC', 'WETH'] as const;
 export type SupportedTokens = typeof SUPPORTED_TOKENS[number];
 
@@ -36,6 +16,72 @@ const SUPPORTED_NETWORKS = ['mainnet'] as const;
 type SupportedNetworks = typeof SUPPORTED_NETWORKS[number];
 
 let hre: HardhatRuntimeEnvironment;
+
+//
+//
+// MAINNET config: https://github.com/enzymefinance/protocol/blob/current/deploy/scripts/config/Mainnet.ts
+// WETH is not included as it is auto-included in the chainlink price feed
+//
+// const primitives = {
+//   ...
+//   wbtc: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
+//   ...
+// }
+//
+// const weth = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
+//
+// const aggregators = {
+//   ...
+//   wbtc: ['0xdeb288f737066589598e9214e782fa5a8ed689e8', ChainlinkRateAsset.ETH],     <-- ChainLinkRateAsset
+//   ...
+// }
+//
+// ChainLinkRateAsset: https://github.com/enzymefinance/protocol/blob/987ed191ecd6e0ca9c4a89569754b3ea562c75cb/packages/protocol/src/types.ts
+//
+// ChainLinkPriceFeed: https://github.com/enzymefinance/protocol/blob/current/contracts/release/infrastructure/price-feeds/primitives/ChainlinkPriceFeed.sol
+//
+// derivatives: UniswapV2PoolPriceFeed.sol: https://github.com/enzymefinance/protocol/blob/987ed191ecd6e0ca9c4a89569754b3ea562c75cb/contracts/release/infrastructure/price-feeds/derivatives/feeds/UniswapV2PoolPriceFeed.sol
+//
+//
+// UniswapV2PoolTokenCalculator: https://github.com/enzymefinance/protocol/blob/987ed191ecd6e0ca9c4a89569754b3ea562c75cb/contracts/release/infrastructure/price-feeds/utils/UniswapV2PoolTokenValueCalculator.sol
+//
+//
+// https://github.com/enzymefinance/protocol/blob/current/deploy/utils/config.ts
+//
+// export interface DeploymentConfig {
+//   weth: string;
+//   primitives: Record<string, string>;
+//   chainlink: {
+//     ethusd: string;
+//     aggregators: Record<string, readonly [string, ChainlinkRateAsset]>;
+//   },
+//   ...
+//   idle: Record<string, string>;
+//   ...
+//   paraSwapV4: {
+//     augustusSwapper: string;
+//     tokenTransferProxy: string;
+//   };
+//   stakehound: {
+//     steth: string;
+//   };
+//   unsupportedAssets: Record<string, string>;
+//   uniswap: {
+//     factory: string;
+//     router: string;
+//     pools: Record<string, string>;
+//   };
+//   uniswapV3: {
+//     router: string;
+//   };
+// };
+//
+
+//
+//
+// KOVAN config: github.com/enzymefinance/protocol/blob/current/deploy/scripts/config/Kovan.ts
+//
+//
 
 // temporary hack to get around testing on pinned mainnet, while using 'live' mainnet chainlink feeds and
 // mainnet subgrah
@@ -47,7 +93,7 @@ interface ExpectedTrade {
 
 interface PriceAggregatorDescriptor {
   address: string;
-  isValue: boolean;
+  rateAsset?: ChainlinkRateAsset;
 }
 
 export interface TokenDescriptor {
@@ -68,7 +114,7 @@ type TokenDescriptors = {
     contract: Contract | undefined;
     decimals: BigNumber;
     mainnetPinnedBlockTradeCache?: ExpectedTrade;
-    priceAggregatorDescriptor: PriceAggregatorDescriptor;
+    priceAggregatorDescriptor?: PriceAggregatorDescriptor;
     symbol: key;
     whaleAddress: string;
   };
@@ -79,7 +125,7 @@ interface ContractDescriptor {
 }
 
 type ContractDescriptors = {
-  [key in 'balancer' | 'enzyme']: ContractDescriptor;
+  [key in 'balancer' | 'chainlink' | 'enzyme']: ContractDescriptor;
 };
 
 export interface NetworkDescriptor {
@@ -114,12 +160,22 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
           BalancerV2WBTCWETHPoolAddress: '0xA6F548DF93de924d73be7D25dC02554c6bD66dB5',
           BalancerV2WBTCWETHPoolId: '0xa6f548df93de924d73be7d25dc02554c6bd66db500020000000000000000000e',
         },
+        chainlink: {
+          ETHUSDAggregator: '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419',
+        },
         enzyme: {
+          AggregatedDerivativePriceFeed: '0x2e45f9b3fd5871ccaf4eb415dfccbdd126f57c4f',
+          DerivativePriceFeedAddress: '0x2e45f9b3fd5871ccaf4eb415dfccbdd126f57c4f',
           EnyzmeComptroller: '0xe0dcf68b0b2fd1097442f2134e57339404a00639',
           EnzymeCouncil: '0xb270fe91e8e4b80452fbf1b4704208792a350f53',
+          EnzymeDeployer: '0x7e6d3b1161df9c9c7527f68d651b297d2fdb820b', // Rhino Fund Deployer
           EnzymeVaultProxy: '0x24f3b37934D1AB26B7bda7F86781c90949aE3a79', // Rhino Fund
           FundOwner: '0x978cc856357946f980fba68db3b7f0d72e570da8', // Rhino Fund Manager
           IntegrationManager: '0x965ca477106476B4600562a2eBe13536581883A6',
+          PrimitivePriceFeedAddress: '0x1fad8faf11e027f8630f394599830dbeb97004ee',
+          // TODO valueInterpreter: https://github.com/enzymefinance/protocol/blob/current/packages/testutils/src/deployment.ts#L102
+          // import from @enzymefinance/protocol
+          ValueInterpreter: '0x10a5624840Ac07287f756777DF1DEC34d2C2d654',
         },
       },
       name: 'mainnet',
@@ -135,8 +191,8 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
             tokenOutAmount: new BN('14048180065889770850'),
           },
           priceAggregatorDescriptor: {
-            address: '0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c',
-            isValue: true,
+            address: '0xdeb288f737066589598e9214e782fa5a8ed689e8', // Chainlink BTC/ETH Price Feed
+            rateAsset: ChainlinkRateAsset.ETH,
           },
           symbol: 'WBTC',
           whaleAddress: '0xe08A8b19e5722a201EaF20A6BC595eF655397bd5',
@@ -150,10 +206,9 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
             tokenOut: 'WBTC',
             tokenOutAmount: new BN('1'),
           },
-          priceAggregatorDescriptor: {
-            address: '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419',
-            isValue: true,
-          },
+          // priceAggregatorDescriptor: {
+          //   address: '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419',
+          // },
           symbol: 'WETH',
           whaleAddress: '0x56178a0d5F301bAf6CF3e1Cd53d9863437345Bf9',
         },
@@ -276,13 +331,22 @@ export function bnToBigNumber(value: BN, decimals = BigNumber.from('0')): BigNum
   return hre.ethers.utils.parseUnits(value.toString(), decimals);
 }
 
-export function priceFeedContractArgsFromNetworkDescriptor(
-  networkDescriptor: NetworkDescriptor,
-): [string, string[], string[], boolean[]] {
+export type PriceFeedDeployArgs = [
+  string, // fund deployer address,
+  string, // derivative price feed address,
+  string, // primitive price feed address,
+  string, // value interpretor address,
+  string, // factory address   TODO what is factory, a factory of what?
+  [string, string], // token0 and token1 erc20 addresses of tokens in pool
+];
+
+export function priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor: NetworkDescriptor): PriceFeedDeployArgs {
   return [
-    networkDescriptor.contracts.balancer.BalancerV2Vault,
-    Object.values(networkDescriptor.tokens).map((tokenDescriptor) => tokenDescriptor.address),
-    Object.values(networkDescriptor.tokens).map((tokenDescriptor) => tokenDescriptor.priceAggregatorDescriptor.address),
-    Object.values(networkDescriptor.tokens).map((tokenDescriptor) => tokenDescriptor.priceAggregatorDescriptor.isValue),
+    networkDescriptor.contracts.enzyme.EnzymeDeployer,
+    networkDescriptor.contracts.enzyme.DerivativePriceFeedAddress,
+    networkDescriptor.contracts.enzyme.PrimitivePriceFeedAddress,
+    networkDescriptor.contracts.enzyme.ValueInterpreter,
+    '0',
+    [networkDescriptor.tokens.WBTC.address, networkDescriptor.tokens.WETH.address],
   ];
 }

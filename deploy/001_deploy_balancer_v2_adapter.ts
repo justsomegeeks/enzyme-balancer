@@ -4,7 +4,7 @@ import type { DeployFunction } from 'hardhat-deploy/types';
 import {
   getNetworkDescriptor,
   initializeEnvHelper,
-  priceFeedContractArgsFromNetworkDescriptor,
+  priceFeedDeployArgsFromNetworkDescriptor,
 } from '../utils/env-helper';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -20,7 +20,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const networkDescriptor = await getNetworkDescriptor(hre.ethers.getDefaultProvider());
 
   const balancerV2PriceFeed = await deploy('BalancerV2PriceFeed', {
-    args: priceFeedContractArgsFromNetworkDescriptor(networkDescriptor),
+    args: priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor),
     from: deployer,
     log: true,
   });
