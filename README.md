@@ -1,6 +1,6 @@
 [![CI](https://github.com/justsomegeeks/enzyme-balancer/actions/workflows/ci.yaml/badge.svg)](https://github.com/justsomegeeks/enzyme-balancer/actions/workflows/ci.yaml)
 
-# JustSomeGeeks Just Some Stuff
+<img src="https://justsomegeeks.github.io/justsomegeeks-logo-dark.png" width="600" height="137">
 
 ## Installation
 

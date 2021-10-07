@@ -56,6 +56,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             int256[] memory limits,
             uint256 deadline
         ) = __decodeTakeOrderCallArgs(_encodedCallArgs);
+
         IBalancerV2Vault.FundManagement memory funds = IBalancerV2Vault.FundManagement(
             address(this),
             false, // fromInternalBalance
@@ -119,14 +120,14 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         spendAssets_ = new address[](assetsLength);
         spendAssetAmounts_ = new uint256[](assetsLength);
         minIncomingAssetAmounts_ = new uint256[](1);
-        // uint totalBPT = BalancerV2PriceFeed(BALANCER_V2_PRICE_FEED).getPoolTotalSupply(address(bytes20(poolId)));
+        uint totalBPT = BalancerV2PriceFeed(BALANCER_V2_PRICE_FEED).getPoolTotalSupply(address(bytes20(poolId)));
 
         for (uint256 i = 0; i < assetsLength; i++) {
             spendAssetAmounts_[i] = request.maxAmountsIn[i];
             spendAssets_[i] = request.assets[i];
-            // (uint256 totalToken,,,) = IBalancerV2Vault(BALANCER_V2_VAULT).getPoolTokenInfo(poolId,IERC20(spendAssets_[i]));
-            // uint256 expectedBPT = totalBPT/totalToken * request.maxAmountsIn[i];
-            // minIncomingAssetAmounts_[i] = expectedBPT;
+            (uint256 totalToken,,,) = IBalancerV2Vault(BALANCER_V2_VAULT).getPoolTokenInfo(poolId, IERC20(spendAssets_[i]));
+            uint256 expectedBPT = totalBPT/totalToken * request.maxAmountsIn[i];
+            minIncomingAssetAmounts_[i] = expectedBPT;
         }
         minIncomingAssetAmounts_[0] = 1000;
 
@@ -241,5 +242,15 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         ) = __decodeLendCallArgs(_encodedCallArgs);
 
         __balancerV2Lend(poolId, msg.sender, recipient, request);
+    }
+
+    ///////////////////
+    // STATE GETTERS //
+    ///////////////////
+
+    /// @notice Gets the `BALANCER_V2_PRICE_FEED` variable
+    /// @return balancerPriceFeed_ The `BALANCER_V2_PRICE_FEED` variable value
+    function getBalancerPriceFeed() external view returns (address balancerPriceFeed_) {
+        return BALANCER_V2_PRICE_FEED;
     }
 }

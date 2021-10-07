@@ -17,7 +17,7 @@ import { expect } from 'chai';
 import type { ContractFactory } from 'ethers';
 import hre from 'hardhat';
 
-// import type { BalancerV2Adapter, BalancerV2PriceFeed } from '../typechain';
+import type { BalancerV2Adapter, BalancerV2PriceFeed } from '../typechain';
 import type { NetworkDescriptor, TokenDescriptor } from '../utils/env-helper';
 import {
   bnToBigNumber,
@@ -38,14 +38,14 @@ import { balancerV2Lend, balancerV2TakeOrder } from '../utils/integrations/testu
 
 describe('BalancerV2Adapter', function () {
   let provider: BaseProvider;
-
   let networkDescriptor: NetworkDescriptor;
+
   let enzymeCouncil: SignerWithAddress;
   let integrationManager: IntegrationManager;
   let aggregatedDerivativePriceFeed: AggregatedDerivativePriceFeed;
 
   let balancerV2PriceFeedFactory: ContractFactory;
-  let balancerV2PriceFeed: any;
+  let balancerV2PriceFeed: BalancerV2PriceFeed;
   let balancerV2PriceFeedArgs: [string, string[], string[], boolean[]];
 
   let balancerV2AdapterFactory: ContractFactory;
@@ -56,7 +56,6 @@ describe('BalancerV2Adapter', function () {
     provider = hre.ethers.getDefaultProvider();
 
     networkDescriptor = await getNetworkDescriptor(provider);
-    balancerV2PriceFeedArgs = priceFeedContractArgsFromNetworkDescriptor(networkDescriptor);
 
     enzymeCouncil = await hre.ethers.getSigner(networkDescriptor.contracts.enzyme.EnzymeCouncil);
     await hre.network.provider.send('hardhat_impersonateAccount', [enzymeCouncil.address]);
@@ -68,14 +67,16 @@ describe('BalancerV2Adapter', function () {
     );
 
     balancerV2PriceFeedFactory = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
+
+    balancerV2PriceFeedArgs = priceFeedContractArgsFromNetworkDescriptor(networkDescriptor);
+    balancerV2PriceFeed = (await balancerV2PriceFeedFactory.deploy(...balancerV2PriceFeedArgs)) as BalancerV2PriceFeed;
+    await balancerV2PriceFeed.deployed();
+
     balancerV2AdapterFactory = await hre.ethers.getContractFactory('BalancerV2Adapter');
   });
 
   describe('constructor', function () {
     it('deploys correctly', async function () {
-      balancerV2PriceFeed = (await balancerV2PriceFeedFactory.deploy(...balancerV2PriceFeedArgs)) as any;
-      await balancerV2PriceFeed.deployed();
-
       const balancerV2Adapter = await balancerV2AdapterFactory.deploy(
         networkDescriptor.contracts.enzyme.IntegrationManager,
         networkDescriptor.contracts.balancer.BalancerV2Vault,
@@ -89,10 +90,13 @@ describe('BalancerV2Adapter', function () {
         networkDescriptor.contracts.enzyme.IntegrationManager,
       );
 
-      // BalancerV2ActionsMixin
+      // BalancerV2ActionsMixin has BalancerV2Vault set correctly
       expect(await balancerV2Adapter.getBalancerV2Vault()).to.equal(
         networkDescriptor.contracts.balancer.BalancerV2Vault,
       );
+
+      // BalancerV2PriceFeed is set correctly
+      expect(await balancerV2Adapter.getBalancerPriceFeed()).to.equal(balancerV2PriceFeed.address);
 
       // Check that the adapter is registered on the integration manager.
       expect(await integrationManager.getRegisteredAdapters()).to.include(balancerV2Adapter.address);
@@ -106,15 +110,13 @@ describe('BalancerV2Adapter', function () {
 
     const deadline = hre.ethers.constants.MaxUint256;
 
-    let balancerV2Adapter: any;
+    let balancerV2Adapter: BalancerV2Adapter;
     let swapInfo: SwapInfo;
     let limits: string[];
     let args: string;
 
     let tokenIn: TokenDescriptor;
     let tokenOut: TokenDescriptor;
-
-    let balancerV2PriceFeed: any;
 
     before(async function () {
       tokenIn = networkDescriptor.tokens.WBTC;
@@ -129,7 +131,7 @@ describe('BalancerV2Adapter', function () {
         networkDescriptor.contracts.enzyme.IntegrationManager,
         networkDescriptor.contracts.balancer.BalancerV2Vault,
         balancerV2PriceFeed.address,
-      )) as any;
+      )) as BalancerV2Adapter;
 
       await balancerV2Adapter.deployed();
 
@@ -196,10 +198,9 @@ describe('BalancerV2Adapter', function () {
       const initUserData = hre.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256[]'], [0, initialBalances]);
 
       const request: JoinPoolRequest = {
-        assets: [tokens.WBTC.address, tokens.WETH.address],
+        assets: [tokens.WETH.address],
         fromInternalBalance: false,
-        //TODO use the correct tokens for the pool being used
-        maxAmountsIn: [0, 1],
+        maxAmountsIn: [1],
         userData: initUserData,
       };
 
@@ -213,6 +214,20 @@ describe('BalancerV2Adapter', function () {
 
       // TODO: verify return value of parseAssetsForMethod to be equal to what was sent
       expect(parsedLendArgs).to.have.length(5);
+
+      expect(parsedLendArgs[0]).to.equal(SpendAssetsHandleType.Transfer);
+
+      expect(parsedLendArgs[1]).to.have.length(1);
+      expect(parsedLendArgs[1][0].toLowerCase()).to.equal(networkDescriptor.tokens.WETH.address.toLowerCase());//token address in
+
+      expect(parsedLendArgs[2]).to.have.length(1);
+      expect(parsedLendArgs[2][0].eq(request.maxAmountsIn[0])).to.be.true;//tokens in amount
+
+      expect(parsedLendArgs[3]).to.have.length(1);//pooladdress
+      expect(parsedLendArgs[3][0].toLowerCase()).to.equal('0x01abc00e86c7e258823b9a055fd62ca6cf61a163');
+
+      expect(parsedLendArgs[4]).to.have.length(1);//incomming assets amount
+      expect(parsedLendArgs[4][0]).gt(0);
     });
 
     xit('generates expected output for redeeming', async function () {
@@ -402,7 +417,7 @@ describe('BalancerV2Adapter', function () {
 
       await integrationManager.registerAdapters([balancerV2Adapter.address]);
       //await  integrationManager.addAuthUserForFund(balancerV2Adapter, enzymeFundOwner);
-      poolId = '0xa660ba113f9aabaeb4bcd28a4a1705f4997d5432000200000000000000000022';
+      poolId = '0x01abc00e86c7e258823b9a055fd62ca6cf61a16300010000000000000000003b';
       recipient = enzymeCouncil.address;
 
       const tokens = networkDescriptor.tokens;
@@ -410,10 +425,9 @@ describe('BalancerV2Adapter', function () {
       const initUserData = hre.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256[]'], [0, initialBalances]);
 
       request = {
-        assets: [tokens.WBTC.address, tokens.WETH.address],
+        assets: [tokens.WETH.address],
         fromInternalBalance: false,
-        //TODO use the correct tokens for the pool being used
-        maxAmountsIn: [0, 1],
+        maxAmountsIn: [1],
         userData: initUserData,
       };
 
@@ -425,12 +439,6 @@ describe('BalancerV2Adapter', function () {
     });
 
     it('can only be called via the IntegrationManager', async function () {
-      const transferArgs = await assetTransferArgs({
-        adapter: balancerV2Adapter,
-        encodedCallArgs: lendArgs,
-        selector: lendSelector,
-      });
-      console.log(transferArgs);
 
       await expect(balancerV2Adapter.lend(enzymeFundAddress, lendSelector, lendArgs)).to.be.revertedWith(
         'Only the IntegrationManager can call this function',
