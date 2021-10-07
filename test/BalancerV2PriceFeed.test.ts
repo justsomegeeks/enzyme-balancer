@@ -54,26 +54,13 @@ describe('BalancerV2PriceFeed', function () {
         it('deploys correctly', async function () {
           await integrationManager.registerAdapters([balancerV2Adapter.address]);
 
-          // AdapterBase2
-          expect(await balancerV2Adapter.getIntegrationManager()).to.equal(
-            networkDescriptor.contracts.enzyme.IntegrationManager,
+          expect(await balancerV2PriceFeed.getFactory()).to.equal(
+            networkDescriptor.contracts.enzyme.AggregatedDerivativePriceFeed,
           );
-
-          // BalancerV2ActionsMixin has BalancerV2Vault set correctly
-          expect(await balancerV2Adapter.getBalancerV2Vault()).to.equal(
-            networkDescriptor.contracts.balancer.BalancerV2Vault,
-          );
-
-          // BalancerV2PriceFeed is set correctly
-          expect(await balancerV2Adapter.getBalancerPriceFeed()).to.equal(balancerV2PriceFeed.address);
-
-          // Check that the adapter is registered on the integration manager.
-          expect(await integrationManager.getRegisteredAdapters()).to.include(balancerV2Adapter.address);
+          expect(await balancerV2PriceFeed.getDerivativePriceFeed()).toMatchAddress(aggregatedDerivativePriceFeed);
+          expect(await balancerV2PriceFeed.getPrimitivePriceFeed()).toMatchAddress(chainlinkPriceFeed);
+          expect(await balancerV2PriceFeed.getValueInterpreter()).toMatchAddress(valueInterpreter);
         });
-        expect(await balancerV2PriceFeed.getFactory()).toMatchAddress(factory);
-        expect(await balancerV2PriceFeed.getDerivativePriceFeed()).toMatchAddress(aggregatedDerivativePriceFeed);
-        expect(await balancerV2PriceFeed.getPrimitivePriceFeed()).toMatchAddress(chainlinkPriceFeed);
-        expect(await balancerV2PriceFeed.getValueInterpreter()).toMatchAddress(valueInterpreter);
 
         const poolContract = new IBalancerV2Pool(
           networkDescriptor.mainnet.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
