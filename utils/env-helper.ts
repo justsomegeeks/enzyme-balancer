@@ -102,8 +102,8 @@ export interface TokenDescriptor {
   decimals: BigNumber;
   // temporary hack to get around testing on pinned mainnet, while using 'live' mainnet chainlink feeds and
   // mainnet subgrah
-  mainnetPinnedBlockTradeCache?: ExpectedTrade;
-  priceAggregatorDescriptor: PriceAggregatorDescriptor;
+  mainnetPinnedBlockTradeCache?: ExpectedTrade | undefined;
+  priceAggregatorDescriptor?: PriceAggregatorDescriptor | undefined;
   symbol: string;
   whaleAddress: string;
 }
@@ -113,8 +113,8 @@ type TokenDescriptors = {
     address: string;
     contract: Contract | undefined;
     decimals: BigNumber;
-    mainnetPinnedBlockTradeCache?: ExpectedTrade;
-    priceAggregatorDescriptor?: PriceAggregatorDescriptor;
+    mainnetPinnedBlockTradeCache?: ExpectedTrade | undefined;
+    priceAggregatorDescriptor?: PriceAggregatorDescriptor | undefined;
     symbol: key;
     whaleAddress: string;
   };
@@ -165,13 +165,16 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
         },
         enzyme: {
           AggregatedDerivativePriceFeed: '0x2e45f9b3fd5871ccaf4eb415dfccbdd126f57c4f',
+          DerivativePriceFeedAddress: '0x2e45f9b3fd5871ccaf4eb415dfccbdd126f57c4f',
           EnyzmeComptroller: '0xe0dcf68b0b2fd1097442f2134e57339404a00639',
           EnzymeCouncil: '0xb270fe91e8e4b80452fbf1b4704208792a350f53',
-          EnzymeDeployer: '0x7e6d3b1161df9c9c7527f68d651b297d2fdb820b', // Rhino Fund Deployer
-          EnzymeVaultProxy: '0x24f3b37934D1AB26B7bda7F86781c90949aE3a79', // Rhino Fund
-          FundOwner: '0x978cc856357946f980fba68db3b7f0d72e570da8', // Rhino Fund Manager
+          EnzymeDeployer: '0x7e6d3b1161df9c9c7527f68d651b297d2fdb820b',
+          // Rhino Fund Deployer
+          EnzymeVaultProxy: '0x24f3b37934D1AB26B7bda7F86781c90949aE3a79',
+          // Rhino Fund
+          FundOwner: '0x978cc856357946f980fba68db3b7f0d72e570da8',
+          // Rhino Fund Manager
           IntegrationManager: '0x965ca477106476B4600562a2eBe13536581883A6',
-          DerivativePriceFeedAddress: '0x2e45f9b3fd5871ccaf4eb415dfccbdd126f57c4f',
           PrimitivePriceFeedAddress: '0x1fad8faf11e027f8630f394599830dbeb97004ee',
           // TODO valueInterpreter: https://github.com/enzymefinance/protocol/blob/current/packages/testutils/src/deployment.ts#L102
           // import from @enzymefinance/protocol
@@ -206,9 +209,10 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
             tokenOut: 'WBTC',
             tokenOutAmount: new BN('1'),
           },
-          // priceAggregatorDescriptor: {
-          //   address: '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419',
-          // },
+          priceAggregatorDescriptor: {
+            address: '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419',
+            rateAsset: ChainlinkRateAsset.ETH,
+          },
           symbol: 'WETH',
           whaleAddress: '0x56178a0d5F301bAf6CF3e1Cd53d9863437345Bf9',
         },

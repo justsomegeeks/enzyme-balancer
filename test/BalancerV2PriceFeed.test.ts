@@ -1,8 +1,9 @@
 import type { BaseProvider } from '@ethersproject/providers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { expect } from 'chai';
 import type { ContractFactory } from 'ethers';
 import hre from 'hardhat';
-import { expect } from 'chai';
+
 import type { BalancerV2PriceFeed } from '../typechain';
 import type { NetworkDescriptor, PriceFeedDeployArgs } from '../utils/env-helper';
 import {
@@ -10,7 +11,6 @@ import {
   initializeEnvHelper,
   priceFeedDeployArgsFromNetworkDescriptor,
 } from '../utils/env-helper';
-import { equal } from 'assert';
 
 describe('BalancerV2PriceFeed', function () {
   let provider: BaseProvider;
@@ -35,55 +35,31 @@ describe('BalancerV2PriceFeed', function () {
     enzymeCouncil = await hre.ethers.getSigner(networkDescriptor.contracts.enzyme.EnzymeCouncil);
     await hre.network.provider.send('hardhat_impersonateAccount', [enzymeCouncil.address]);
   });
+  it('should deploy correctly', async function () {
+    balancerV2PriceFeedArgs = priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor);
+    balancerV2PriceFeed = (await balancerV2PriceFeedFactory.deploy(...balancerV2PriceFeedArgs)) as BalancerV2PriceFeed;
+    await balancerV2PriceFeed.deployed();
 
-  describe('constructor', function () {
-    xit('should deploy correctly', async function () {
-      provider = hre.ethers.getDefaultProvider();
+    //TODO: Balancerify the uniswapV2PriceFeed test code below
+    expect(await balancerV2PriceFeed.getFactory()).to.equal(
+      networkDescriptor.contracts.enzyme.AggregatedDerivativePriceFeed,
+    );
+    expect(await balancerV2PriceFeed.getDerivativePriceFeed()).to.equal(
+      networkDescriptor.contracts.enzyme.DerivativePriceFeedAddress,
+    );
+    expect(await balancerV2PriceFeed.getPrimitivePriceFeed()).to.equal(
+      networkDescriptor.contracts.enzyme.PriomitivePriceFeedAddress,
+    );
+    // expect(await balancerV2PriceFeed.getValueInterpreter()).to.equal(networkDescriptor.contracts.enzyme.ValueInterpreter);
 
-      networkDescriptor = await getNetworkDescriptor(provider);
-
-      balancerV2PriceFeedFactory = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
-
-      balancerV2PriceFeedArgs = priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor);
-      balancerV2PriceFeed = (await balancerV2PriceFeedFactory.deploy(
-        ...balancerV2PriceFeedArgs,
-      )) as BalancerV2PriceFeed;
-      await balancerV2PriceFeed.deployed();
-
-      //TODO: Balancerify the uniswapV2PriceFeed test code below
-      describe('constructor', function () {
-        it('deploys correctly', async function () {
-          expect(await balancerV2PriceFeed.getFactory()).to.equal(
-            networkDescriptor.contracts.enzyme.AggregatedDerivativePriceFeed,
-          );
-          expect(await balancerV2PriceFeed.getDerivativePriceFeed()).to.equal(
-            networkDescriptor.contracts.enzyme.DerivativePriceFeedAddress,
-          );
-          expect(await balancerV2PriceFeed.getPrimitivePriceFeed()).toMatchAddress(chainlinkPriceFeed);
-          expect(await balancerV2PriceFeed.getValueInterpreter()).toMatchAddress(valueInterpreter);
-        });
-
-        const poolContract = new IBalancerV2Pool(
-          networkDescriptor.mainnet.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
-          provider,
-        );
-        const BalancerV2Vault = new IBalancerV2Vault(
-          networkDescriptor.mainnet.contracts.balancer.BalancerV2Vault,
-          provider,
-        );
-        const token0 = await pairContract.token0();
-        const token1 = await pairContract.token1();
-        expect(await uniswapV2PoolPriceFeed.getPoolTokenInfo(poolToken)).toMatchFunctionOutput(
-          uniswapV2PoolPriceFeed.getPoolTokenInfo,
-          {
-            token0,
-            token1,
-            token0Decimals: await new StandardToken(token0, provider).decimals(),
-            token1Decimals: await new StandardToken(token1, provider).decimals(),
-          },
-        );
-      });
-    });
+    // const poolContract = new IBalancerV2Pool(
+    //   networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
+    //   provider,
+    // );
+    // const BalancerV2Vault = new IBalancerV2Vault(
+    //   networkDescriptor.contracts.balancer.BalancerV2Vault,
+    //   provider,
+    // );
   });
 
   describe('calcUnderlyingValues', function () {
