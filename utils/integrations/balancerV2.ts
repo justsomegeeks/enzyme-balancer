@@ -58,14 +58,14 @@ export interface BalancerV2TakeOrder {
   //   overrides: { value: string } | {};
 }
 
-export interface poolExit {
+export interface BalancerV2PoolExit {
   poolId: BigNumber;
   sender: string;
   recipient: string;
-  exitRequest: exitRequest;
+  exitRequest: BalancerV2ExitRequest;
 }
 
-export interface exitRequest {
+export interface BalancerV2ExitRequest {
   assets: string[];
   minAmountsOut: BigNumber[];
   userData: Bytes;
@@ -94,6 +94,9 @@ export function balancerV2TakeOrderArgs({
   );
 }
 
+export function balancerV2RedeemRequest({ assets, minAmountsOut, userData, toInternalBalance }: BalancerV2ExitRequest) {
+  const _minAmountsOut = BigNumber.from(minAmountsOut.toString());
+}
 const lendV2JoinPoolRequest = utils.ParamType.fromString(
   'tuple(address[] assets, uint256[] maxAmountsIn, bytes userData, bool fromInternalBalance)',
 );
