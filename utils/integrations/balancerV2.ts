@@ -46,13 +46,13 @@ export interface BalancerV2TakeOrder {
 
 export interface poolExit {
   poolId: BigNumber;
-  sender: Address;
-  recipient: Address;
+  sender: string;
+  recipient: string;
   exitRequest: exitRequest;
 }
 
 export interface exitRequest {
-  assets: Address[];
+  assets: string[];
   minAmountsOut: BigNumber[];
   userData: Bytes;
   toInternalBalance: boolean;
