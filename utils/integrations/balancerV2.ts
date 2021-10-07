@@ -11,7 +11,7 @@
 import type { JoinPoolRequest } from '@balancer-labs/balancer-js';
 import type { SwapInfo, SwapV2 } from '@balancer-labs/sor';
 import { scale, SOR, SwapTypes } from '@balancer-labs/sor';
-import { encodeArgs, redeemFragment } from '@enzymefinance/protocol';
+import { encodeArgs } from '@enzymefinance/protocol';
 import type { BaseProvider } from '@ethersproject/providers';
 import { BigNumber as BN } from 'bignumber.js';
 import type { BytesLike, Bytes } from 'ethers';
@@ -36,13 +36,13 @@ export interface FundManagement {
 
 export interface poolExit {
   poolId: BigNumber;
-  sender: Address;
-  recipient: Address;
+  sender: string;
+  recipient: string;
   exitRequest: exitRequest;
 }
 
 export interface exitRequest {
-  assets: Address[];
+  assets: string[];
   minAmountsOut: BigNumber[];
   userData: Bytes;
   toInternalBalance: boolean;
