@@ -14,8 +14,8 @@ import { scale, SOR, SwapTypes } from '@balancer-labs/sor';
 import { encodeArgs, redeemFragment } from '@enzymefinance/protocol';
 import type { BaseProvider } from '@ethersproject/providers';
 import { BigNumber as BN } from 'bignumber.js';
-import { BigNumber, utils, Bytes } from 'ethers';
-import { Address } from 'hardhat-deploy/dist/types';
+import type { BytesLike, Bytes } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 
 import type { BalancerV2Adapter } from '../../typechain';
 import type { Balances, SupportedTokens, TokenDescriptor } from '../env-helper';
@@ -56,6 +56,20 @@ export interface BalancerV2TakeOrder {
   limits: string[];
   deadline: BigNumber;
   //   overrides: { value: string } | {};
+}
+
+export interface poolExit {
+  poolId: BigNumber;
+  sender: Address;
+  recipient: Address;
+  exitRequest: exitRequest;
+}
+
+export interface exitRequest {
+  assets: Address[];
+  minAmountsOut: BigNumber[];
+  userData: Bytes;
+  toInternalBalance: boolean;
 }
 
 const swapV2Tuple = utils.ParamType.fromString(
