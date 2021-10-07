@@ -2,6 +2,7 @@ import type { JoinPoolRequest } from '@balancer-labs/balancer-js';
 import type { SwapInfo } from '@balancer-labs/sor';
 import { SwapTypes } from '@balancer-labs/sor';
 import {
+  AggregatedDerivativePriceFeed,
   ComptrollerLib,
   IntegrationManager,
   lendSelector,
@@ -41,6 +42,7 @@ describe('BalancerV2Adapter', function () {
   let networkDescriptor: NetworkDescriptor;
   let enzymeCouncil: SignerWithAddress;
   let integrationManager: IntegrationManager;
+  let aggregatedDerivativePriceFeed: AggregatedDerivativePriceFeed;
 
   let balancerV2PriceFeedFactory: ContractFactory;
   let balancerV2PriceFeed: any;
@@ -58,7 +60,12 @@ describe('BalancerV2Adapter', function () {
 
     enzymeCouncil = await hre.ethers.getSigner(networkDescriptor.contracts.enzyme.EnzymeCouncil);
     await hre.network.provider.send('hardhat_impersonateAccount', [enzymeCouncil.address]);
+
     integrationManager = new IntegrationManager(networkDescriptor.contracts.enzyme.IntegrationManager, enzymeCouncil);
+    aggregatedDerivativePriceFeed = new AggregatedDerivativePriceFeed(
+      networkDescriptor.contracts.enzyme.AggregatedDerivativePriceFeed,
+      enzymeCouncil,
+    );
 
     balancerV2PriceFeedFactory = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
     balancerV2AdapterFactory = await hre.ethers.getContractFactory('BalancerV2Adapter');
@@ -430,7 +437,7 @@ describe('BalancerV2Adapter', function () {
       );
     });
 
-    xit('works as expected when called by a fund', async function () {
+    it('works as expected when called by a fund', async function () {
       expect(lendArgs).to.not.be.undefined;
 
       // const preTradeBalances = await getBalances(
@@ -438,6 +445,11 @@ describe('BalancerV2Adapter', function () {
       //   networkDescriptor.tokens.WBTC.address,
       //   networkDescriptor.tokens.WETH.address,
       // );
+      // Whitelisting BPT token and our price feed to enzyme
+      await aggregatedDerivativePriceFeed.addDerivatives(
+        [networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress],
+        [balancerV2PriceFeed.address],
+      );
       const lendTxnReceipt = await balancerV2Lend({
         balancerV2Adapter: balancerV2Adapter.address,
         comptrollerProxy,

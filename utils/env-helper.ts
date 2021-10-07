@@ -115,6 +115,7 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
           BalancerV2WBTCWETHPoolId: '0xa6f548df93de924d73be7d25dc02554c6bd66db500020000000000000000000e',
         },
         enzyme: {
+          AggregatedDerivativePriceFeed: '0x2e45f9b3fd5871ccaf4eb415dfccbdd126f57c4f',
           EnyzmeComptroller: '0xe0dcf68b0b2fd1097442f2134e57339404a00639',
           EnzymeCouncil: '0xb270fe91e8e4b80452fbf1b4704208792a350f53',
           EnzymeVaultProxy: '0x24f3b37934D1AB26B7bda7F86781c90949aE3a79', // Rhino Fund
