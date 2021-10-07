@@ -52,12 +52,6 @@ describe('BalancerV2PriceFeed', function () {
       //TODO: Balancerify the uniswapV2PriceFeed test code below
       describe('constructor', function () {
         it('deploys correctly', async function () {
-          const balancerv = await balancerV2PriceFeedFactory.deploy(
-            networkDescriptor.contracts.enzyme.PrimitivePriceFeedAddress,
-            networkDescriptor.contracts.balancer.BalancerV2Vault,
-            balancerV2PriceFeed.address,
-          );
-
           await integrationManager.registerAdapters([balancerV2Adapter.address]);
 
           // AdapterBase2

@@ -346,7 +346,8 @@ export function priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor: Netw
     networkDescriptor.contracts.enzyme.DerivativePriceFeedAddress,
     networkDescriptor.contracts.enzyme.PrimitivePriceFeedAddress,
     networkDescriptor.contracts.enzyme.ValueInterpreter,
-    '0',
+    networkDescriptor.contracts.enzyme
+      .AggregatedDerivativePriceFeed /* not sure if this is right but using it for now this is the "factory" variable*/,
     [networkDescriptor.tokens.WBTC.address, networkDescriptor.tokens.WETH.address],
   ];
 }
