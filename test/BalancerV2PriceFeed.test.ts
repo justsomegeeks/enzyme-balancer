@@ -10,6 +10,7 @@ import {
   initializeEnvHelper,
   priceFeedDeployArgsFromNetworkDescriptor,
 } from '../utils/env-helper';
+import { equal } from 'assert';
 
 describe('BalancerV2PriceFeed', function () {
   let provider: BaseProvider;
@@ -36,7 +37,7 @@ describe('BalancerV2PriceFeed', function () {
   });
 
   describe('constructor', function () {
-    xit('sets state vars', async function () {
+    xit('should deploy correctly', async function () {
       provider = hre.ethers.getDefaultProvider();
 
       networkDescriptor = await getNetworkDescriptor(provider);
@@ -52,12 +53,12 @@ describe('BalancerV2PriceFeed', function () {
       //TODO: Balancerify the uniswapV2PriceFeed test code below
       describe('constructor', function () {
         it('deploys correctly', async function () {
-          await integrationManager.registerAdapters([balancerV2Adapter.address]);
-
           expect(await balancerV2PriceFeed.getFactory()).to.equal(
             networkDescriptor.contracts.enzyme.AggregatedDerivativePriceFeed,
           );
-          expect(await balancerV2PriceFeed.getDerivativePriceFeed()).toMatchAddress(aggregatedDerivativePriceFeed);
+          expect(await balancerV2PriceFeed.getDerivativePriceFeed()).to.equal(
+            networkDescriptor.contracts.enzyme.DerivativePriceFeedAddress,
+          );
           expect(await balancerV2PriceFeed.getPrimitivePriceFeed()).toMatchAddress(chainlinkPriceFeed);
           expect(await balancerV2PriceFeed.getValueInterpreter()).toMatchAddress(valueInterpreter);
         });

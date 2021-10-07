@@ -14,16 +14,19 @@ import "@enzymefinance/contracts/release/infrastructure/price-feeds/derivatives/
 import "@enzymefinance/contracts/release/infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "@enzymefinance/contracts/release/extensions/utils/FundDeployerOwnerMixin.sol";
 import "@enzymefinance/contracts/release/utils/MathHelpers.sol";
-
+//////old pricefeed imports////
+import "./interfaces/IBalancerV2Pool.sol";
 import "./interfaces/IBalancerV2Pair.sol";
+import "./interfaces/IBalancerV2Vault.sol";
+import "hardhat/console.sol";
 
 /// @title BalancerV2PoolPriceFeed Contract
 /// @author JustSomeGeeks Hackathon Team <https://github.com/justsomegeeks>
 /// @notice Price feed for Balancer V2 BPT tokens
-contract BalancerV2PoolPriceFeed is
+contract BalancerV2PriceFeed is
     IDerivativePriceFeed,
     FundDeployerOwnerMixin,
-    MathHelpers,
+    MathHelpers
     /*UniswapV2PoolTokenValueCalculator*/
 {
     event PoolTokenAdded(address indexed poolToken, address token0, address token1);
@@ -41,6 +44,8 @@ contract BalancerV2PoolPriceFeed is
     address private immutable PRIMITIVE_PRICE_FEED;
     address private immutable VALUE_INTERPRETER;
 
+    IBalancerV2Vault internal vault;
+
     mapping(address => PoolTokenInfo) private poolTokenToInfo;
 
     constructor(
@@ -49,7 +54,8 @@ contract BalancerV2PoolPriceFeed is
         address _primitivePriceFeed,
         address _valueInterpreter,
         address _factory,
-        address[] memory _poolTokens
+        address[] memory _poolTokens,
+        address _balancerV2Vault
     ) public FundDeployerOwnerMixin(_fundDeployer) {
         DERIVATIVE_PRICE_FEED = _derivativePriceFeed;
         FACTORY = _factory;
@@ -57,6 +63,7 @@ contract BalancerV2PoolPriceFeed is
         VALUE_INTERPRETER = _valueInterpreter;
 
         __addPoolTokens(_poolTokens, _derivativePriceFeed, _primitivePriceFeed);
+        vault = IBalancerV2Vault(_balancerV2Vault);
     }
 
     /// @notice Converts a given amount of a derivative to its underlying asset values
@@ -64,74 +71,34 @@ contract BalancerV2PoolPriceFeed is
     /// @param _derivativeAmount The amount of the derivative to convert
     /// @return underlyings_ The underlying assets for the _derivative
     /// @return underlyingAmounts_ The amount of each underlying asset for the equivalent derivative amount
+    //_derivative is the BPT token address, _derivativeAmount is the number of bpts
     function calcUnderlyingValues(address _derivative, uint256 _derivativeAmount)
         external
         override
         returns (address[] memory underlyings_, uint256[] memory underlyingAmounts_)
     {
-        // PoolTokenInfo memory poolTokenInfo = poolTokenToInfo[_derivative];
+        IBalancerV2Pool poolContract = IBalancerV2Pool(_derivative);
+        bytes32 poolId = poolContract.getPoolId();
+        uint256 totalBPT = poolContract.totalSupply();
+        uint256 BPTPercentage = _derivativeAmount / totalBPT;
 
-        // underlyings_ = new address[](2);
-        // underlyings_[0] = poolTokenInfo.token0;
-        // underlyings_[1] = poolTokenInfo.token1;
+        (IERC20[] memory tokens, uint256[] memory balances, ) = getPoolInfoFromPool(poolId);
 
-        // // Calculate the amounts underlying one unit of a pool token,
-        // // taking into account the known, trusted rate between the two underlyings
-        // (uint256 token0TrustedRateAmount, uint256 token1TrustedRateAmount) = __calcTrustedRate(
-        //     poolTokenInfo.token0,
-        //     poolTokenInfo.token1,
-        //     poolTokenInfo.token0Decimals,
-        //     poolTokenInfo.token1Decimals
-        // );
+        underlyingAmounts_ = new uint256[](tokens.length);
+        underlyings_ = new address[](tokens.length);
 
-        // (
-        //     uint256 token0DenormalizedRate,
-        //     uint256 token1DenormalizedRate
-        // ) =
-        //    // https://github.com/enzymefinance/protocol/blob/current/contracts/release/infrastructure/price-feeds/utils/UniswapV2PoolTokenValueCalculator.sol
-        //    __calcTrustedPoolTokenValue( 
-        //         FACTORY,
-        //         _derivative,
-        //         token0TrustedRateAmount,
-        //         token1TrustedRateAmount
-        //     );
-
+        for (uint256 i = 0; i < tokens.length; ) {
+            underlyingAmounts_[i] = balances[i] * BPTPercentage;
+            underlyings_[i] = address(tokens[i]);
+        }
         // // Define normalized rates for each underlying
         // underlyingAmounts_ = new uint256[](2);
         // underlyingAmounts_[0] = _derivativeAmount.mul(token0DenormalizedRate).div(POOL_TOKEN_UNIT);
         // underlyingAmounts_[1] = _derivativeAmount.mul(token1DenormalizedRate).div(POOL_TOKEN_UNIT);
 
-        PoolTokenInfo memory poolTokenInfo = poolTokenToInfo[_derivative];
-
-        underlyings_ = new address[](2);
-        underlyings_[0] = address(0);
-        underlyings_[1] = address(0);
-
-        // Calculate the amounts underlying one unit of a pool token,
-        // taking into account the known, trusted rate between the two underlyings
-        (uint256 token0TrustedRateAmount, uint256 token1TrustedRateAmount) = __calcTrustedRate(
-            poolTokenInfo.token0,
-            poolTokenInfo.token1,
-            poolTokenInfo.token0Decimals,
-            poolTokenInfo.token1Decimals
-        );
-
-        (
-            uint256 token0DenormalizedRate,
-            uint256 token1DenormalizedRate
-        ) = (1, 1);
-           // https://github.com/enzymefinance/protocol/blob/current/contracts/release/infrastructure/price-feeds/utils/UniswapV2PoolTokenValueCalculator.sol
-        //    __calcTrustedPoolTokenValue( 
-        //         FACTORY,
-        //         _derivative,
-        //         token0TrustedRateAmount,
-        //         token1TrustedRateAmount
-        //     );
-
-        // Define normalized rates for each underlying
         underlyingAmounts_ = new uint256[](2);
-        underlyingAmounts_[0] = _derivativeAmount.mul(token0DenormalizedRate).div(POOL_TOKEN_UNIT);
-        underlyingAmounts_[1] = _derivativeAmount.mul(token1DenormalizedRate).div(POOL_TOKEN_UNIT);
+        underlyingAmounts_[0] = _derivativeAmount.div(POOL_TOKEN_UNIT);
+        underlyingAmounts_[1] = _derivativeAmount.div(POOL_TOKEN_UNIT);
 
         return (underlyings_, underlyingAmounts_);
     }
@@ -147,30 +114,30 @@ contract BalancerV2PoolPriceFeed is
 
     /// @dev Calculates the trusted rate of two assets based on our price feeds.
     /// Uses the decimals-derived unit for whichever asset is used as the quote asset.
-    function __calcTrustedRate(
-        address _token0,
-        address _token1,
-        uint256 _token0Decimals,
-        uint256 _token1Decimals
-    ) private returns (uint256 token0RateAmount_, uint256 token1RateAmount_) {
-        bool rateIsValid;
-        // The quote asset of the value lookup must be a supported primitive asset,
-        // so we cycle through the tokens until reaching a primitive.
-        // If neither is a primitive, will revert at the ValueInterpreter
-        if (IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_token0)) {
-            token1RateAmount_ = 10**_token1Decimals;
-            (token0RateAmount_, rateIsValid) = ValueInterpreter(VALUE_INTERPRETER)
-                .calcCanonicalAssetValue(_token1, token1RateAmount_, _token0);
-        } else {
-            token0RateAmount_ = 10**_token0Decimals;
-            (token1RateAmount_, rateIsValid) = ValueInterpreter(VALUE_INTERPRETER)
-                .calcCanonicalAssetValue(_token0, token0RateAmount_, _token1);
-        }
+    // function __calcTrustedRate(
+    //     address _token0,
+    //     address _token1,
+    //     uint256 _token0Decimals,
+    //     uint256 _token1Decimals
+    // ) private returns (uint256 token0RateAmount_, uint256 token1RateAmount_) {
+    //     bool rateIsValid;
+    //     // The quote asset of the value lookup must be a supported primitive asset,
+    //     // so we cycle through the tokens until reaching a primitive.
+    //     // If neither is a primitive, will revert at the ValueInterpreter
+    //     if (IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_token0)) {
+    //         token1RateAmount_ = 10**_token1Decimals;
+    //         (token0RateAmount_, rateIsValid) = ValueInterpreter(VALUE_INTERPRETER)
+    //             .calcCanonicalAssetValue(_token1, token1RateAmount_, _token0);
+    //     } else {
+    //         token0RateAmount_ = 10**_token0Decimals;
+    //         (token1RateAmount_, rateIsValid) = ValueInterpreter(VALUE_INTERPRETER)
+    //             .calcCanonicalAssetValue(_token0, token0RateAmount_, _token1);
+    //     }
 
-        require(rateIsValid, "__calcTrustedRate: Invalid rate");
+    //     require(rateIsValid, "__calcTrustedRate: Invalid rate");
 
-        return (token0RateAmount_, token1RateAmount_);
-    }
+    //     return (token0RateAmount_, token1RateAmount_);
+    // }
 
     //////////////////////////
     // POOL TOKENS REGISTRY //
@@ -197,9 +164,9 @@ contract BalancerV2PoolPriceFeed is
                 "__addPoolTokens: Value already set"
             );
 
-            IUniswapV2Pair uniswapV2Pair = IUniswapV2Pair(_poolTokens[i]);
-            address token0 = uniswapV2Pair.token0();
-            address token1 = uniswapV2Pair.token1();
+            IBalancerV2Pair balancerV2Pair = IBalancerV2Pair(_poolTokens[i]);
+            address token0 = balancerV2Pair.token0();
+            address token1 = balancerV2Pair.token1();
 
             require(
                 __poolTokenIsSupportable(
@@ -302,5 +269,85 @@ contract BalancerV2PoolPriceFeed is
     /// @return valueInterpreter_ The `VALUE_INTERPRETER` variable value
     function getValueInterpreter() external view returns (address valueInterpreter_) {
         return VALUE_INTERPRETER;
+    }
+
+    //////////////////old pricefeed functions////////////////////////
+    function getLatestPrice(address _token) public returns (uint256) {
+        AggregatorV3Interface priceFeed = AggregatorV3Interface(_token);
+        (, int256 price, , , ) = priceFeed.latestRoundData();
+        return uint256(price);
+    }
+
+    function getAllPrices(IERC20[] memory tokens) internal returns (uint256[] memory result) {
+        uint256 size = tokens.length;
+        result = new uint256[](size);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            // if (tokenAggregator[address(tokens[i])].isValue) {
+            //prevents calling obscure tokens until we decide what to do with those
+            result[i] = getLatestPrice(address(tokens[i]));
+            console.log("RESULT", result[i]);
+
+            // } else {
+            //     revert("token price not available");
+            // }
+        }
+    }
+
+    function getTimestamp(address _token) public returns (int256) {
+        AggregatorV3Interface priceFeed = AggregatorV3Interface(_token);
+        (, , , uint256 timeStamp, ) = priceFeed.latestRoundData();
+        return int256(timeStamp);
+    }
+
+    function getPoolInfoFromPool(bytes32 _poolId)
+        public
+        view
+        returns (
+            IERC20[] memory tokens,
+            uint256[] memory balances,
+            uint256 lastChangeBlock
+        )
+    {
+        (tokens, balances, lastChangeBlock) = vault.getPoolTokens(_poolId);
+        return (tokens, balances, lastChangeBlock);
+    }
+
+    function getBalancerV2Vault() public view returns (address) {
+        return address(vault);
+    }
+
+    function getTokensFromPool(bytes32 _poolId) public view returns (IERC20[] memory tokens) {
+        (tokens, , ) = vault.getPoolTokens(_poolId);
+        return tokens;
+    }
+
+    function calcPoolValues(bytes32 _poolId) public returns (uint256[] memory underlyingValues_) {
+        (IERC20[] memory tokens, uint256[] memory balances, ) = getPoolInfoFromPool(_poolId);
+        uint256[] memory prices = getAllPrices(tokens);
+        underlyingValues_ = new uint256[](tokens.length);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            underlyingValues_[i] = balances[i] * prices[i];
+        }
+        return (underlyingValues_);
+    }
+
+    function getPoolTotalSupply(address _poolAddress) public view returns (uint256 totalSupply) {
+        IBalancerV2Pool pool = IBalancerV2Pool(_poolAddress);
+        totalSupply = pool.totalSupply();
+    }
+
+    function calcBPTValue(bytes32 _poolId) public returns (uint256 totalSupply, uint256 BPTValue) {
+        address _poolAddress = getAddress(_poolId);
+        totalSupply = getPoolTotalSupply(_poolAddress);
+        uint256 totalTokenValue;
+        uint256[] memory underlyingValues_ = calcPoolValues(_poolId);
+        for (uint256 i = 0; i < underlyingValues_.length; i++) {
+            totalTokenValue += underlyingValues_[i];
+        }
+        BPTValue = totalTokenValue / totalSupply;
+    }
+
+    function getAddress(bytes32 data) public pure returns (address) {
+        return address(bytes20(data));
     }
 }
