@@ -193,7 +193,6 @@ describe('BalancerV2Adapter', function () {
       const request: JoinPoolRequest = {
         assets: [tokens.WETH.address],
         fromInternalBalance: false,
-        //TODO use the correct tokens for the pool being used
         maxAmountsIn: [1],
         userData: initUserData,
       };
@@ -208,6 +207,20 @@ describe('BalancerV2Adapter', function () {
 
       // TODO: verify return value of parseAssetsForMethod to be equal to what was sent
       expect(parsedLendArgs).to.have.length(5);
+
+      expect(parsedLendArgs[0]).to.equal(SpendAssetsHandleType.Transfer);
+
+      expect(parsedLendArgs[1]).to.have.length(1);
+      expect(parsedLendArgs[1][0].toLowerCase()).to.equal(networkDescriptor.tokens.WETH.address.toLowerCase());//token address in
+
+      expect(parsedLendArgs[2]).to.have.length(1);
+      expect(parsedLendArgs[2][0].eq(request.maxAmountsIn[0])).to.be.true;//tokens in amount
+
+      expect(parsedLendArgs[3]).to.have.length(1);//pooladdress
+      expect(parsedLendArgs[3][0].toLowerCase()).to.equal('0x01abc00e86c7e258823b9a055fd62ca6cf61a163');
+
+      expect(parsedLendArgs[4]).to.have.length(1);//incomming assets amount
+      expect(parsedLendArgs[4][0]).gt(0);
     });
 
     xit('generates expected output for redeeming', async function () {
@@ -407,7 +420,6 @@ describe('BalancerV2Adapter', function () {
       request = {
         assets: [tokens.WETH.address],
         fromInternalBalance: false,
-        //TODO use the correct tokens for the pool being used
         maxAmountsIn: [1],
         userData: initUserData,
       };
@@ -420,12 +432,6 @@ describe('BalancerV2Adapter', function () {
     });
 
     it('can only be called via the IntegrationManager', async function () {
-      const transferArgs = await assetTransferArgs({
-        adapter: balancerV2Adapter,
-        encodedCallArgs: lendArgs,
-        selector: lendSelector,
-      });
-      console.log(transferArgs);
 
       await expect(balancerV2Adapter.lend(enzymeFundAddress, lendSelector, lendArgs)).to.be.revertedWith(
         'Only the IntegrationManager can call this function',
