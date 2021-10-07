@@ -19,7 +19,7 @@ describe('BalancerV2PriceFeed', function () {
 
   let balancerV2PriceFeedFactory: ContractFactory;
   let balancerV2PriceFeed: BalancerV2PriceFeed;
-  let balancerV2PriceFeedArgs: [string, string[], string[], boolean[]];
+  let balancerV2PriceFeedArgs: [string, string, string[], string[], boolean[]];
 
   before(async function () {
     initializeEnvHelper(hre);

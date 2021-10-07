@@ -8,27 +8,6 @@ import { BigNumber as BN } from 'bignumber.js';
 import { BigNumber } from 'ethers';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-/**
- * Network: Kovan
- * Aggregator: ETH/USD
- * Address: 0x9326BFA02ADD2366b30bacB125260Af641031331
- */
-//chainlink oracle addresses.
-// address ETH_USD = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-// address BTC_USD = 0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c;
-// address CRV_USD = 0xCd627aA160A6fA45Eb793D19Ef54f5062F20f33f;
-// address YFI_USD = 0xA027702dbb89fbd58938e4324ac03B58d812b0E1;
-// address UNI_ETH = 0xD6aA3D25116d8dA79Ea0246c4826EB951872e02e;
-// balancer smart contract addresses on mainnet.
-//     Vault: 0xBA12222222228d8Ba445958a75a0704d566BF2C8
-// Authorizer: 0xA331D84eC860Bf466b4CdCcFb4aC09a1B43F3aE6
-// WeightedPoolFactory: 0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9
-// WeightedPool2TokensFactory: 0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0
-// StablePoolFactory: 0xc66Ba2B6595D3613CCab350C886aCE23866EDe24
-// LiquidityBootstrappingPoolFactory: 0x751A0bC0e3f75b38e01Cf25bFCE7fF36DE1C87DE
-// MetastablePoolFactory: 0x67d27634E44793fE63c467035E31ea8635117cd4
-// InvestmentPoolFactory: 0x48767F9F868a4A7b86A90736632F6E44C2df7fa9
-
 const SUPPORTED_TOKENS = ['WBTC', 'WETH'] as const;
 export type SupportedTokens = typeof SUPPORTED_TOKENS[number];
 
