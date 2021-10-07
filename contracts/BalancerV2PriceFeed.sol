@@ -63,6 +63,7 @@ contract BalancerV2PriceFeed is
         VALUE_INTERPRETER = _valueInterpreter;
 
         __addPoolTokens(_poolTokens, _derivativePriceFeed, _primitivePriceFeed);
+
         vault = IBalancerV2Vault(_balancerV2Vault);
     }
 
@@ -271,14 +272,16 @@ contract BalancerV2PriceFeed is
         return VALUE_INTERPRETER;
     }
 
-    //////////////////old pricefeed functions////////////////////////
-    function getLatestPrice(address _token) public returns (uint256) {
+    ////////////////////////////////////////////////////////
+    //////////////////old pricefeed functions///////////////////////
+    //////////////////////////////////////////
+    function getLatestPrice(address _token) public view returns (uint256) {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(_token);
         (, int256 price, , , ) = priceFeed.latestRoundData();
         return uint256(price);
     }
 
-    function getAllPrices(IERC20[] memory tokens) internal returns (uint256[] memory result) {
+    function getAllPrices(IERC20[] memory tokens) internal view returns (uint256[] memory result) {
         uint256 size = tokens.length;
         result = new uint256[](size);
         for (uint256 i = 0; i < tokens.length; i++) {
@@ -293,7 +296,7 @@ contract BalancerV2PriceFeed is
         }
     }
 
-    function getTimestamp(address _token) public returns (int256) {
+    function getTimestamp(address _token) public view returns (int256) {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(_token);
         (, , , uint256 timeStamp, ) = priceFeed.latestRoundData();
         return int256(timeStamp);
@@ -321,7 +324,7 @@ contract BalancerV2PriceFeed is
         return tokens;
     }
 
-    function calcPoolValues(bytes32 _poolId) public returns (uint256[] memory underlyingValues_) {
+    function calcPoolValues(bytes32 _poolId) public view returns (uint256[] memory underlyingValues_) {
         (IERC20[] memory tokens, uint256[] memory balances, ) = getPoolInfoFromPool(_poolId);
         uint256[] memory prices = getAllPrices(tokens);
         underlyingValues_ = new uint256[](tokens.length);
@@ -336,7 +339,7 @@ contract BalancerV2PriceFeed is
         totalSupply = pool.totalSupply();
     }
 
-    function calcBPTValue(bytes32 _poolId) public returns (uint256 totalSupply, uint256 BPTValue) {
+    function calcBPTValue(bytes32 _poolId) public view returns (uint256 totalSupply, uint256 BPTValue) {
         address _poolAddress = getAddress(_poolId);
         totalSupply = getPoolTotalSupply(_poolAddress);
         uint256 totalTokenValue;

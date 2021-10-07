@@ -209,10 +209,10 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
             tokenOut: 'WBTC',
             tokenOutAmount: new BN('1'),
           },
-          priceAggregatorDescriptor: {
-            address: '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419',
-            rateAsset: ChainlinkRateAsset.ETH,
-          },
+          // priceAggregatorDescriptor: {
+          //   address: '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419',
+          //   rateAsset: ChainlinkRateAsset.ETH,
+          // },
           symbol: 'WETH',
           whaleAddress: '0x56178a0d5F301bAf6CF3e1Cd53d9863437345Bf9',
         },
