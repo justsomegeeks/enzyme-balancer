@@ -18,13 +18,13 @@ import type { ContractFactory } from 'ethers';
 import hre from 'hardhat';
 
 import type { BalancerV2Adapter, BalancerV2PriceFeed } from '../typechain';
-import type { NetworkDescriptor, TokenDescriptor } from '../utils/env-helper';
+import type { NetworkDescriptor, PriceFeedDeployArgs, TokenDescriptor } from '../utils/env-helper';
 import {
   bnToBigNumber,
   getBalances,
   getNetworkDescriptor,
   initializeEnvHelper,
-  priceFeedContractArgsFromNetworkDescriptor,
+  priceFeedDeployArgsFromNetworkDescriptor,
 } from '../utils/env-helper';
 import type { BalancerV2Lend } from '../utils/integrations/balancerV2';
 import {
@@ -46,7 +46,7 @@ describe('BalancerV2Adapter', function () {
 
   let balancerV2PriceFeedFactory: ContractFactory;
   let balancerV2PriceFeed: BalancerV2PriceFeed;
-  let balancerV2PriceFeedArgs: [string, string, string[], string[], boolean[]];
+  let balancerV2PriceFeedArgs: PriceFeedDeployArgs;
 
   let balancerV2AdapterFactory: ContractFactory;
 
@@ -68,7 +68,7 @@ describe('BalancerV2Adapter', function () {
 
     balancerV2PriceFeedFactory = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
 
-    balancerV2PriceFeedArgs = priceFeedContractArgsFromNetworkDescriptor(networkDescriptor);
+    balancerV2PriceFeedArgs = priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor);
     balancerV2PriceFeed = (await balancerV2PriceFeedFactory.deploy(...balancerV2PriceFeedArgs)) as BalancerV2PriceFeed;
     await balancerV2PriceFeed.deployed();
 
