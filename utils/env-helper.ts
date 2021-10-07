@@ -43,7 +43,7 @@ let hre: HardhatRuntimeEnvironment;
 // derivatives: UniswapV2PoolPriceFeed.sol: https://github.com/enzymefinance/protocol/blob/987ed191ecd6e0ca9c4a89569754b3ea562c75cb/contracts/release/infrastructure/price-feeds/derivatives/feeds/UniswapV2PoolPriceFeed.sol
 //
 //
-// UniswapV2PoolTokenCalculator: https://github.com/enzymefinance/protocol/blob/987ed191ecd6e0ca9c4a89569754b3ea562c75cb/contracts/release/infrastructure/price-feeds/utils/UniswapV2PoolTokenValueCalculator.sol
+// UniswapV2PoolTokenCalculator: https://github.com/enzymefinance/protocol/blob/987ed191ecd6e0ca9c4a89569754b3ea562c75cb/contracts/release/infrastructure/price-feeds/utils/UniswapV2PoolTokenValueCalculator.sol  MDC: wow.  that's a hell of a thing!
 //
 //
 // https://github.com/enzymefinance/protocol/blob/current/deploy/utils/config.ts
@@ -171,6 +171,8 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
           EnzymeVaultProxy: '0x24f3b37934D1AB26B7bda7F86781c90949aE3a79', // Rhino Fund
           FundOwner: '0x978cc856357946f980fba68db3b7f0d72e570da8', // Rhino Fund Manager
           IntegrationManager: '0x965ca477106476B4600562a2eBe13536581883A6',
+          DerivativePriceFeedAddress: '0x2e45f9b3fd5871ccaf4eb415dfccbdd126f57c4f',
+          PrimitivePriceFeedAddress: '0x1fad8faf11e027f8630f394599830dbeb97004ee',
           // TODO valueInterpreter: https://github.com/enzymefinance/protocol/blob/current/packages/testutils/src/deployment.ts#L102
           // import from @enzymefinance/protocol
           ValueInterpreter: '0x10a5624840Ac07287f756777DF1DEC34d2C2d654',
@@ -341,8 +343,8 @@ export type PriceFeedDeployArgs = [
 export function priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor: NetworkDescriptor): PriceFeedDeployArgs {
   return [
     networkDescriptor.contracts.enzyme.EnzymeDeployer,
-    '0',
-    '0',
+    networkDescriptor.contracts.enzyme.DerivativePriceFeedAddress,
+    networkDescriptor.contracts.enzyme.PrimitivePriceFeedAddress,
     networkDescriptor.contracts.enzyme.ValueInterpreter,
     '0',
     [networkDescriptor.tokens.WBTC.address, networkDescriptor.tokens.WETH.address],

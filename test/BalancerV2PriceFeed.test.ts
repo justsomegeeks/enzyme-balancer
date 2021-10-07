@@ -2,7 +2,7 @@ import type { BaseProvider } from '@ethersproject/providers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import type { ContractFactory } from 'ethers';
 import hre from 'hardhat';
-
+import { expect } from 'chai';
 import type { BalancerV2PriceFeed } from '../typechain';
 import type { NetworkDescriptor, PriceFeedDeployArgs } from '../utils/env-helper';
 import {
@@ -49,30 +49,58 @@ describe('BalancerV2PriceFeed', function () {
       )) as BalancerV2PriceFeed;
       await balancerV2PriceFeed.deployed();
 
-      /*
-        TODO: Balancerify the uniswapV2PriceFeed test code below
-
-        expect(await uniswapV2PoolPriceFeed.getFactory()).toMatchAddress(factory);
-        expect(await uniswapV2PoolPriceFeed.getDerivativePriceFeed()).toMatchAddress(aggregatedDerivativePriceFeed);
-        expect(await uniswapV2PoolPriceFeed.getPrimitivePriceFeed()).toMatchAddress(chainlinkPriceFeed);
-        expect(await uniswapV2PoolPriceFeed.getValueInterpreter()).toMatchAddress(valueInterpreter);
-
-        for (const poolToken of Object.values(pools)) {
-          const pairContract = new IUniswapV2Pair(poolToken, provider);
-          const token0 = await pairContract.token0();
-          const token1 = await pairContract.token1();
-          expect(await uniswapV2PoolPriceFeed.getPoolTokenInfo(poolToken)).toMatchFunctionOutput(
-            uniswapV2PoolPriceFeed.getPoolTokenInfo,
-            {
-              token0,
-              token1,
-              token0Decimals: await new StandardToken(token0, provider).decimals(),
-              token1Decimals: await new StandardToken(token1, provider).decimals(),
-            },
+      //TODO: Balancerify the uniswapV2PriceFeed test code below
+      describe('constructor', function () {
+        it('deploys correctly', async function () {
+          const balancerv = await balancerV2PriceFeedFactory.deploy(
+            networkDescriptor.contracts.enzyme.PrimitivePriceFeedAddress,
+            networkDescriptor.contracts.balancer.BalancerV2Vault,
+            balancerV2PriceFeed.address,
           );
-        }
+
+          await integrationManager.registerAdapters([balancerV2Adapter.address]);
+
+          // AdapterBase2
+          expect(await balancerV2Adapter.getIntegrationManager()).to.equal(
+            networkDescriptor.contracts.enzyme.IntegrationManager,
+          );
+
+          // BalancerV2ActionsMixin has BalancerV2Vault set correctly
+          expect(await balancerV2Adapter.getBalancerV2Vault()).to.equal(
+            networkDescriptor.contracts.balancer.BalancerV2Vault,
+          );
+
+          // BalancerV2PriceFeed is set correctly
+          expect(await balancerV2Adapter.getBalancerPriceFeed()).to.equal(balancerV2PriceFeed.address);
+
+          // Check that the adapter is registered on the integration manager.
+          expect(await integrationManager.getRegisteredAdapters()).to.include(balancerV2Adapter.address);
+        });
+        expect(await balancerV2PriceFeed.getFactory()).toMatchAddress(factory);
+        expect(await balancerV2PriceFeed.getDerivativePriceFeed()).toMatchAddress(aggregatedDerivativePriceFeed);
+        expect(await balancerV2PriceFeed.getPrimitivePriceFeed()).toMatchAddress(chainlinkPriceFeed);
+        expect(await balancerV2PriceFeed.getValueInterpreter()).toMatchAddress(valueInterpreter);
+
+        const poolContract = new IBalancerV2Pool(
+          networkDescriptor.mainnet.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
+          provider,
+        );
+        const BalancerV2Vault = new IBalancerV2Vault(
+          networkDescriptor.mainnet.contracts.balancer.BalancerV2Vault,
+          provider,
+        );
+        const token0 = await pairContract.token0();
+        const token1 = await pairContract.token1();
+        expect(await uniswapV2PoolPriceFeed.getPoolTokenInfo(poolToken)).toMatchFunctionOutput(
+          uniswapV2PoolPriceFeed.getPoolTokenInfo,
+          {
+            token0,
+            token1,
+            token0Decimals: await new StandardToken(token0, provider).decimals(),
+            token1Decimals: await new StandardToken(token1, provider).decimals(),
+          },
+        );
       });
-      */
     });
   });
 

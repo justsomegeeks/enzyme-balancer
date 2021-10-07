@@ -78,9 +78,12 @@ describe('BalancerV2Adapter', function () {
   describe('constructor', function () {
     it('deploys correctly', async function () {
       const balancerV2Adapter = await balancerV2AdapterFactory.deploy(
-        networkDescriptor.contracts.enzyme.IntegrationManager,
-        networkDescriptor.contracts.balancer.BalancerV2Vault,
-        balancerV2PriceFeed.address,
+        DERIVATIVE_PRICE_FEED = _derivativePriceFeed;
+        FACTORY = _factory;
+        PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
+        VALUE_INTERPRETER = _valueInterpreter;
+
+        __addPoolTokens(_poolTokens, _derivativePriceFeed, _primitivePriceFeed);
       );
 
       await integrationManager.registerAdapters([balancerV2Adapter.address]);
