@@ -279,8 +279,9 @@ export function bnToBigNumber(value: BN, decimals = BigNumber.from('0')): BigNum
 
 export function priceFeedContractArgsFromNetworkDescriptor(
   networkDescriptor: NetworkDescriptor,
-): [string, string[], string[], boolean[]] {
+): [string, string, string[], string[], boolean[]] {
   return [
+    networkDescriptor.contracts.enzyme.EnzymeCouncil,
     networkDescriptor.contracts.balancer.BalancerV2Vault,
     Object.values(networkDescriptor.tokens).map((tokenDescriptor) => tokenDescriptor.address),
     Object.values(networkDescriptor.tokens).map((tokenDescriptor) => tokenDescriptor.priceAggregatorDescriptor.address),

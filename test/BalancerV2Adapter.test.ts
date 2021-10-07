@@ -46,7 +46,7 @@ describe('BalancerV2Adapter', function () {
 
   let balancerV2PriceFeedFactory: ContractFactory;
   let balancerV2PriceFeed: BalancerV2PriceFeed;
-  let balancerV2PriceFeedArgs: [string, string[], string[], boolean[]];
+  let balancerV2PriceFeedArgs: [string, string, string[], string[], boolean[]];
 
   let balancerV2AdapterFactory: ContractFactory;
 
@@ -218,15 +218,15 @@ describe('BalancerV2Adapter', function () {
       expect(parsedLendArgs[0]).to.equal(SpendAssetsHandleType.Transfer);
 
       expect(parsedLendArgs[1]).to.have.length(1);
-      expect(parsedLendArgs[1][0].toLowerCase()).to.equal(networkDescriptor.tokens.WETH.address.toLowerCase());//token address in
+      expect(parsedLendArgs[1][0].toLowerCase()).to.equal(networkDescriptor.tokens.WETH.address.toLowerCase()); //token address in
 
       expect(parsedLendArgs[2]).to.have.length(1);
-      expect(parsedLendArgs[2][0].eq(request.maxAmountsIn[0])).to.be.true;//tokens in amount
+      expect(parsedLendArgs[2][0].eq(request.maxAmountsIn[0])).to.be.true; //tokens in amount
 
-      expect(parsedLendArgs[3]).to.have.length(1);//pooladdress
+      expect(parsedLendArgs[3]).to.have.length(1); //pooladdress
       expect(parsedLendArgs[3][0].toLowerCase()).to.equal('0x01abc00e86c7e258823b9a055fd62ca6cf61a163');
 
-      expect(parsedLendArgs[4]).to.have.length(1);//incomming assets amount
+      expect(parsedLendArgs[4]).to.have.length(1); //incomming assets amount
       expect(parsedLendArgs[4][0]).gt(0);
     });
 
@@ -439,7 +439,6 @@ describe('BalancerV2Adapter', function () {
     });
 
     it('can only be called via the IntegrationManager', async function () {
-
       await expect(balancerV2Adapter.lend(enzymeFundAddress, lendSelector, lendArgs)).to.be.revertedWith(
         'Only the IntegrationManager can call this function',
       );
@@ -454,9 +453,17 @@ describe('BalancerV2Adapter', function () {
       //   networkDescriptor.tokens.WETH.address,
       // );
       // Whitelisting BPT token and our price feed to enzyme
+      console.log('Working....');
       await aggregatedDerivativePriceFeed.addDerivatives(
         [networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress],
         [balancerV2PriceFeed.address],
+      );
+      console.log('Able to register');
+      console.log(
+        'Asset registered ',
+        await aggregatedDerivativePriceFeed.isSupportedAsset(
+          networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
+        ),
       );
       const lendTxnReceipt = await balancerV2Lend({
         balancerV2Adapter: balancerV2Adapter.address,

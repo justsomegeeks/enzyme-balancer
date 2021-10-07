@@ -120,13 +120,18 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         spendAssets_ = new address[](assetsLength);
         spendAssetAmounts_ = new uint256[](assetsLength);
         minIncomingAssetAmounts_ = new uint256[](1);
-        uint totalBPT = BalancerV2PriceFeed(BALANCER_V2_PRICE_FEED).getPoolTotalSupply(address(bytes20(poolId)));
+        uint256 totalBPT = BalancerV2PriceFeed(BALANCER_V2_PRICE_FEED).getPoolTotalSupply(
+            address(bytes20(poolId))
+        );
 
         for (uint256 i = 0; i < assetsLength; i++) {
             spendAssetAmounts_[i] = request.maxAmountsIn[i];
             spendAssets_[i] = request.assets[i];
-            (uint256 totalToken,,,) = IBalancerV2Vault(BALANCER_V2_VAULT).getPoolTokenInfo(poolId, IERC20(spendAssets_[i]));
-            uint256 expectedBPT = totalBPT/totalToken * request.maxAmountsIn[i];
+            (uint256 totalToken, , , ) = IBalancerV2Vault(BALANCER_V2_VAULT).getPoolTokenInfo(
+                poolId,
+                IERC20(spendAssets_[i])
+            );
+            uint256 expectedBPT = (totalBPT / totalToken) * request.maxAmountsIn[i];
             minIncomingAssetAmounts_[i] = expectedBPT;
         }
         minIncomingAssetAmounts_[0] = 1000;
