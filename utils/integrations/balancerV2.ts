@@ -14,7 +14,7 @@ import { scale, SOR, SwapTypes } from '@balancer-labs/sor';
 import { encodeArgs } from '@enzymefinance/protocol';
 import type { BaseProvider } from '@ethersproject/providers';
 import { BigNumber as BN } from 'bignumber.js';
-import type { BytesLike } from 'ethers';
+import type { BytesLike, Bytes } from 'ethers';
 import { BigNumber, utils } from 'ethers';
 
 import type { BalancerV2Adapter } from '../../typechain';
@@ -34,6 +34,20 @@ export interface FundManagement {
   toInternalBalance: boolean;
 }
 
+export interface poolExit {
+  poolId: BigNumber;
+  sender: string;
+  recipient: string;
+  exitRequest: exitRequest;
+}
+
+export interface exitRequest {
+  assets: string[];
+  minAmountsOut: BigNumber[];
+  userData: Bytes;
+  toInternalBalance: boolean;
+}
+
 export interface BalancerV2TakeOrder {
   swapType: SwapTypes;
   swaps: SwapV2[];
@@ -42,6 +56,20 @@ export interface BalancerV2TakeOrder {
   limits: string[];
   deadline: BigNumber;
   //   overrides: { value: string } | {};
+}
+
+export interface BalancerV2PoolExit {
+  poolId: BigNumber;
+  sender: string;
+  recipient: string;
+  exitRequest: BalancerV2ExitRequest;
+}
+
+export interface BalancerV2ExitRequest {
+  assets: string[];
+  minAmountsOut: BigNumber[];
+  userData: Bytes;
+  toInternalBalance: boolean;
 }
 
 const swapV2Tuple = utils.ParamType.fromString(
@@ -66,6 +94,9 @@ export function balancerV2TakeOrderArgs({
   );
 }
 
+export function balancerV2RedeemRequest({ assets, minAmountsOut, userData, toInternalBalance }: BalancerV2ExitRequest) {
+  const _minAmountsOut = BigNumber.from(minAmountsOut.toString());
+}
 const lendV2JoinPoolRequest = utils.ParamType.fromString(
   'tuple(address[] assets, uint256[] maxAmountsIn, bytes userData, bool fromInternalBalance)',
 );
@@ -146,6 +177,16 @@ export function calculateLimits(swapType: SwapTypes, swapInfo: SwapInfo): string
   return limits;
 }
 
+export function calcMinTokensOut(exitInfo: poolExit): BigNumber[] {
+  const minTokensOut: BigNumber[] = [];
+  //userPercentage = userBPTTokens / pool.totalSupply();
+  //minTokensOut = poolTokenAmounts.map(el=> el*userPercentage);
+  return minTokensOut;
+}
+
+export async function balancerV2Redeem(poolId: Address, _sentBPT: Number) {
+  //TODO:  calcMinTokensOut, encode call args, make call.
+}
 //
 // hand rolled version of:
 //   https://github.com/enzymefinance/protocol/blob/current/packages/protocol/src/utils/integrations/common.ts#L52-L72

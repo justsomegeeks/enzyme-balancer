@@ -130,6 +130,8 @@ interface IBalancerV2Vault {
 
     function getPool(bytes32 poolId) external view returns (address, PoolSpecialization);
 
+    function getPoolId() external view returns (bytes32);
+
     function getPoolTokenInfo(bytes32 poolId, IERC20 token)
         external
         view
