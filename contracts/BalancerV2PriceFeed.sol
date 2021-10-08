@@ -74,7 +74,6 @@ contract BalancerV2PriceFeed is
         override
         returns (address[] memory underlyings_, uint256[] memory underlyingAmounts_)
     {
-        // IBalancerV2Pool poolContract = IBalancerV2Pool(_derivative);
         uint256 totalBPT = getPoolTotalSupply(_derivative);
         uint256 BPTPercentage = _derivativeAmount / totalBPT;
         console.log(totalBPT, BPTPercentage);
