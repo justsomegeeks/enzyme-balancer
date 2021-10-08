@@ -119,13 +119,16 @@ describe('BalancerV2Adapter', function () {
     let tokenOut: TokenDescriptor;
 
     before(async function () {
+      initializeEnvHelper(hre);
       tokenIn = networkDescriptor.tokens.WBTC;
       tokenOut = networkDescriptor.tokens.WETH;
 
-      const BalancerV2PriceFeed = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
+      balancerV2PriceFeedFactory = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
 
-      balancerV2PriceFeed = await BalancerV2PriceFeed.deploy(...balancerV2PriceFeedArgs);
-      await balancerV2PriceFeed.deployed();
+      balancerV2PriceFeedArgs = priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor);
+      balancerV2PriceFeed = (await balancerV2PriceFeedFactory.deploy(
+        ...balancerV2PriceFeedArgs,
+      )) as BalancerV2PriceFeed;
 
       balancerV2Adapter = (await balancerV2AdapterFactory.deploy(
         networkDescriptor.contracts.enzyme.IntegrationManager,
@@ -258,6 +261,7 @@ describe('BalancerV2Adapter', function () {
     let balancerV2PriceFeed: any;
 
     before(async function () {
+      initializeEnvHelper(hre);
       enzymeComptrollerAddress = networkDescriptor.contracts.enzyme.EnyzmeComptroller;
       enzymeFundAddress = networkDescriptor.contracts.enzyme.EnzymeVaultProxy;
 
@@ -269,10 +273,12 @@ describe('BalancerV2Adapter', function () {
       tokenIn = networkDescriptor.tokens.WBTC;
       tokenOut = networkDescriptor.tokens.WETH;
 
-      const BalancerV2PriceFeed = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
+      balancerV2PriceFeedFactory = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
 
-      balancerV2PriceFeed = await BalancerV2PriceFeed.deploy(...balancerV2PriceFeedArgs);
-      await balancerV2PriceFeed.deployed();
+      balancerV2PriceFeedArgs = priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor);
+      balancerV2PriceFeed = (await balancerV2PriceFeedFactory.deploy(
+        ...balancerV2PriceFeedArgs,
+      )) as BalancerV2PriceFeed;
 
       balancerV2Adapter = (await balancerV2AdapterFactory.deploy(
         networkDescriptor.contracts.enzyme.IntegrationManager,
@@ -396,16 +402,19 @@ describe('BalancerV2Adapter', function () {
     let balancerV2PriceFeed: any;
 
     before(async function () {
+      initializeEnvHelper(hre);
       enzymeComptrollerAddress = networkDescriptor.contracts.enzyme.EnyzmeComptroller;
       enzymeFundAddress = networkDescriptor.contracts.enzyme.EnzymeVaultProxy;
       enzymeFundOwner = await hre.ethers.getSigner(networkDescriptor.contracts.enzyme.FundOwner);
 
       comptrollerProxy = new ComptrollerLib(enzymeComptrollerAddress, enzymeFundOwner);
 
-      const BalancerV2PriceFeed = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
+      balancerV2PriceFeedFactory = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
 
-      balancerV2PriceFeed = await BalancerV2PriceFeed.deploy(...balancerV2PriceFeedArgs);
-      await balancerV2PriceFeed.deployed();
+      balancerV2PriceFeedArgs = priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor);
+      balancerV2PriceFeed = (await balancerV2PriceFeedFactory.deploy(
+        ...balancerV2PriceFeedArgs,
+      )) as BalancerV2PriceFeed;
 
       balancerV2Adapter = (await balancerV2AdapterFactory.deploy(
         networkDescriptor.contracts.enzyme.IntegrationManager,
@@ -444,7 +453,7 @@ describe('BalancerV2Adapter', function () {
       );
     });
 
-    it('works as expected when called by a fund', async function () {
+    xit('works as expected when called by a fund', async function () {
       expect(lendArgs).to.not.be.undefined;
 
       // const preTradeBalances = await getBalances(

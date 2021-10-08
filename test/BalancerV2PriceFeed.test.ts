@@ -1,7 +1,8 @@
 import type { BaseProvider } from '@ethersproject/providers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { expect } from 'chai';
 import type { ContractFactory } from 'ethers';
-import hre from 'hardhat';
+import hre, { ethers } from 'hardhat';
 
 import type { BalancerV2PriceFeed } from '../typechain';
 import type { NetworkDescriptor, PriceFeedDeployArgs } from '../utils/env-helper';
@@ -34,56 +35,76 @@ describe('BalancerV2PriceFeed', function () {
     enzymeCouncil = await hre.ethers.getSigner(networkDescriptor.contracts.enzyme.EnzymeCouncil);
     await hre.network.provider.send('hardhat_impersonateAccount', [enzymeCouncil.address]);
   });
+  it('should deploy correctly', async function () {
+    balancerV2PriceFeedArgs = priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor);
+    balancerV2PriceFeed = (await balancerV2PriceFeedFactory.deploy(...balancerV2PriceFeedArgs)) as BalancerV2PriceFeed;
+    await balancerV2PriceFeed.deployed();
 
-  describe('constructor', function () {
-    xit('sets state vars', async function () {
+    //TODO: Balancerify the uniswapV2PriceFeed test code below
+    const PriceFeedVault = await balancerV2PriceFeed.getBalancerV2Vault();
+
+    expect(ethers.utils.getAddress(PriceFeedVault)).to.equal(
+      ethers.utils.getAddress(networkDescriptor.contracts.balancer.BalancerV2Vault),
+      'incorect Vault Address',
+    );
+    const derivativeAddress = await balancerV2PriceFeed.getDerivativePriceFeed();
+    expect(ethers.utils.getAddress(derivativeAddress)).to.equal(
+      ethers.utils.getAddress(networkDescriptor.contracts.enzyme.DerivativePriceFeedAddress),
+      'incorrect Derivative',
+    );
+    const primativeAddress = await balancerV2PriceFeed.getPrimitivePriceFeed();
+    expect(ethers.utils.getAddress(primativeAddress)).to.equal(
+      ethers.utils.getAddress(networkDescriptor.contracts.enzyme.PrimitivePriceFeedAddress),
+      'incorrect Primitive',
+    );
+    const valueIntAddress = await balancerV2PriceFeed.getValueInterpreter();
+    expect(ethers.utils.getAddress(valueIntAddress)).to.equal(
+      ethers.utils.getAddress(networkDescriptor.contracts.enzyme.ValueInterpreter),
+    );
+
+    // const poolContract = new IBalancerV2Pool(
+    //   networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
+    //   provider,
+    // );
+    // const BalancerV2Vault = new IBalancerV2Vault(
+    //   networkDescriptor.contracts.balancer.BalancerV2Vault,
+    //   provider,
+    // );
+  });
+
+  describe('calcUnderlyingValues', function () {
+    before(async function () {
+      initializeEnvHelper(hre);
+
       provider = hre.ethers.getDefaultProvider();
 
       networkDescriptor = await getNetworkDescriptor(provider);
+      balancerV2PriceFeedArgs = priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor);
 
       balancerV2PriceFeedFactory = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
 
+      enzymeCouncil = await hre.ethers.getSigner(networkDescriptor.contracts.enzyme.EnzymeCouncil);
+      await hre.network.provider.send('hardhat_impersonateAccount', [enzymeCouncil.address]);
       balancerV2PriceFeedArgs = priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor);
       balancerV2PriceFeed = (await balancerV2PriceFeedFactory.deploy(
         ...balancerV2PriceFeedArgs,
       )) as BalancerV2PriceFeed;
       await balancerV2PriceFeed.deployed();
-
-      /*
-        TODO: Balancerify the uniswapV2PriceFeed test code below
-
-        expect(await uniswapV2PoolPriceFeed.getFactory()).toMatchAddress(factory);
-        expect(await uniswapV2PoolPriceFeed.getDerivativePriceFeed()).toMatchAddress(aggregatedDerivativePriceFeed);
-        expect(await uniswapV2PoolPriceFeed.getPrimitivePriceFeed()).toMatchAddress(chainlinkPriceFeed);
-        expect(await uniswapV2PoolPriceFeed.getValueInterpreter()).toMatchAddress(valueInterpreter);
-
-        for (const poolToken of Object.values(pools)) {
-          const pairContract = new IUniswapV2Pair(poolToken, provider);
-          const token0 = await pairContract.token0();
-          const token1 = await pairContract.token1();
-          expect(await uniswapV2PoolPriceFeed.getPoolTokenInfo(poolToken)).toMatchFunctionOutput(
-            uniswapV2PoolPriceFeed.getPoolTokenInfo,
-            {
-              token0,
-              token1,
-              token0Decimals: await new StandardToken(token0, provider).decimals(),
-              token1Decimals: await new StandardToken(token1, provider).decimals(),
-            },
-          );
-        }
-      });
-      */
-    });
-  });
-
-  describe('calcUnderlyingValues', function () {
-    xit('returns rate for 18 decimals underlying assets', function () {
-      return;
     });
 
-    xit('returns rate for non-18 decimals underlying assets', function () {
-      return;
+    it('returns rate for 18 decimals underlying assets', async function () {
+      const underLyingValues = await balancerV2PriceFeed.callStatic.calcUnderlyingValues(
+        networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
+        hre.ethers.utils.parseEther('100'),
+      );
+      expect(underLyingValues[0][0].toLowerCase()).to.equal(networkDescriptor.tokens.WBTC.address);
+      expect(underLyingValues[0][1].toLowerCase()).to.equal(networkDescriptor.tokens.WETH.address);
+      console.log(underLyingValues[1][0].toString());
     });
+
+    // xit('returns rate for non-18 decimals underlying assets', function () {
+    //   return;
+    // });
   });
 
   describe('addPoolTokens', function () {

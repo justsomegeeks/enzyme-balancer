@@ -43,7 +43,7 @@ let hre: HardhatRuntimeEnvironment;
 // derivatives: UniswapV2PoolPriceFeed.sol: https://github.com/enzymefinance/protocol/blob/987ed191ecd6e0ca9c4a89569754b3ea562c75cb/contracts/release/infrastructure/price-feeds/derivatives/feeds/UniswapV2PoolPriceFeed.sol
 //
 //
-// UniswapV2PoolTokenCalculator: https://github.com/enzymefinance/protocol/blob/987ed191ecd6e0ca9c4a89569754b3ea562c75cb/contracts/release/infrastructure/price-feeds/utils/UniswapV2PoolTokenValueCalculator.sol
+// UniswapV2PoolTokenCalculator: https://github.com/enzymefinance/protocol/blob/987ed191ecd6e0ca9c4a89569754b3ea562c75cb/contracts/release/infrastructure/price-feeds/utils/UniswapV2PoolTokenValueCalculator.sol  MDC: wow.  that's a hell of a thing!
 //
 //
 // https://github.com/enzymefinance/protocol/blob/current/deploy/utils/config.ts
@@ -98,12 +98,12 @@ interface PriceAggregatorDescriptor {
 
 export interface TokenDescriptor {
   address: string;
-  contract: Contract | undefined;
+  contract: Contract;
   decimals: BigNumber;
   // temporary hack to get around testing on pinned mainnet, while using 'live' mainnet chainlink feeds and
   // mainnet subgrah
   mainnetPinnedBlockTradeCache?: ExpectedTrade;
-  priceAggregatorDescriptor: PriceAggregatorDescriptor;
+  priceAggregatorDescriptor?: PriceAggregatorDescriptor;
   symbol: string;
   whaleAddress: string;
 }
@@ -111,7 +111,7 @@ export interface TokenDescriptor {
 type TokenDescriptors = {
   [key in SupportedTokens]: {
     address: string;
-    contract: Contract | undefined;
+    contract: Contract;
     decimals: BigNumber;
     mainnetPinnedBlockTradeCache?: ExpectedTrade;
     priceAggregatorDescriptor?: PriceAggregatorDescriptor;
@@ -168,9 +168,12 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
           DerivativePriceFeedAddress: '0x2e45f9b3fd5871ccaf4eb415dfccbdd126f57c4f',
           EnyzmeComptroller: '0xe0dcf68b0b2fd1097442f2134e57339404a00639',
           EnzymeCouncil: '0xb270fe91e8e4b80452fbf1b4704208792a350f53',
-          EnzymeDeployer: '0x7e6d3b1161df9c9c7527f68d651b297d2fdb820b', // Rhino Fund Deployer
-          EnzymeVaultProxy: '0x24f3b37934D1AB26B7bda7F86781c90949aE3a79', // Rhino Fund
-          FundOwner: '0x978cc856357946f980fba68db3b7f0d72e570da8', // Rhino Fund Manager
+          EnzymeDeployer: '0x7e6d3b1161df9c9c7527f68d651b297d2fdb820b',
+          // Rhino Fund Deployer
+          EnzymeVaultProxy: '0x24f3b37934D1AB26B7bda7F86781c90949aE3a79',
+          // Rhino Fund
+          FundOwner: '0x978cc856357946f980fba68db3b7f0d72e570da8',
+          // Rhino Fund Manager
           IntegrationManager: '0x965ca477106476B4600562a2eBe13536581883A6',
           PrimitivePriceFeedAddress: '0x1fad8faf11e027f8630f394599830dbeb97004ee',
           // TODO valueInterpreter: https://github.com/enzymefinance/protocol/blob/current/packages/testutils/src/deployment.ts#L102
@@ -208,6 +211,7 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
           },
           // priceAggregatorDescriptor: {
           //   address: '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419',
+          //   rateAsset: ChainlinkRateAsset.ETH,
           // },
           symbol: 'WETH',
           whaleAddress: '0x56178a0d5F301bAf6CF3e1Cd53d9863437345Bf9',
@@ -332,12 +336,12 @@ export function bnToBigNumber(value: BN, decimals = BigNumber.from('0')): BigNum
 }
 
 export type PriceFeedDeployArgs = [
-  string, // fund deployer address,
-  string, // derivative price feed address,
-  string, // primitive price feed address,
-  string, // value interpretor address,
-  string, // factory address   TODO what is factory, a factory of what?
-  [string, string], // token0 and token1 erc20 addresses of tokens in pool
+  string, // fund deployer address
+  string, // derivative price feed address
+  string, // primitive price feed address
+  string, // value interpretor address
+  string, // Balancer V2 vault address
+  string, // Balancer V2 pool id
 ];
 
 export function priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor: NetworkDescriptor): PriceFeedDeployArgs {
@@ -346,7 +350,7 @@ export function priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor: Netw
     networkDescriptor.contracts.enzyme.DerivativePriceFeedAddress,
     networkDescriptor.contracts.enzyme.PrimitivePriceFeedAddress,
     networkDescriptor.contracts.enzyme.ValueInterpreter,
-    '0',
-    [networkDescriptor.tokens.WBTC.address, networkDescriptor.tokens.WETH.address],
+    networkDescriptor.contracts.balancer.BalancerV2Vault,
+    networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolId,
   ];
 }
