@@ -2,7 +2,7 @@ import type { BaseProvider } from '@ethersproject/providers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import type { ContractFactory } from 'ethers';
-import hre from 'hardhat';
+import hre, { ethers } from 'hardhat';
 
 import type { BalancerV2PriceFeed } from '../typechain';
 import type { NetworkDescriptor, PriceFeedDeployArgs } from '../utils/env-helper';
@@ -41,16 +41,26 @@ describe('BalancerV2PriceFeed', function () {
     await balancerV2PriceFeed.deployed();
 
     //TODO: Balancerify the uniswapV2PriceFeed test code below
-    expect(await balancerV2PriceFeed.getFactory()).to.equal(
-      networkDescriptor.contracts.enzyme.AggregatedDerivativePriceFeed,
+    const PriceFeedVault = await balancerV2PriceFeed.getBalancerV2Vault();
+
+    expect(ethers.utils.getAddress(PriceFeedVault)).to.equal(
+      ethers.utils.getAddress(networkDescriptor.contracts.balancer.BalancerV2Vault),
+      'incorect Vault Address',
     );
-    expect(await balancerV2PriceFeed.getDerivativePriceFeed()).to.equal(
-      networkDescriptor.contracts.enzyme.DerivativePriceFeedAddress,
+    const derivativeAddress = await balancerV2PriceFeed.getDerivativePriceFeed();
+    expect(ethers.utils.getAddress(derivativeAddress)).to.equal(
+      ethers.utils.getAddress(networkDescriptor.contracts.enzyme.DerivativePriceFeedAddress),
+      'incorrect Derivative',
     );
-    expect(await balancerV2PriceFeed.getPrimitivePriceFeed()).to.equal(
-      networkDescriptor.contracts.enzyme.PriomitivePriceFeedAddress,
+    const primativeAddress = await balancerV2PriceFeed.getPrimitivePriceFeed();
+    expect(ethers.utils.getAddress(primativeAddress)).to.equal(
+      ethers.utils.getAddress(networkDescriptor.contracts.enzyme.PrimitivePriceFeedAddress),
+      'incorrect Primitive',
     );
-    // expect(await balancerV2PriceFeed.getValueInterpreter()).to.equal(networkDescriptor.contracts.enzyme.ValueInterpreter);
+    const valueIntAddress = await balancerV2PriceFeed.getValueInterpreter();
+    expect(ethers.utils.getAddress(valueIntAddress)).to.equal(
+      ethers.utils.getAddress(networkDescriptor.contracts.enzyme.ValueInterpreter),
+    );
 
     // const poolContract = new IBalancerV2Pool(
     //   networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
