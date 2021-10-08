@@ -91,8 +91,6 @@ contract BalancerV2PriceFeed is
         override
         returns (address[] memory underlyings_, uint256[] memory underlyingAmounts_)
     {
-        console.log("Calling....");
-
         uint256 totalBPT = getPoolTotalSupply(_derivative);
         uint256 _precision = 18;
         uint256 BPTPortion = calcPortionOfPool(_derivativeAmount, totalBPT, _precision);
@@ -104,13 +102,10 @@ contract BalancerV2PriceFeed is
 
         for (uint256 i = 0; i < tokens.length; i++) {
             underlyingAmounts_[i] = calcUnderlyingAmount(balances[i], BPTPortion, _precision);
-            console.log("UNDERLYING", underlyingAmounts_[i]);
+
             underlyings_[i] = address(tokens[i]);
         }
 
-        // underlyingAmounts_ = new uint256[](2);
-        // underlyingAmounts_[0] = underlyingAmounts_[0].div(POOL_TOKEN_UNIT);
-        // underlyingAmounts_[1] = underlyingAmounts_[1].div(POOL_TOKEN_UNIT);
         return (underlyings_, underlyingAmounts_);
     }
 
