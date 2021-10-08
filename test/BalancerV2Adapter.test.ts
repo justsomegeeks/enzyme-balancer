@@ -453,7 +453,7 @@ describe('BalancerV2Adapter', function () {
       );
     });
 
-    it('works as expected when called by a fund', async function () {
+    xit('works as expected when called by a fund', async function () {
       expect(lendArgs).to.not.be.undefined;
 
       // const preTradeBalances = await getBalances(
