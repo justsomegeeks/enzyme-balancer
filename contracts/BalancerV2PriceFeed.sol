@@ -104,7 +104,7 @@ contract BalancerV2PriceFeed is
         underlyings_ = new address[](tokens.length);
 
         for (uint256 i = 0; i < tokens.length; i++) {
-            underlyingAmounts_[i] = (balances[i] * BPTPortion) / POOL_TOKEN_UNIT;
+            underlyingAmounts_[i] = (balances[i] * BPTPortion) / (10**_precision);
             console.log("UNDERLYING", underlyingAmounts_[i]);
             underlyings_[i] = address(tokens[i]);
         }
