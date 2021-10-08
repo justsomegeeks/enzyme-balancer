@@ -341,8 +341,8 @@ export type PriceFeedDeployArgs = [
   string, // primitive price feed address,
   string, // value interpretor address,
   string, // factory address   TODO what is factory, a factory of what?
-  [string, string], // token0 and token1 erc20 addresses of tokens in pool
   string,
+  [string, string], // token0 and token1 erc20 addresses of tokens in pool
 ];
 
 export function priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor: NetworkDescriptor): PriceFeedDeployArgs {
@@ -351,9 +351,9 @@ export function priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor: Netw
     networkDescriptor.contracts.enzyme.DerivativePriceFeedAddress,
     networkDescriptor.contracts.enzyme.PrimitivePriceFeedAddress,
     networkDescriptor.contracts.enzyme.ValueInterpreter,
-    networkDescriptor.contracts.enzyme
-      .AggregatedDerivativePriceFeed /* not sure if this is right but using it for now this is the "factory" variable*/,
+    networkDescriptor.contracts.balancer
+      .BalancerV2Vault /* not sure if this is right but using it for now this is the "factory" variable*/,
+    networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolId,
     [networkDescriptor.tokens.WBTC.address, networkDescriptor.tokens.WETH.address],
-    networkDescriptor.contracts.balancer.BalancerV2Vault,
   ];
 }

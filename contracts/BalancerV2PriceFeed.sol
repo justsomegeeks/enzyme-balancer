@@ -40,12 +40,10 @@ contract BalancerV2PriceFeed is
 
     uint256 private constant POOL_TOKEN_UNIT = 10**18;
     address private immutable DERIVATIVE_PRICE_FEED;
-    address private immutable FACTORY;
+    address private BALANCERV2VAULT;
     address private immutable PRIMITIVE_PRICE_FEED;
     address private immutable VALUE_INTERPRETER;
-
-    IBalancerV2Vault internal vault;
-
+    bytes32 private balancerPoolId;
     mapping(address => PoolTokenInfo) private poolTokenToInfo;
 
     constructor(
@@ -53,18 +51,17 @@ contract BalancerV2PriceFeed is
         address _derivativePriceFeed,
         address _primitivePriceFeed,
         address _valueInterpreter,
-        address _factory,
-        address[] memory _poolTokens,
-        address _balancerV2Vault
+        address _BalancerV2Vault,
+        bytes32 _BalancerPoolId,
+        address[] memory _poolTokens
     ) public FundDeployerOwnerMixin(_fundDeployer) {
         DERIVATIVE_PRICE_FEED = _derivativePriceFeed;
-        FACTORY = _factory;
+        BALANCERV2VAULT = _BalancerV2Vault;
         PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
         VALUE_INTERPRETER = _valueInterpreter;
+        balancerPoolId = _BalancerPoolId;
 
         __addPoolTokens(_poolTokens, _derivativePriceFeed, _primitivePriceFeed);
-
-        vault = IBalancerV2Vault(_balancerV2Vault);
     }
 
     /// @notice Converts a given amount of a derivative to its underlying asset values
@@ -165,9 +162,10 @@ contract BalancerV2PriceFeed is
                 "__addPoolTokens: Value already set"
             );
 
-            IBalancerV2Pair balancerV2Pair = IBalancerV2Pair(_poolTokens[i]);
-            address token0 = balancerV2Pair.token0();
-            address token1 = balancerV2Pair.token1();
+            IBalancerV2Vault vault = IBalancerV2Vault(BALANCERV2VAULT);
+            (IERC20[] memory tokens, , ) = vault.getPoolTokens(balancerPoolId);
+            address token0 = address(tokens[0]);
+            address token1 = address(tokens[1]);
 
             require(
                 __poolTokenIsSupportable(
@@ -229,12 +227,6 @@ contract BalancerV2PriceFeed is
     /// @return derivativePriceFeed_ The `DERIVATIVE_PRICE_FEED` variable value
     function getDerivativePriceFeed() external view returns (address derivativePriceFeed_) {
         return DERIVATIVE_PRICE_FEED;
-    }
-
-    /// @notice Gets the `FACTORY` variable value
-    /// @return factory_ The `FACTORY` variable value
-    function getFactory() external view returns (address factory_) {
-        return FACTORY;
     }
 
     /// @notice Gets the `PoolTokenInfo` for a given pool token
@@ -311,20 +303,26 @@ contract BalancerV2PriceFeed is
             uint256 lastChangeBlock
         )
     {
+        IBalancerV2Vault vault = IBalancerV2Vault(BALANCERV2VAULT);
         (tokens, balances, lastChangeBlock) = vault.getPoolTokens(_poolId);
         return (tokens, balances, lastChangeBlock);
     }
 
     function getBalancerV2Vault() public view returns (address) {
-        return address(vault);
+        return BALANCERV2VAULT;
     }
 
     function getTokensFromPool(bytes32 _poolId) public view returns (IERC20[] memory tokens) {
+        IBalancerV2Vault vault = IBalancerV2Vault(BALANCERV2VAULT);
         (tokens, , ) = vault.getPoolTokens(_poolId);
         return tokens;
     }
 
-    function calcPoolValues(bytes32 _poolId) public view returns (uint256[] memory underlyingValues_) {
+    function calcPoolValues(bytes32 _poolId)
+        public
+        view
+        returns (uint256[] memory underlyingValues_)
+    {
         (IERC20[] memory tokens, uint256[] memory balances, ) = getPoolInfoFromPool(_poolId);
         uint256[] memory prices = getAllPrices(tokens);
         underlyingValues_ = new uint256[](tokens.length);
@@ -339,7 +337,11 @@ contract BalancerV2PriceFeed is
         totalSupply = pool.totalSupply();
     }
 
-    function calcBPTValue(bytes32 _poolId) public view returns (uint256 totalSupply, uint256 BPTValue) {
+    function calcBPTValue(bytes32 _poolId)
+        public
+        view
+        returns (uint256 totalSupply, uint256 BPTValue)
+    {
         address _poolAddress = getAddress(_poolId);
         totalSupply = getPoolTotalSupply(_poolAddress);
         uint256 totalTokenValue;
