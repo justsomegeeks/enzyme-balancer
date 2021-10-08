@@ -97,22 +97,20 @@ contract BalancerV2PriceFeed is
         uint256 _precision = 18;
         uint256 BPTPortion = calcPortionOfPool(_derivativeAmount, totalBPT, _precision);
 
-        console.log(totalBPT, BPTPortion, _derivativeAmount);
         (IERC20[] memory tokens, uint256[] memory balances, ) = getPoolData(_derivative);
 
         underlyingAmounts_ = new uint256[](tokens.length);
         underlyings_ = new address[](tokens.length);
 
         for (uint256 i = 0; i < tokens.length; i++) {
-            underlyingAmounts_[i] = (balances[i] * BPTPortion) / (10**_precision);
+            underlyingAmounts_[i] = calcUnderlyingAmount(balances[i], BPTPortion, _precision);
             console.log("UNDERLYING", underlyingAmounts_[i]);
             underlyings_[i] = address(tokens[i]);
         }
 
-        underlyingAmounts_ = new uint256[](2);
-        underlyingAmounts_[0] = _derivativeAmount.div(POOL_TOKEN_UNIT);
-        underlyingAmounts_[1] = _derivativeAmount.div(POOL_TOKEN_UNIT);
-
+        // underlyingAmounts_ = new uint256[](2);
+        // underlyingAmounts_[0] = underlyingAmounts_[0].div(POOL_TOKEN_UNIT);
+        // underlyingAmounts_[1] = underlyingAmounts_[1].div(POOL_TOKEN_UNIT);
         return (underlyings_, underlyingAmounts_);
     }
 
@@ -135,6 +133,14 @@ contract BalancerV2PriceFeed is
         // with rounding of last digit
         uint256 _portionOfPool = ((_numberOfBPT / totalBPT) + 5) / 10;
         return (_portionOfPool);
+    }
+
+    function calcUnderlyingAmount(
+        uint256 balance,
+        uint256 BPTPortion,
+        uint256 precision
+    ) internal pure returns (uint256 underlyingAmount) {
+        underlyingAmount = ((balance * BPTPortion).div(10**precision));
     }
 
     /// @dev Calculates the trusted rate of two assets based on our price feeds.
