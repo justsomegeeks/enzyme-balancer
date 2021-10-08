@@ -25,7 +25,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const balancerV2PriceFeed = await deploy('BalancerV2PriceFeed', {
     args: priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor),
-    from: enzymeCouncil.address,
+    from: deployer,
     log: true,
   });
 
@@ -36,13 +36,21 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       enzymeCouncil,
     );
 
-    console.log('Registering BPT pool tokens...');
-
     const pools = [networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress];
 
     await derivativePriceFeedInstance.addDerivatives(
       pools,
       pools.map(() => balancerV2PriceFeed.address),
+    );
+
+    console.log(`Registering BPT pool tokens...`);
+    console.log(`  Balancer BPT WBTC/WETH pool: ${networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress}`);
+
+    console.log(
+      'derivativePriceFeedInstance address: ',
+      await derivativePriceFeedInstance.getPriceFeedForDerivative(
+        networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
+      ),
     );
   }
 

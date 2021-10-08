@@ -1,3 +1,4 @@
+import { AggregatedDerivativePriceFeed } from '@enzymefinance/protocol';
 import type { BaseProvider } from '@ethersproject/providers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
@@ -46,8 +47,32 @@ describe('BalancerV2PriceFeed', function () {
 
       await balancerV2PriceFeed.deployed();
 
+      const derivativePriceFeedInstance = new AggregatedDerivativePriceFeed(
+        networkDescriptor.contracts.enzyme.AggregatedDerivativePriceFeed,
+        enzymeCouncil,
+      );
+
       expect((await balancerV2PriceFeed.getVault()).toLowerCase()).to.equal(
         networkDescriptor.contracts.balancer.BalancerV2Vault.toLowerCase(),
+      );
+
+      const pools = [networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress];
+
+      await derivativePriceFeedInstance.addDerivatives(
+        pools,
+        pools.map(() => balancerV2PriceFeed.address),
+      );
+
+      console.log(`Registering BPT pool tokens...`);
+      console.log(
+        `  Balancer BPT WBTC/WETH pool: ${networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress}`,
+      );
+
+      console.log(
+        'derivativePriceFeedInstance address: ',
+        await derivativePriceFeedInstance.getPriceFeedForDerivative(
+          networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
+        ),
       );
 
       expect((await balancerV2PriceFeed.getDerivativePriceFeed()).toLowerCase()).to.equal(
