@@ -2,7 +2,7 @@ import type { BaseProvider } from '@ethersproject/providers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import type { ContractFactory } from 'ethers';
-import hre, { ethers } from 'hardhat';
+import hre from 'hardhat';
 
 import type { BalancerV2PriceFeed } from '../typechain';
 import type { NetworkDescriptor, PriceFeedDeployArgs } from '../utils/env-helper';
@@ -35,41 +35,52 @@ describe('BalancerV2PriceFeed', function () {
     enzymeCouncil = await hre.ethers.getSigner(networkDescriptor.contracts.enzyme.EnzymeCouncil);
     await hre.network.provider.send('hardhat_impersonateAccount', [enzymeCouncil.address]);
   });
-  it('should deploy correctly', async function () {
-    balancerV2PriceFeedArgs = priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor);
-    balancerV2PriceFeed = (await balancerV2PriceFeedFactory.deploy(...balancerV2PriceFeedArgs)) as BalancerV2PriceFeed;
-    await balancerV2PriceFeed.deployed();
 
-    //TODO: Balancerify the uniswapV2PriceFeed test code below
-    const PriceFeedVault = await balancerV2PriceFeed.getBalancerV2Vault();
+  describe('constructor', function () {
+    it('deploys correctly', async function () {
+      balancerV2PriceFeedArgs = priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor);
 
-    expect(ethers.utils.getAddress(PriceFeedVault)).to.equal(
-      ethers.utils.getAddress(networkDescriptor.contracts.balancer.BalancerV2Vault),
-      'incorect Vault Address',
-    );
-    const derivativeAddress = await balancerV2PriceFeed.getDerivativePriceFeed();
-    expect(ethers.utils.getAddress(derivativeAddress)).to.equal(
-      ethers.utils.getAddress(networkDescriptor.contracts.enzyme.DerivativePriceFeedAddress),
-      'incorrect Derivative',
-    );
-    const primativeAddress = await balancerV2PriceFeed.getPrimitivePriceFeed();
-    expect(ethers.utils.getAddress(primativeAddress)).to.equal(
-      ethers.utils.getAddress(networkDescriptor.contracts.enzyme.PrimitivePriceFeedAddress),
-      'incorrect Primitive',
-    );
-    const valueIntAddress = await balancerV2PriceFeed.getValueInterpreter();
-    expect(ethers.utils.getAddress(valueIntAddress)).to.equal(
-      ethers.utils.getAddress(networkDescriptor.contracts.enzyme.ValueInterpreter),
-    );
+      balancerV2PriceFeed = (await balancerV2PriceFeedFactory.deploy(
+        ...balancerV2PriceFeedArgs,
+      )) as BalancerV2PriceFeed;
 
-    // const poolContract = new IBalancerV2Pool(
-    //   networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
-    //   provider,
-    // );
-    // const BalancerV2Vault = new IBalancerV2Vault(
-    //   networkDescriptor.contracts.balancer.BalancerV2Vault,
-    //   provider,
-    // );
+      await balancerV2PriceFeed.deployed();
+
+      expect((await balancerV2PriceFeed.getVault()).toLowerCase()).to.equal(
+        networkDescriptor.contracts.balancer.BalancerV2Vault.toLowerCase(),
+      );
+
+      expect((await balancerV2PriceFeed.getDerivativePriceFeed()).toLowerCase()).to.equal(
+        networkDescriptor.contracts.enzyme.DerivativePriceFeedAddress.toLowerCase(),
+      );
+
+      expect((await balancerV2PriceFeed.getPrimitivePriceFeed()).toLowerCase()).to.equal(
+        networkDescriptor.contracts.enzyme.PrimitivePriceFeedAddress.toLowerCase(),
+      );
+
+      expect((await balancerV2PriceFeed.getValueInterpreter()).toLowerCase()).to.equal(
+        networkDescriptor.contracts.enzyme.ValueInterpreter.toLowerCase(),
+      );
+
+      const balancerV2WBTCWETHPoolId = balancerV2PriceFeedArgs[5][0];
+      const poolDescriptor = await balancerV2PriceFeed.getPoolDescriptor(
+        networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
+      );
+
+      expect(poolDescriptor.poolId).to.equal(balancerV2WBTCWETHPoolId);
+
+      expect(poolDescriptor.poolTokenDescriptor.token0.toLowerCase()).to.equal(
+        networkDescriptor.tokens.WBTC.address.toLowerCase(),
+      );
+
+      expect(poolDescriptor.poolTokenDescriptor.token0Decimals).to.equal(networkDescriptor.tokens.WBTC.decimals);
+
+      expect(poolDescriptor.poolTokenDescriptor.token1.toLowerCase()).to.equal(
+        networkDescriptor.tokens.WETH.address.toLowerCase(),
+      );
+
+      expect(poolDescriptor.poolTokenDescriptor.token1Decimals).to.equal(networkDescriptor.tokens.WETH.decimals);
+    });
   });
 
   describe('calcUnderlyingValues', function () {
@@ -92,7 +103,7 @@ describe('BalancerV2PriceFeed', function () {
       await balancerV2PriceFeed.deployed();
     });
 
-    it('returns rate for 18 decimals underlying assets', async function () {
+    xit('returns rate for 18 decimals underlying assets', async function () {
       const underLyingValues = await balancerV2PriceFeed.callStatic.calcUnderlyingValues(
         networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
         hre.ethers.utils.parseEther('100'),
@@ -102,9 +113,9 @@ describe('BalancerV2PriceFeed', function () {
       console.log(underLyingValues[1][0].toString());
     });
 
-    // xit('returns rate for non-18 decimals underlying assets', function () {
-    //   return;
-    // });
+    xit('returns rate for non-18 decimals underlying assets', function () {
+      return;
+    });
   });
 
   describe('addPoolTokens', function () {

@@ -341,7 +341,7 @@ export type PriceFeedDeployArgs = [
   string, // primitive price feed address
   string, // value interpretor address
   string, // Balancer V2 vault address
-  string, // Balancer V2 pool id
+  string[], // Balancer V2 pool ids
 ];
 
 export function priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor: NetworkDescriptor): PriceFeedDeployArgs {
@@ -351,6 +351,6 @@ export function priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor: Netw
     networkDescriptor.contracts.enzyme.PrimitivePriceFeedAddress,
     networkDescriptor.contracts.enzyme.ValueInterpreter,
     networkDescriptor.contracts.balancer.BalancerV2Vault,
-    networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolId,
+    [networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolId],
   ];
 }
