@@ -94,15 +94,18 @@ contract BalancerV2PriceFeed is
         console.log("Calling....");
 
         uint256 totalBPT = getPoolTotalSupply(_derivative);
-        uint256 BPTPercentage = _derivativeAmount / totalBPT;
-        console.log(totalBPT, BPTPercentage);
+        uint256 _precision = 18;
+        uint256 BPTPortion = calcPortionOfPool(_derivativeAmount, totalBPT, _precision);
+
+        console.log(totalBPT, BPTPortion, _derivativeAmount);
         (IERC20[] memory tokens, uint256[] memory balances, ) = getPoolData(_derivative);
 
         underlyingAmounts_ = new uint256[](tokens.length);
         underlyings_ = new address[](tokens.length);
 
         for (uint256 i = 0; i < tokens.length; i++) {
-            underlyingAmounts_[i] = balances[i] * BPTPercentage;
+            underlyingAmounts_[i] = (balances[i] * BPTPortion) / POOL_TOKEN_UNIT;
+            console.log("UNDERLYING", underlyingAmounts_[i]);
             underlyings_[i] = address(tokens[i]);
         }
 
@@ -121,6 +124,18 @@ contract BalancerV2PriceFeed is
     }
 
     // PRIVATE FUNCTIONS
+    //@dev Calculates percentages
+    function calcPortionOfPool(
+        uint256 numerator,
+        uint256 denominator,
+        uint256 precision
+    ) public pure returns (uint256 quotient) {
+        // caution, check safe-to-multiply here
+        uint256 _numerator = numerator * 10**(precision + 1);
+        // with rounding of last digit
+        uint256 _quotient = ((_numerator / denominator) + 5) / 10;
+        return (_quotient);
+    }
 
     /// @dev Calculates the trusted rate of two assets based on our price feeds.
     /// Uses the decimals-derived unit for whichever asset is used as the quote asset.
