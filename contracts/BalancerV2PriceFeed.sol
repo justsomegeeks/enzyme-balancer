@@ -66,11 +66,11 @@ contract BalancerV2PriceFeed is
         VALUE_INTERPRETER = _valueInterpreter;
         WBTC_WETH_POOL_ID = _balancerPoolId;
 
-        // I am adding pool token here because it is impossible to read immutable 
+        // I am adding pool token here because it is impossible to read immutable
         // variables at the time of contract creation (meaning when constructor is running)
         // this can be put into __init() function later
         address _poolAddress = address(bytes20(_balancerPoolId));
-        WBTC_WETH_POOL_ADDRESS =  _poolAddress;
+        WBTC_WETH_POOL_ADDRESS = _poolAddress;
 
         IBalancerV2Vault vault = IBalancerV2Vault(_balancerV2Vault);
         (IERC20[] memory tokens, , ) = vault.getPoolTokens(_balancerPoolId);
@@ -86,7 +86,6 @@ contract BalancerV2PriceFeed is
         });
 
         emit PoolTokenAdded(_poolAddress, _token0, _token1);
-
     }
 
     /// @notice Converts a given amount of a derivative to its underlying asset values
@@ -99,7 +98,6 @@ contract BalancerV2PriceFeed is
         external
         override
         returns (address[] memory underlyings_, uint256[] memory underlyingAmounts_)
-
     {
         console.log("Calling....");
         // IBalancerV2Pool poolContract = IBalancerV2Pool(_derivative);
@@ -113,7 +111,7 @@ contract BalancerV2PriceFeed is
         underlyingAmounts_ = new uint256[](tokens.length);
         underlyings_ = new address[](tokens.length);
 
-        for (uint256 i = 0; i < tokens.length; i++ ) {
+        for (uint256 i = 0; i < tokens.length; i++) {
             underlyingAmounts_[i] = balances[i] * BPTPercentage;
             underlyings_[i] = address(tokens[i]);
         }
