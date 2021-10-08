@@ -85,15 +85,21 @@ describe('BalancerV2PriceFeed', function () {
 
       enzymeCouncil = await hre.ethers.getSigner(networkDescriptor.contracts.enzyme.EnzymeCouncil);
       await hre.network.provider.send('hardhat_impersonateAccount', [enzymeCouncil.address]);
+      balancerV2PriceFeedArgs = priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor);
+      balancerV2PriceFeed = (await balancerV2PriceFeedFactory.deploy(
+        ...balancerV2PriceFeedArgs,
+      )) as BalancerV2PriceFeed;
+      await balancerV2PriceFeed.deployed();
     });
 
     it('returns rate for 18 decimals underlying assets', async function () {
-      let underlyings,
-        underlyingAmounts = await balancerV2PriceFeed.calcUnderlyingValues(
-          networkDescriptor.contracts.balancer.BalancerV2PoolAddress,
-          1000,
-        );
-      console.log(underlyings, underlyingAmounts);
+      const underLyingValues = await balancerV2PriceFeed.callStatic.calcUnderlyingValues(
+        networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
+        hre.ethers.utils.parseEther('100'),
+      );
+      expect(underLyingValues[0][0].toLowerCase()).to.equal(networkDescriptor.tokens.WBTC.address);
+      expect(underLyingValues[0][1].toLowerCase()).to.equal(networkDescriptor.tokens.WETH.address);
+      console.log(underLyingValues[1][0].toString());
     });
 
     // xit('returns rate for non-18 decimals underlying assets', function () {
