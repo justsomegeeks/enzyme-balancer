@@ -14,7 +14,7 @@ import "@enzymefinance/contracts/release/infrastructure/price-feeds/derivatives/
 import "@enzymefinance/contracts/release/infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "@enzymefinance/contracts/release/extensions/utils/FundDeployerOwnerMixin.sol";
 import "@enzymefinance/contracts/release/utils/MathHelpers.sol";
-//////old pricefeed imports////
+
 import "./interfaces/IBalancerV2Pool.sol";
 import "./interfaces/IBalancerV2Vault.sol";
 import "hardhat/console.sol";
@@ -26,7 +26,7 @@ contract BalancerV2PriceFeed is
     IDerivativePriceFeed,
     FundDeployerOwnerMixin,
     MathHelpers
-    /*UniswapV2PoolTokenValueCalculator*/
+    /*Balancer V2V2PoolTokenValueCalculator*/
 {
     event PoolTokenAdded(address indexed poolToken, address token0, address token1);
 
@@ -37,12 +37,19 @@ contract BalancerV2PriceFeed is
         uint8 token1Decimals;
     }
 
+    // BPT tokens have 18 decimals
     uint256 private constant POOL_TOKEN_UNIT = 10**18;
+
     address private immutable DERIVATIVE_PRICE_FEED;
-    address private BALANCERV2VAULT;
     address private immutable PRIMITIVE_PRICE_FEED;
     address private immutable VALUE_INTERPRETER;
-    bytes32 private balancerPoolId;
+
+    IBalancerV2Vault private immutable BALANCER_V2_VAULT;
+
+    bytes32 private immutable BALANCER_V2_POOL_ID;
+    // Balancer V2 pool address and BPT ERC20 token address are the same
+    address private immutable BALANCER_V2_POOL_ADDRESS;
+
     mapping(address => PoolTokenInfo) private poolTokenToInfo;
 
     constructor(
@@ -50,17 +57,45 @@ contract BalancerV2PriceFeed is
         address _derivativePriceFeed,
         address _primitivePriceFeed,
         address _valueInterpreter,
-        address _BalancerV2Vault,
-        bytes32 _BalancerPoolId,
-        address[] memory _poolTokens
+        address _balancerV2Vault,
+        bytes32 _balancerPoolId
     ) public FundDeployerOwnerMixin(_fundDeployer) {
         DERIVATIVE_PRICE_FEED = _derivativePriceFeed;
-        BALANCERV2VAULT = _BalancerV2Vault;
         PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
         VALUE_INTERPRETER = _valueInterpreter;
-        balancerPoolId = _BalancerPoolId;
+        BALANCER_V2_VAULT = IBalancerV2Vault(_balancerV2Vault);
+        BALANCER_V2_POOL_ID = _balancerPoolId;
 
-        __addPoolTokens(_poolTokens, _derivativePriceFeed, _primitivePriceFeed);
+        __initPool();
+    }
+
+    function __initPool() private {
+        (IERC20[] memory poolTokens, , ) = BALANCER_V2_VAULT.getPoolTokens(BALANCER_V2_POOL_ID);
+
+        require(
+            __poolTokenIsSupportable(
+                DERIVATIVE_PRICE_FEED,
+                PRIMITIVE_PRICE_FEED,
+                address(poolTokens[0]),
+                address(poolTokens[1])
+            ),
+            "__addPoolTokens: Unsupported pool token"
+        );
+
+        (BALANCER_V2_POOL_ADDRESS, ) = BALANCER_V2_VAULT.getPool(BALANCER_V2_POOL_ID);
+
+        poolTokenToInfo[BALANCER_V2_POOL_ADDRESS] = PoolTokenInfo({
+            token0: address(poolTokens[0]),
+            token1: address(poolTokens[1]),
+            token0Decimals: ERC20(address(poolTokens[0])).decimals(),
+            token1Decimals: ERC20(address(poolTokens[1])).decimals()
+        });
+
+        emit PoolTokenAdded(
+            BALANCER_V2_POOL_ADDRESS,
+            address(poolTokens[0]),
+            address(poolTokens[1])
+        );
     }
 
     /// @notice Converts a given amount of a derivative to its underlying asset values
@@ -79,7 +114,7 @@ contract BalancerV2PriceFeed is
         uint256 BPTPercentage = _derivativeAmount / totalBPT;
         console.log(totalBPT, BPTPercentage);
         (IERC20[] memory tokens, uint256[] memory balances, ) = getPoolInfoFromPool(
-            balancerPoolId
+            BALANCER_V2_POOL_ID
         );
 
         underlyingAmounts_ = new uint256[](tokens.length);
@@ -140,53 +175,6 @@ contract BalancerV2PriceFeed is
     //////////////////////////
     // POOL TOKENS REGISTRY //
     //////////////////////////
-
-    /// @notice Adds Uniswap pool tokens to the price feed
-    /// @param _poolTokens Uniswap pool tokens to add
-    function addPoolTokens(address[] calldata _poolTokens) external onlyFundDeployerOwner {
-        require(_poolTokens.length > 0, "addPoolTokens: Empty _poolTokens");
-
-        __addPoolTokens(_poolTokens, DERIVATIVE_PRICE_FEED, PRIMITIVE_PRICE_FEED);
-    }
-
-    /// @dev Helper to add Uniswap pool tokens
-    function __addPoolTokens(
-        address[] memory _poolTokens,
-        address _derivativePriceFeed,
-        address _primitivePriceFeed
-    ) private {
-        for (uint256 i; i < _poolTokens.length; i++) {
-            require(_poolTokens[i] != address(0), "__addPoolTokens: Empty poolToken");
-            require(
-                poolTokenToInfo[_poolTokens[i]].token0 == address(0),
-                "__addPoolTokens: Value already set"
-            );
-
-            IBalancerV2Vault vault = IBalancerV2Vault(BALANCERV2VAULT);
-            (IERC20[] memory tokens, , ) = vault.getPoolTokens(balancerPoolId);
-            address token0 = address(tokens[0]);
-            address token1 = address(tokens[1]);
-
-            require(
-                __poolTokenIsSupportable(
-                    _derivativePriceFeed,
-                    _primitivePriceFeed,
-                    token0,
-                    token1
-                ),
-                "__addPoolTokens: Unsupported pool token"
-            );
-
-            poolTokenToInfo[_poolTokens[i]] = PoolTokenInfo({
-                token0: token0,
-                token1: token1,
-                token0Decimals: ERC20(token0).decimals(),
-                token1Decimals: ERC20(token1).decimals()
-            });
-
-            emit PoolTokenAdded(_poolTokens[i], token0, token1);
-        }
-    }
 
     /// @dev Helper to determine if a pool token is supportable, based on whether price feeds are
     /// available for its underlying feeds. At least one of the underlying tokens must be
@@ -303,17 +291,17 @@ contract BalancerV2PriceFeed is
             uint256 lastChangeBlock
         )
     {
-        IBalancerV2Vault vault = IBalancerV2Vault(BALANCERV2VAULT);
+        IBalancerV2Vault vault = IBalancerV2Vault(BALANCER_V2_VAULT);
         (tokens, balances, lastChangeBlock) = vault.getPoolTokens(_poolId);
         return (tokens, balances, lastChangeBlock);
     }
 
     function getBalancerV2Vault() public view returns (address) {
-        return BALANCERV2VAULT;
+        return address(BALANCER_V2_VAULT);
     }
 
     function getTokensFromPool(bytes32 _poolId) public view returns (IERC20[] memory tokens) {
-        IBalancerV2Vault vault = IBalancerV2Vault(BALANCERV2VAULT);
+        IBalancerV2Vault vault = IBalancerV2Vault(BALANCER_V2_POOL_ADDRESS);
         (tokens, , ) = vault.getPoolTokens(_poolId);
         return tokens;
     }
@@ -332,8 +320,8 @@ contract BalancerV2PriceFeed is
         return (underlyingValues_);
     }
 
-    function getPoolTotalSupply(address _poolAddress) public view returns (uint256 totalSupply) {
-        IBalancerV2Pool pool = IBalancerV2Pool(_poolAddress);
+    function getPoolTotalSupply() public view returns (uint256 totalSupply) {
+        IBalancerV2Pool pool = IBalancerV2Pool(BALANCER_V2_POOL_ADDRESS);
         totalSupply = pool.totalSupply();
     }
 
@@ -342,17 +330,12 @@ contract BalancerV2PriceFeed is
         view
         returns (uint256 totalSupply, uint256 BPTValue)
     {
-        address _poolAddress = getAddress(_poolId);
-        totalSupply = getPoolTotalSupply(_poolAddress);
+        totalSupply = getPoolTotalSupply();
         uint256 totalTokenValue;
         uint256[] memory underlyingValues_ = calcPoolValues(_poolId);
         for (uint256 i = 0; i < underlyingValues_.length; i++) {
             totalTokenValue += underlyingValues_[i];
         }
         BPTValue = totalTokenValue / totalSupply;
-    }
-
-    function getAddress(bytes32 data) public pure returns (address) {
-        return address(bytes20(data));
     }
 }
