@@ -138,7 +138,16 @@ describe('BalancerV2PriceFeed', function () {
       expect(underLyingValues[0][1].toLowerCase()).to.equal(networkDescriptor.tokens.WETH.address);
       expect(underLyingValues[1][0].toBigInt() > 0 && underLyingValues[1][1].toBigInt() > 0);
     });
-
+    it('should return the value of a bptToken for a pool', async function () {
+      const bptValue = await balancerV2PriceFeed.callStatic.__calcTrustedRate(
+        networkDescriptor.tokens.WBTC.address,
+        networkDescriptor.tokens.WETH.address,
+        8,
+        18,
+      );
+      console.log(bptValue);
+      expect(bptValue);
+    });
     xit('returns rate for non-18 decimals underlying assets', function () {
       return;
     });

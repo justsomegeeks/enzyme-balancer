@@ -122,7 +122,7 @@ contract BalancerV2PriceFeed is
         uint256 numberOfBPT,
         uint256 totalBPT,
         uint256 precision
-    ) public pure returns (uint256 portionOfPool) {
+    ) internal pure returns (uint256 portionOfPool) {
         // caution, check safe-to-multiply here
         uint256 _numberOfBPT = numberOfBPT * 10**(precision + 1);
         // with rounding of last digit
@@ -145,7 +145,7 @@ contract BalancerV2PriceFeed is
         address _token1,
         uint256 _token0Decimals,
         uint256 _token1Decimals
-    ) private returns (uint256 token0RateAmount_, uint256 token1RateAmount_) {
+    ) public returns (uint256 token0RateAmount_, uint256 token1RateAmount_) {
         bool rateIsValid;
         // The quote asset of the value lookup must be a supported primitive asset,
         // so we cycle through the tokens until reaching a primitive.
@@ -333,5 +333,97 @@ contract BalancerV2PriceFeed is
 
     function getPoolTotalSupply(address _poolAddress) public view returns (uint256) {
         return IBalancerV2Pool(_poolAddress).totalSupply();
+    }
+
+    ////////////////////////////////////////////////////////
+    //////////////////old pricefeed functions///////////////////////
+    //////////////////////////////////////////
+    function getLatestPrice(address _token) public view returns (uint256) {
+        AggregatorV3Interface priceFeed = AggregatorV3Interface(_token);
+        (, int256 price, , , ) = priceFeed.latestRoundData();
+        return uint256(price);
+    }
+
+    function getAllPrices(IERC20[] memory tokens) internal view returns (uint256[] memory result) {
+        uint256 size = tokens.length;
+        result = new uint256[](size);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            // if (tokenAggregator[address(tokens[i])].isValue) {
+            //prevents calling obscure tokens until we decide what to do with those
+            result[i] = getLatestPrice(address(tokens[i]));
+            console.log("RESULT", result[i]);
+
+            // } else {
+            //     revert("token price not available");
+            // }
+        }
+    }
+
+    function getTimestamp(address _token) public view returns (int256) {
+        AggregatorV3Interface priceFeed = AggregatorV3Interface(_token);
+        (, , , uint256 timeStamp, ) = priceFeed.latestRoundData();
+        return int256(timeStamp);
+    }
+
+    function getPoolInfoFromPool(bytes32 _poolId)
+        public
+        view
+        returns (
+            IERC20[] memory tokens,
+            uint256[] memory balances,
+            uint256 lastChangeBlock
+        )
+    {
+        IBalancerV2Vault vault = IBalancerV2Vault(VAULT);
+        (tokens, balances, lastChangeBlock) = vault.getPoolTokens(_poolId);
+        return (tokens, balances, lastChangeBlock);
+    }
+
+    function getBalancerV2Vault() public view returns (address) {
+        return VAULT;
+    }
+
+    function getTokensFromPool(bytes32 _poolId) public view returns (IERC20[] memory tokens) {
+        IBalancerV2Vault vault = IBalancerV2Vault(VAULT);
+        (tokens, , ) = vault.getPoolTokens(_poolId);
+        return tokens;
+    }
+
+    function calcPoolValues(bytes32 _poolId)
+        public
+        view
+        returns (uint256[] memory underlyingValues_)
+    {
+        console.log("calling pool values");
+        (IERC20[] memory tokens, uint256[] memory balances, ) = getPoolInfoFromPool(_poolId);
+        uint256[] memory prices = getAllPrices(tokens);
+        underlyingValues_ = new uint256[](tokens.length);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            underlyingValues_[i] = balances[i] * prices[i];
+        }
+        return (underlyingValues_);
+    }
+
+    function calcBPTValue(bytes32 _poolId)
+        public
+        view
+        returns (uint256 totalSupply, uint256 BPTValue)
+    {
+        console.log("...calling");
+        address _poolAddress = getAddress(_poolId);
+        console.log("pool address", _poolAddress);
+        totalSupply = getPoolTotalSupply(_poolAddress);
+        console.log("totalSupply", totalSupply);
+        uint256 totalTokenValue;
+        uint256[] memory underlyingValues_ = calcPoolValues(_poolId);
+        for (uint256 i = 0; i < underlyingValues_.length; i++) {
+            totalTokenValue += underlyingValues_[i];
+            console.log("token value", totalTokenValue);
+        }
+        BPTValue = totalTokenValue / totalSupply;
+    }
+
+    function getAddress(bytes32 data) public pure returns (address) {
+        return address(bytes20(data));
     }
 }
