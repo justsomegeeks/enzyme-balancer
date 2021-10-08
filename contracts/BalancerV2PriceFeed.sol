@@ -16,7 +16,6 @@ import "@enzymefinance/contracts/release/extensions/utils/FundDeployerOwnerMixin
 import "@enzymefinance/contracts/release/utils/MathHelpers.sol";
 //////old pricefeed imports////
 import "./interfaces/IBalancerV2Pool.sol";
-import "./interfaces/IBalancerV2Pair.sol";
 import "./interfaces/IBalancerV2Vault.sol";
 import "hardhat/console.sol";
 
@@ -75,12 +74,13 @@ contract BalancerV2PriceFeed is
         override
         returns (address[] memory underlyings_, uint256[] memory underlyingAmounts_)
     {
-        IBalancerV2Pool poolContract = IBalancerV2Pool(_derivative);
-        bytes32 poolId = poolContract.getPoolId();
-        uint256 totalBPT = poolContract.totalSupply();
+        // IBalancerV2Pool poolContract = IBalancerV2Pool(_derivative);
+        uint256 totalBPT = getPoolTotalSupply(_derivative);
         uint256 BPTPercentage = _derivativeAmount / totalBPT;
-
-        (IERC20[] memory tokens, uint256[] memory balances, ) = getPoolInfoFromPool(poolId);
+        console.log(totalBPT, BPTPercentage);
+        (IERC20[] memory tokens, uint256[] memory balances, ) = getPoolInfoFromPool(
+            balancerPoolId
+        );
 
         underlyingAmounts_ = new uint256[](tokens.length);
         underlyings_ = new address[](tokens.length);

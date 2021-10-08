@@ -73,13 +73,32 @@ describe('BalancerV2PriceFeed', function () {
   });
 
   describe('calcUnderlyingValues', function () {
-    xit('returns rate for 18 decimals underlying assets', function () {
-      return;
+    before(async function () {
+      initializeEnvHelper(hre);
+
+      provider = hre.ethers.getDefaultProvider();
+
+      networkDescriptor = await getNetworkDescriptor(provider);
+      balancerV2PriceFeedArgs = priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor);
+
+      balancerV2PriceFeedFactory = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
+
+      enzymeCouncil = await hre.ethers.getSigner(networkDescriptor.contracts.enzyme.EnzymeCouncil);
+      await hre.network.provider.send('hardhat_impersonateAccount', [enzymeCouncil.address]);
     });
 
-    xit('returns rate for non-18 decimals underlying assets', function () {
-      return;
+    it('returns rate for 18 decimals underlying assets', async function () {
+      let underlyings,
+        underlyingAmounts = await balancerV2PriceFeed.calcUnderlyingValues(
+          networkDescriptor.contracts.balancer.BalancerV2PoolAddress,
+          1000,
+        );
+      console.log(underlyings, underlyingAmounts);
     });
+
+    // xit('returns rate for non-18 decimals underlying assets', function () {
+    //   return;
+    // });
   });
 
   describe('addPoolTokens', function () {
