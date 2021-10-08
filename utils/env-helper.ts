@@ -98,12 +98,12 @@ interface PriceAggregatorDescriptor {
 
 export interface TokenDescriptor {
   address: string;
-  contract: Contract | undefined;
+  contract: Contract;
   decimals: BigNumber;
   // temporary hack to get around testing on pinned mainnet, while using 'live' mainnet chainlink feeds and
   // mainnet subgrah
-  mainnetPinnedBlockTradeCache?: ExpectedTrade | undefined;
-  priceAggregatorDescriptor?: PriceAggregatorDescriptor | undefined;
+  mainnetPinnedBlockTradeCache?: ExpectedTrade;
+  priceAggregatorDescriptor?: PriceAggregatorDescriptor;
   symbol: string;
   whaleAddress: string;
 }
@@ -111,10 +111,10 @@ export interface TokenDescriptor {
 type TokenDescriptors = {
   [key in SupportedTokens]: {
     address: string;
-    contract: Contract | undefined;
+    contract: Contract;
     decimals: BigNumber;
-    mainnetPinnedBlockTradeCache?: ExpectedTrade | undefined;
-    priceAggregatorDescriptor?: PriceAggregatorDescriptor | undefined;
+    mainnetPinnedBlockTradeCache?: ExpectedTrade;
+    priceAggregatorDescriptor?: PriceAggregatorDescriptor;
     symbol: key;
     whaleAddress: string;
   };
@@ -336,13 +336,12 @@ export function bnToBigNumber(value: BN, decimals = BigNumber.from('0')): BigNum
 }
 
 export type PriceFeedDeployArgs = [
-  string, // fund deployer address,
-  string, // derivative price feed address,
-  string, // primitive price feed address,
-  string, // value interpretor address,
-  string, // factory address   TODO what is factory, a factory of what?
-  string,
-  [string, string], // token0 and token1 erc20 addresses of tokens in pool
+  string, // fund deployer address
+  string, // derivative price feed address
+  string, // primitive price feed address
+  string, // value interpretor address
+  string, // Balancer V2 vault address
+  string[], // Balancer V2 pool ids
 ];
 
 export function priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor: NetworkDescriptor): PriceFeedDeployArgs {
@@ -351,9 +350,7 @@ export function priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor: Netw
     networkDescriptor.contracts.enzyme.DerivativePriceFeedAddress,
     networkDescriptor.contracts.enzyme.PrimitivePriceFeedAddress,
     networkDescriptor.contracts.enzyme.ValueInterpreter,
-    networkDescriptor.contracts.balancer
-      .BalancerV2Vault /* not sure if this is right but using it for now this is the "factory" variable*/,
-    networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolId,
-    [networkDescriptor.tokens.WBTC.address, networkDescriptor.tokens.WETH.address],
+    networkDescriptor.contracts.balancer.BalancerV2Vault,
+    [networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolId],
   ];
 }
