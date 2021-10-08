@@ -1,3 +1,4 @@
+import { AggregatedDerivativePriceFeed } from '@enzymefinance/protocol';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 import type { DeployFunction } from 'hardhat-deploy/types';
 
@@ -19,11 +20,39 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const networkDescriptor = await getNetworkDescriptor(hre.ethers.getDefaultProvider());
 
+  const enzymeCouncil = await hre.ethers.getSigner(networkDescriptor.contracts.enzyme.EnzymeCouncil);
+  await hre.network.provider.send('hardhat_impersonateAccount', [enzymeCouncil.address]);
+
   const balancerV2PriceFeed = await deploy('BalancerV2PriceFeed', {
     args: priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor),
     from: deployer,
     log: true,
   });
+
+  // Register all Balancer V2 pool tokens with the derivative price feed.
+  if (balancerV2PriceFeed.newlyDeployed) {
+    const derivativePriceFeedInstance = new AggregatedDerivativePriceFeed(
+      networkDescriptor.contracts.enzyme.AggregatedDerivativePriceFeed,
+      enzymeCouncil,
+    );
+
+    const pools = [networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress];
+
+    await derivativePriceFeedInstance.addDerivatives(
+      pools,
+      pools.map(() => balancerV2PriceFeed.address),
+    );
+
+    console.log(`Registering BPT pool tokens...`);
+    console.log(`  Balancer BPT WBTC/WETH pool: ${networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress}`);
+
+    console.log(
+      'derivativePriceFeedInstance address: ',
+      await derivativePriceFeedInstance.getPriceFeedForDerivative(
+        networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
+      ),
+    );
+  }
 
   await deploy('BalancerV2Adapter', {
     args: [
