@@ -128,7 +128,7 @@ describe('BalancerV2PriceFeed', function () {
       await balancerV2PriceFeed.deployed();
     });
 
-    xit('returns rate for 18 decimals underlying assets', async function () {
+    it('returns rate for 18 decimals underlying assets', async function () {
       const underLyingValues = await balancerV2PriceFeed.callStatic.calcUnderlyingValues(
         networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
         hre.ethers.utils.parseEther('100'),

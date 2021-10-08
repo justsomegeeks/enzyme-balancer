@@ -126,15 +126,15 @@ contract BalancerV2PriceFeed is
     // PRIVATE FUNCTIONS
     //@dev Calculates percentages
     function calcPortionOfPool(
-        uint256 numerator,
-        uint256 denominator,
+        uint256 numberOfBPT,
+        uint256 totalBPT,
         uint256 precision
-    ) public pure returns (uint256 quotient) {
+    ) public pure returns (uint256 portionOfPool) {
         // caution, check safe-to-multiply here
-        uint256 _numerator = numerator * 10**(precision + 1);
+        uint256 _numberOfBPT = numberOfBPT * 10**(precision + 1);
         // with rounding of last digit
-        uint256 _quotient = ((_numerator / denominator) + 5) / 10;
-        return (_quotient);
+        uint256 _portionOfPool = ((_numberOfBPT / totalBPT) + 5) / 10;
+        return (_portionOfPool);
     }
 
     /// @dev Calculates the trusted rate of two assets based on our price feeds.
