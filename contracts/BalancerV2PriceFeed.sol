@@ -111,6 +111,22 @@ contract BalancerV2PriceFeed is
         return (underlyings_, underlyingAmounts_);
     }
 
+    //baseAsset is the asset you want to get the value of
+    //baseAssetAmount is the amount of that asset you're quoting.
+    //quoteAsset is the asset you want to get the price in.
+    function getCurrentRate(
+        address _baseAsset,
+        uint256 _baseAssetAmount,
+        address _quoteAsset
+    ) public view returns (uint256 quoteAssetAmount_, bool isValid) {
+        IPrimitivePriceFeed priceFeed = IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED);
+        (quoteAssetAmount_, isValid) = priceFeed.calcCanonicalValue(
+            _baseAsset,
+            _baseAssetAmount,
+            _quoteAsset
+        );
+    }
+
     /// @notice Checks if an asset is supported by the price feed
     /// @param _asset The asset to check
     /// @return isSupported_ True if the asset is supported

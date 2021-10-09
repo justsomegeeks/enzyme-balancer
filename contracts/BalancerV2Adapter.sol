@@ -161,8 +161,6 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         address poolAddress = address(bytes20(poolId));
         incomingAssets_ = new address[](1);
         incomingAssets_[0] = poolAddress;
-
-        console.log("Parse assets for lend");
         return (
             IIntegrationManager.SpendAssetsHandleType.Transfer,
             spendAssets_,

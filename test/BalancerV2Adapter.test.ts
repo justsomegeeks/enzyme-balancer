@@ -314,7 +314,7 @@ describe('BalancerV2Adapter', function () {
         tokenOut,
         tokenIn.mainnetPinnedBlockTradeCache.tokenInAmount,
       );
-
+      console.log('SWAP INFO: ', swapInfo);
       limits = calculateLimits(swapType, swapInfo);
 
       args = balancerV2TakeOrderArgs({
@@ -446,8 +446,7 @@ describe('BalancerV2Adapter', function () {
 
       console.log(`initial balances: WBTC: ${initialBalances[0].toString()}, WETH: ${initialBalances[1].toString()}`);
 
-      const amountsIn = [hre.ethers.utils.parseUnits('1', 8), hre.ethers.utils.parseEther('14.084120840052506')];
-
+      const amountsIn = [hre.ethers.utils.parseUnits('1', 8), hre.ethers.utils.parseEther('14.086665457707791586')];
       // TODO: just making a number up here to try to get lend to work
       const minBPTOut = hre.ethers.utils.parseUnits('1', 1);
       console.log(`minBPTOut = ${minBPTOut.toString()}`);
