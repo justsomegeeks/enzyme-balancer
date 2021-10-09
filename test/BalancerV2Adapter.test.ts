@@ -1,4 +1,5 @@
 import type { JoinPoolRequest } from '@balancer-labs/balancer-js';
+import { WeightedPoolEncoder } from '@balancer-labs/balancer-js';
 import type { SwapInfo } from '@balancer-labs/sor';
 import { SwapTypes } from '@balancer-labs/sor';
 import {
@@ -71,6 +72,11 @@ describe('BalancerV2Adapter', function () {
     balancerV2PriceFeedArgs = priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor);
     balancerV2PriceFeed = (await balancerV2PriceFeedFactory.deploy(...balancerV2PriceFeedArgs)) as BalancerV2PriceFeed;
     await balancerV2PriceFeed.deployed();
+
+    await aggregatedDerivativePriceFeed.addDerivatives(
+      [networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress],
+      [balancerV2PriceFeed.address],
+    );
 
     balancerV2AdapterFactory = await hre.ethers.getContractFactory('BalancerV2Adapter');
   });
@@ -432,15 +438,25 @@ describe('BalancerV2Adapter', function () {
       recipient = enzymeCouncil.address;
 
       const tokens = networkDescriptor.tokens;
-      // TODO: initialBalances of enzyme fund.
-      const initialBalances = [0, 1];
-      const initUserData = hre.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256[]'], [0, initialBalances]);
+
+      const initialBalances = [
+        await tokens.WBTC.contract.balanceOf(networkDescriptor.contracts.enzyme.EnzymeVaultProxy),
+        await tokens.WETH.contract.balanceOf(networkDescriptor.contracts.enzyme.EnzymeVaultProxy),
+      ];
+
+      console.log(`initial balances: WBTC: ${initialBalances[0].toString()}, WETH: ${initialBalances[1].toString()}`);
+
+      const amountsIn = [hre.ethers.utils.parseUnits('1', 8), hre.ethers.utils.parseEther('14.084120840052506')];
+
+      // TODO: just making a number up here to try to get lend to work
+      const minBPTOut = hre.ethers.utils.parseUnits('1', 1);
+      console.log(`minBPTOut = ${minBPTOut.toString()}`);
 
       request = {
         assets: [tokens.WBTC.address, tokens.WETH.address],
         fromInternalBalance: false,
-        maxAmountsIn: [hre.ethers.utils.parseUnits('1', 8), hre.ethers.utils.parseEther('14.084120840052506')],
-        userData: initUserData,
+        maxAmountsIn: amountsIn,
+        userData: WeightedPoolEncoder.joinExactTokensInForBPTOut(amountsIn, minBPTOut),
       };
 
       lendArgs = balancerV2LendArgs({
@@ -456,7 +472,7 @@ describe('BalancerV2Adapter', function () {
       );
     });
 
-    it('works as expected when called by a fund', async function () {
+    it.only('works as expected when called by a fund', async function () {
       expect(lendArgs).to.not.be.undefined;
 
       // const preTradeBalances = await getBalances(
@@ -465,18 +481,8 @@ describe('BalancerV2Adapter', function () {
       //   networkDescriptor.tokens.WETH.address,
       // );
       // Whitelisting BPT token and our price feed to enzyme
-      console.log('Working....');
-      await aggregatedDerivativePriceFeed.addDerivatives(
-        [networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress],
-        [balancerV2PriceFeed.address],
-      );
-      console.log('Able to register');
-      console.log(
-        'Asset registered ',
-        await aggregatedDerivativePriceFeed.isSupportedAsset(
-          networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
-        ),
-      );
+      console.log('Lending....');
+
       const lendTxnReceipt = await balancerV2Lend({
         balancerV2Adapter: balancerV2Adapter.address,
         enzymeComptroller,
