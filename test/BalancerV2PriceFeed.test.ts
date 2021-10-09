@@ -128,11 +128,14 @@ describe('BalancerV2PriceFeed', function () {
       await balancerV2PriceFeed.deployed();
     });
 
-    xit('returns rate for 18 decimals underlying assets', async function () {
+    it('returns rate for 18 decimals underlying assets', async function () {
       const underLyingValues = await balancerV2PriceFeed.callStatic.calcUnderlyingValues(
         networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
         hre.ethers.utils.parseEther('100'),
       );
+      console.log(underLyingValues);
+      console.log(underLyingValues[1][0].toString());
+      console.log(underLyingValues[1][1].toString());
       expect(underLyingValues[0][0].toLowerCase()).to.equal(networkDescriptor.tokens.WBTC.address);
       expect(underLyingValues[0][1].toLowerCase()).to.equal(networkDescriptor.tokens.WETH.address);
       console.log(underLyingValues[1][0].toString());

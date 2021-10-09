@@ -110,7 +110,12 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         (bytes32 poolId, , IBalancerV2Vault.JoinPoolRequest memory request) = __decodeLendCallArgs(
             _encodedCallArgs
         );
-
+        console.logBytes(_encodedCallArgs);
+        console.logBytes32(poolId);
+        console.logAddress(request.assets[0]);
+        console.logAddress(request.assets[1]);
+        console.logUint(request.maxAmountsIn[0]);
+        console.logUint(request.maxAmountsIn[1]);
         require(
             request.assets.length == request.maxAmountsIn.length,
             "length of request.assets and request.maxAmountsIn must be equal"
@@ -123,6 +128,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         uint256 totalBPT = BalancerV2PriceFeed(BALANCER_V2_PRICE_FEED).getPoolTotalSupply(
             address(bytes20(poolId))
         );
+        // INFO: How are we calculating minimum incoming BPT amounts?
 
         for (uint256 i = 0; i < assetsLength; i++) {
             spendAssetAmounts_[i] = request.maxAmountsIn[i];
@@ -131,15 +137,22 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
                 poolId,
                 IERC20(spendAssets_[i])
             );
+            console.log("Total BPT");
+            console.log(totalBPT);
+            console.log("Total Token");
+            console.log(totalToken);
+
             uint256 expectedBPT = (totalBPT / totalToken) * request.maxAmountsIn[i];
-            minIncomingAssetAmounts_[i] = expectedBPT;
+            console.log("Expected BPT");
+            console.log(expectedBPT);
+            minIncomingAssetAmounts_[0] += expectedBPT;
         }
-        minIncomingAssetAmounts_[0] = 1000;
 
         address poolAddress = address(bytes20(poolId));
         incomingAssets_ = new address[](1);
         incomingAssets_[0] = poolAddress;
 
+        console.log("Parse assets for lend");
         return (
             IIntegrationManager.SpendAssetsHandleType.Transfer,
             spendAssets_,
@@ -238,15 +251,16 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
     function lend(
         address _vaultProxy,
         bytes calldata _encodedCallArgs,
-        bytes calldata
-    ) external onlyIntegrationManager fundAssetsTransferHandler(_vaultProxy, _encodedCallArgs) {
+        bytes calldata _encodedAssetTransferArgs
+    ) external onlyIntegrationManager fundAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs) {
         (
             bytes32 poolId,
             address recipient,
             IBalancerV2Vault.JoinPoolRequest memory request
         ) = __decodeLendCallArgs(_encodedCallArgs);
+        console.log("From the world of lend");
 
-        __balancerV2Lend(poolId, msg.sender, recipient, request);
+        __balancerV2Lend(poolId, address(this), recipient, request);
     }
 
     ///////////////////

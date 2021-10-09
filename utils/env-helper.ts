@@ -150,6 +150,34 @@ export function initializeEnvHelper(_hre: HardhatRuntimeEnvironment) {
   hre = _hre;
 }
 
+// export const bptPoolCache = {
+//   poolToken: {
+//     totalToken: '21002989178344846700415',
+//   },
+//   token0: {
+//     totalToken: '282851094270',
+//   },
+//   token1: {
+//     totalToken: '39837089914397634606231',
+//   },
+// };
+
+// export const bptPoolCache = {
+//   poolToken: {
+//     totalToken: '21002.989178344846700415',
+//   },
+//   token0: {
+//     totalToken: '2828.51094270',
+//   },
+//   token1: {
+//     totalToken: '39837.089914397634606231',
+//   },
+// };
+export const lendAmounts = () => ({
+  ETH: hre.ethers.utils.parseEther('14.084120840052506'),
+  WBTC: hre.ethers.utils.parseUnits('1', 8),
+});
+
 export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
   return {
     mainnet: {

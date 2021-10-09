@@ -18,7 +18,6 @@ import {
 import type { BigNumber } from '@ethersproject/bignumber';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
-import type { BalancerV2Lend } from '../balancerV2';
 import { balancerV2LendArgs, balancerV2TakeOrderArgs, calculateLimits } from '../balancerV2';
 
 export async function balancerV2TakeOrder({
@@ -60,7 +59,7 @@ export async function balancerV2TakeOrder({
     .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 }
 export async function balancerV2Lend({
-  comptrollerProxy,
+  enzymeComptroller,
   integrationManager,
   enzymeFundOwner,
   balancerV2Adapter,
@@ -68,7 +67,7 @@ export async function balancerV2Lend({
   recipient,
   request,
 }: {
-  comptrollerProxy: ComptrollerLib;
+  enzymeComptroller: ComptrollerLib;
   integrationManager: IntegrationManager;
   enzymeFundOwner: SignerWithAddress;
   balancerV2Adapter: AddressLike;
@@ -80,14 +79,14 @@ export async function balancerV2Lend({
     poolId,
     recipient,
     request,
-  } as BalancerV2Lend);
+  });
   const callArgs = callOnIntegrationArgs({
     adapter: balancerV2Adapter,
     encodedCallArgs: lendArgs,
     selector: lendSelector,
   });
 
-  return comptrollerProxy
+  return enzymeComptroller
     .connect(enzymeFundOwner)
     .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 }
