@@ -66,17 +66,15 @@ abstract contract BalancerV2ActionsMixin is AssetHelpers {
             address(this),
             BALANCER_V2_VAULT
         );
-        console.log(approvalWeth);
+        console.log("approval weth: ", approvalWeth);
 
         uint256 balanceBefore = IERC20(address(bytes20(_poolId))).balanceOf(_recipient);
-        console.log("balance before");
-        console.log(balanceBefore);
+        console.log("IERC20 balance before: ", balanceBefore);
 
         IBalancerV2Vault(BALANCER_V2_VAULT).joinPool(_poolId, _sender, _recipient, _request);
 
         uint256 balanceAfter = IERC20(address(bytes20(_poolId))).balanceOf(_recipient);
-        console.log("balance after");
-        console.log(balanceAfter);
+        console.log("IERC20 balance after: ", balanceAfter);
     }
 
     /// @dev Helper to remove liquidity
