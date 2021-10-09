@@ -114,7 +114,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         console.logBytes32(poolId);
         console.logAddress(request.assets[0]);
         console.logAddress(request.assets[1]);
-        console.logUint(request.maxAmountsIn[0]);
+        console.log(request.maxAmountsIn[0]);
         console.logUint(request.maxAmountsIn[1]);
         require(
             request.assets.length == request.maxAmountsIn.length,
@@ -137,16 +137,26 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
                 poolId,
                 IERC20(spendAssets_[i])
             );
-            console.log("Total BPT:", totalBPT);
-            console.log("Total Token:", totalToken);
+            console.log("asset ", request.assets[i]);
+            console.log(
+                "tokens in ",
+                request.maxAmountsIn[i],
+                "Total Tokens in pool: ",
+                totalToken
+            );
+            console.log("Total BPT: ", totalBPT);
             uint256 calculationPrecision = 18;
-            uint256 BPTPortion = calcPortionOfPool(totalToken, totalBPT, calculationPrecision) *
-                request.maxAmountsIn[i];
-            uint256 expectedBPT = calcUnderlyingAmount();
-            console.log("Expected BPT:", expectedBPT);
-            minIncomingAssetAmounts_[0] += expectedBPT;
+            uint256 BPTPortion = calcPortionOfPool(
+                request.maxAmountsIn[i],
+                totalToken,
+                calculationPrecision
+            );
+            uint256 expectedBPT = calcBPTAmount(totalBPT, BPTPortion, calculationPrecision);
+            console.log("BPTs Per TotalTokens:", BPTPortion, "Expected BPT:", expectedBPT);
+            minIncomingAssetAmounts_[0] = expectedBPT;
         }
-        minIncomingAssetAmounts_[0] = 7425457989251114227;
+        console.log("total expected bpt:", minIncomingAssetAmounts_[0]);
+        // = 7425457989251114227;
 
         address poolAddress = address(bytes20(poolId));
         incomingAssets_ = new address[](1);
@@ -162,27 +172,46 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         );
     }
 
-    //@dev Calculates percentages
+    /// @dev Calculates percentages
     function calcPortionOfPool(
-        uint256 numberOfBPT,
-        uint256 totalBPT,
+        uint256 tokensIn,
+        uint256 totalTokens,
         uint256 precision
     ) internal pure returns (uint256 portionOfPool) {
         // caution, check safe-to-multiply here
-        uint256 _numberOfBPT = numberOfBPT * 10**(precision + 1);
+        uint256 _tokensIn = tokensIn.mul(10**(precision.add(1)));
         // with rounding of last digit
-        uint256 _portionOfPool = ((_numberOfBPT / totalBPT) + 5) / 10;
+        uint256 _portionOfPool = (_tokensIn.div(totalTokens)).add(5).div(10);
         return (_portionOfPool);
     }
 
-    //takes the amount received from calcPortionOfPool and returns and amount based on that portion.
-    function calcUnderlyingAmount(
+    //(100*tokensIn + (tokensIn+totalTokens)/2)/(tokensIn + totalTokens)
+    // function calcPortionOfPool(
+    //     uint256 tokensIn,
+    //     uint256 totalTokens,
+    //     uint256 precision
+    // ) internal pure returns (uint256 portion) {
+    //     portion =
+    //         (((10**precision) * tokensIn) + (tokensIn + totalTokens) / 2) /
+    //         (tokensIn + totalTokens);
+    //     //console.log("p", precision);
+    // }
+
+    function calcBPTAmount(
         uint256 balance,
-        uint256 BPTPortion,
+        uint256 tokenPortion,
         uint256 precision
     ) internal pure returns (uint256 underlyingAmount) {
-        underlyingAmount = ((balance * BPTPortion).div(10**precision));
+        //console.log("precision", precision);
+        underlyingAmount = (balance.mul(tokenPortion)).div(10**(precision));
     }
+
+    function calcExpectedBPT(
+        uint256 tokensIn,
+        uint256 totalTokens,
+        uint256 tokenBalance,
+        uint256 precision
+    ) internal pure returns (uint256 expectedBPT) {}
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
     /// during swap() calls
