@@ -128,16 +128,27 @@ describe('BalancerV2PriceFeed', function () {
       await balancerV2PriceFeed.deployed();
     });
 
-    xit('returns rate for 18 decimals underlying assets', async function () {
+    it('returns assets and number of underlying assets per BPT', async function () {
       const underLyingValues = await balancerV2PriceFeed.callStatic.calcUnderlyingValues(
         networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
         hre.ethers.utils.parseEther('100'),
       );
+      underLyingValues.forEach((el, i) => console.log(`at index ${i}: ${el}`));
       expect(underLyingValues[0][0].toLowerCase()).to.equal(networkDescriptor.tokens.WBTC.address);
       expect(underLyingValues[0][1].toLowerCase()).to.equal(networkDescriptor.tokens.WETH.address);
-      console.log(underLyingValues[1][0].toString());
+      expect(underLyingValues[1][0].toBigInt() > 0 && underLyingValues[1][1].toBigInt() > 0);
     });
-
+    xit('should return the value of a bptToken for a pool', async function () {
+      // const bptValue = await balancerV2PriceFeed.callStatic.__calcTrustedRate(
+      //   networkDescriptor.tokens.WBTC.address,
+      //   networkDescriptor.tokens.WETH.address,
+      //   8,
+      //   18,
+      // );
+      const aPrice = await balancerV2PriceFeed.callStatic.getLatestPrice(networkDescriptor.tokens.WBTC.address);
+      console.log(aPrice);
+      expect(aPrice);
+    });
     xit('returns rate for non-18 decimals underlying assets', function () {
       return;
     });
