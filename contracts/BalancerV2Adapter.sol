@@ -285,6 +285,15 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
     /// @notice Deposits an amount of an underlying asset into a pool
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs Encoded order parameters
+
+    struct LendVars {
+        bytes32 poolId;
+        address poolAddress;
+        address recipient;
+        IERC20 balPoolToken;
+        IBalancerV2Vault.JoinPoolRequest request;
+    }
+
     function lend(
         address _vaultProxy,
         bytes calldata _encodedCallArgs,
@@ -294,17 +303,23 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         onlyIntegrationManager
         fundAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
     {
-        (
-            bytes32 poolId,
-            address recipient,
-            IBalancerV2Vault.JoinPoolRequest memory request
-        ) = __decodeLendCallArgs(_encodedCallArgs);
+        LendVars memory vars;
+
+        (vars.poolId, vars.recipient, vars.request) = __decodeLendCallArgs(_encodedCallArgs);
+
+        vars.balPoolToken = IERC20(address(bytes20(vars.poolId)));
+        //console.log(balpooltoken);
+        uint256 enzymeVaultBalance = vars.balPoolToken.balanceOf(_vaultProxy);
+
         console.log("From the world of lend");
+        console.log("ENZYME VAULT BEFORE", enzymeVaultBalance);
+        // console.log("request.assets[0] = ", request.assets[0]);
+        // console.log("request.assets[1] = ", request.assets[1]);
 
-        console.log("request.assets[0] = ", request.assets[0]);
-        console.log("request.assets[1] = ", request.assets[1]);
+        __balancerV2Lend(vars.poolId, address(this), payable(_vaultProxy), vars.request);
 
-        __balancerV2Lend(poolId, address(this), recipient, request);
+        uint256 enzymeVaultBalanceAfter = vars.balPoolToken.balanceOf(_vaultProxy);
+        console.log("ENZYME VAULT AFTER", enzymeVaultBalanceAfter);
     }
 
     ///////////////////
