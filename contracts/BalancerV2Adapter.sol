@@ -185,18 +185,6 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         return (_portionOfPool);
     }
 
-    //(100*tokensIn + (tokensIn+totalTokens)/2)/(tokensIn + totalTokens)
-    // function calcPortionOfPool(
-    //     uint256 tokensIn,
-    //     uint256 totalTokens,
-    //     uint256 precision
-    // ) internal pure returns (uint256 portion) {
-    //     portion =
-    //         (((10**precision) * tokensIn) + (tokensIn + totalTokens) / 2) /
-    //         (tokensIn + totalTokens);
-    //     //console.log("p", precision);
-    // }
-
     function calcBPTAmount(
         uint256 balance,
         uint256 tokenPortion,
