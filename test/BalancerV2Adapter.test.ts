@@ -1,4 +1,4 @@
-import type { JoinPoolRequest } from '@balancer-labs/balancer-js';
+import type { JoinPoolRequest, ExitPoolRequest } from '@balancer-labs/balancer-js';
 import type { SwapInfo } from '@balancer-labs/sor';
 import { SwapTypes } from '@balancer-labs/sor';
 import {
@@ -6,6 +6,7 @@ import {
   ComptrollerLib,
   IntegrationManager,
   lendSelector,
+  redeemSelector,
   SpendAssetsHandleType,
   takeOrderSelector,
 } from '@enzymefinance/protocol';
@@ -26,15 +27,16 @@ import {
   initializeEnvHelper,
   priceFeedDeployArgsFromNetworkDescriptor,
 } from '../utils/env-helper';
-import type { BalancerV2Lend } from '../utils/integrations/balancerV2';
+import type { BalancerV2Lend, BalancerV2Redeem } from '../utils/integrations/balancerV2';
 import {
   assetTransferArgs,
   balancerV2LendArgs,
+  balancerV2RedeemArgs,
   balancerV2TakeOrderArgs,
   calculateLimits,
   getSwap,
 } from '../utils/integrations/balancerV2';
-import { balancerV2Lend, balancerV2TakeOrder } from '../utils/integrations/testutils/balancerV2TestHelper';
+import { balancerV2Lend, balancerV2TakeOrder, balancerV2Redeem } from '../utils/integrations/testutils/balancerV2TestHelper';
 
 describe('BalancerV2Adapter', function () {
   let provider: BaseProvider;
@@ -233,8 +235,44 @@ describe('BalancerV2Adapter', function () {
       expect(parsedLendArgs[4][0]).gt(0);
     });
 
-    xit('generates expected output for redeeming', async function () {
-      return;
+    it('generates expected output for redeeming', async function () {
+      const poolId = '0x01abc00e86c7e258823b9a055fd62ca6cf61a16300010000000000000000003b';
+      const recipient = enzymeCouncil.address;
+
+      const tokens = networkDescriptor.tokens;
+      const initialBalances = [0, 1];
+      const initUserData = hre.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256[]'], [0, initialBalances]);
+
+      const request: ExitPoolRequest = {
+        assets: [tokens.WETH.address],
+        toInternalBalance: false,
+        minAmountsOut: [1],
+        userData: initUserData,
+      };
+
+      args = balancerV2RedeemArgs({
+        poolId,
+        recipient,
+        request,
+      } as BalancerV2Redeem);
+
+      const parsedRedeemArgs = await balancerV2Adapter.parseAssetsForMethod(redeemSelector, args);
+
+      expect(parsedRedeemArgs).to.have.length(5);
+
+      expect(parsedRedeemArgs[0]).to.equal(SpendAssetsHandleType.Transfer);
+
+      expect(parsedRedeemArgs[1]).to.have.length(1);
+      expect(parsedRedeemArgs[1][0].toLowerCase()).to.equal(networkDescriptor.tokens.WETH.address.toLowerCase()); //token address in
+
+      expect(parsedRedeemArgs[2]).to.have.length(1);
+      expect(parsedRedeemArgs[2][0].eq(request.minAmountsOut[0])).to.be.true; //tokens in amount
+
+      expect(parsedRedeemArgs[3]).to.have.length(1); //pooladdress
+      expect(parsedRedeemArgs[3][0].toLowerCase()).to.equal('0x01abc00e86c7e258823b9a055fd62ca6cf61a163');
+
+      expect(parsedRedeemArgs[4]).to.have.length(1); //incomming assets amount
+      expect(parsedRedeemArgs[4][0]).gt(0);
     });
   });
 
@@ -499,12 +537,112 @@ describe('BalancerV2Adapter', function () {
   });
 
   describe('redeem', function () {
-    xit('can only be called via the IntegrationManager', async function () {
-      return;
+    let balancerV2Adapter: any;
+    let redeemArgs: any;
+    let enzymeFundAddress: string;
+    let enzymeFundOwner: SignerWithAddress;
+    let request: ExitPoolRequest;
+    let poolId: string;
+    let recipient: string;
+    let comptrollerProxy: ComptrollerLib;
+    let enzymeComptrollerAddress: string;
+    let balancerV2PriceFeed: any;
+
+    before(async function () {
+      initializeEnvHelper(hre);
+      enzymeComptrollerAddress = networkDescriptor.contracts.enzyme.EnyzmeComptroller;
+      enzymeFundAddress = networkDescriptor.contracts.enzyme.EnzymeVaultProxy;
+      enzymeFundOwner = await hre.ethers.getSigner(networkDescriptor.contracts.enzyme.FundOwner);
+
+      comptrollerProxy = new ComptrollerLib(enzymeComptrollerAddress, enzymeFundOwner);
+
+      balancerV2PriceFeedFactory = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
+
+      balancerV2PriceFeedArgs = priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor);
+      balancerV2PriceFeed = (await balancerV2PriceFeedFactory.deploy(
+        ...balancerV2PriceFeedArgs,
+      )) as BalancerV2PriceFeed;
+
+      balancerV2Adapter = (await balancerV2AdapterFactory.deploy(
+        networkDescriptor.contracts.enzyme.IntegrationManager,
+        networkDescriptor.contracts.balancer.BalancerV2Vault,
+        balancerV2PriceFeed.address,
+      )) as any;
+
+      await balancerV2Adapter.deployed();
+
+      await integrationManager.registerAdapters([balancerV2Adapter.address]);
+      //await  integrationManager.addAuthUserForFund(balancerV2Adapter, enzymeFundOwner);
+      poolId = '0x01abc00e86c7e258823b9a055fd62ca6cf61a16300010000000000000000003b';
+      recipient = enzymeCouncil.address;
+
+      const tokens = networkDescriptor.tokens;
+      const initialBalances = [0, 1];
+      const initUserData = hre.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256[]'], [0, initialBalances]);
+
+      request = {
+        assets: [tokens.WETH.address],
+        toInternalBalance: false,
+        minAmountsOut: [1],
+        userData: initUserData,
+      };
+
+      redeemArgs = balancerV2RedeemArgs({
+        poolId,
+        recipient,
+        request,
+      } as BalancerV2Redeem);
+    });
+
+    it('can only be called via the IntegrationManager', async function () {
+      await expect(balancerV2Adapter.redeem(enzymeFundAddress, redeemSelector, redeemArgs)).to.be.revertedWith(
+        'Only the IntegrationManager can call this function',
+      );
     });
 
     xit('works as expected when called by a fund', async function () {
-      return;
+      expect(redeemArgs).to.not.be.undefined;
+
+      // const preTradeBalances = await getBalances(
+      //   enzymeFundAddress,
+      //   networkDescriptor.tokens.WBTC.address,
+      //   networkDescriptor.tokens.WETH.address,
+      // );
+      // Whitelisting BPT token and our price feed to enzyme
+      console.log('Working....');
+      await aggregatedDerivativePriceFeed.addDerivatives(
+        [networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress],
+        [balancerV2PriceFeed.address],
+      );
+      console.log('Able to register');
+      console.log(
+        'Asset registered ',
+        await aggregatedDerivativePriceFeed.isSupportedAsset(
+          networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
+        ),
+      );
+      const redeemTxnReceipt = await balancerV2Redeem({
+        balancerV2Adapter: balancerV2Adapter.address,
+        comptrollerProxy,
+        enzymeFundOwner,
+        integrationManager,
+        poolId,
+        recipient,
+        request,
+      });
+
+      // Trade on BalancerV2
+
+      // const postTradeBalances = await getBalances(enzymeFundAddress, tokenIn, tokenOut);
+
+      // expect(preTradeBalances.tokenIn.balance.sub(tokenInAmountBigNumber).eq(postTradeBalances.tokenIn.balance)).to.be
+      //   .true;
+      // expect(postTradeBalances.tokenOut.balance.gte(preTradeBalances.tokenOut.balance.add(returnAmountBigNumber))).to.be
+      //   .true;
+
+      const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
+      assertEvent(redeemTxnReceipt, CallOnIntegrationExecutedForFundEvent);
+    
     });
   });
 });

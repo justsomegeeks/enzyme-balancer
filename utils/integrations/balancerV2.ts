@@ -8,7 +8,7 @@
   The code here is heavily inspired by: https://github.com/balancer-labs/balancer-sor/blob/master/test/testScripts/swapExample.ts
 */
 
-import type { JoinPoolRequest } from '@balancer-labs/balancer-js';
+import type { JoinPoolRequest, ExitPoolRequest } from '@balancer-labs/balancer-js';
 import type { SwapInfo, SwapV2 } from '@balancer-labs/sor';
 import { scale, SOR, SwapTypes } from '@balancer-labs/sor';
 import { encodeArgs } from '@enzymefinance/protocol';
@@ -94,11 +94,12 @@ export function balancerV2TakeOrderArgs({
   );
 }
 
-export function balancerV2RedeemRequest({ assets, minAmountsOut, userData, toInternalBalance }: BalancerV2ExitRequest) {
-  const _minAmountsOut = BigNumber.from(minAmountsOut.toString());
-}
 const lendV2JoinPoolRequest = utils.ParamType.fromString(
   'tuple(address[] assets, uint256[] maxAmountsIn, bytes userData, bool fromInternalBalance)',
+);
+
+const redeemV2JoinPoolRequest = utils.ParamType.fromString(
+  'tuple(address[] assets, uint256[] minAmountsOut, bytes userData, bool toInternalBalance)',
 );
 
 export function balancerV2LendArgs({ poolId, recipient, request }: BalancerV2Lend) {
@@ -108,6 +109,14 @@ export interface BalancerV2Lend {
   poolId: string;
   recipient: string;
   request: JoinPoolRequest;
+}
+export function balancerV2RedeemArgs({ poolId, recipient, request }: BalancerV2Redeem) {
+  return encodeArgs(['bytes32', 'address', redeemV2JoinPoolRequest], [poolId, recipient, request]);
+}
+export interface BalancerV2Redeem {
+  poolId: string;
+  recipient: string;
+  request: ExitPoolRequest;
 }
 
 export async function getSwap(
@@ -182,10 +191,6 @@ export function calcMinTokensOut(exitInfo: poolExit): BigNumber[] {
   //userPercentage = userBPTTokens / pool.totalSupply();
   //minTokensOut = poolTokenAmounts.map(el=> el*userPercentage);
   return minTokensOut;
-}
-
-export async function balancerV2Redeem(poolId: Address, _sentBPT: Number) {
-  //TODO:  calcMinTokensOut, encode call args, make call.
 }
 //
 // hand rolled version of:

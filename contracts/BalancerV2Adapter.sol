@@ -218,6 +218,35 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
                 )
             );
     }
+    /// @dev Helper to decode the lend encoded call arguments
+    function __decodeLendCallArgs(bytes memory _encodedCallArgs)
+        private
+        pure
+        returns (
+            bytes32 poolId_,
+            address recipient_,
+            IBalancerV2Vault.JoinPoolRequest memory request_
+        )
+    {
+        return abi.decode(_encodedCallArgs, (bytes32, address, IBalancerV2Vault.JoinPoolRequest));
+    }
+
+    /// @notice Deposits an amount of an underlying asset into a pool
+    /// @param _vaultProxy The VaultProxy of the calling fund
+    /// @param _encodedCallArgs Encoded order parameters
+    function lend(
+        address _vaultProxy,
+        bytes calldata _encodedCallArgs,
+        bytes calldata
+    ) external onlyIntegrationManager fundAssetsTransferHandler(_vaultProxy, _encodedCallArgs) {
+        (
+            bytes32 poolId,
+            address recipient,
+            IBalancerV2Vault.JoinPoolRequest memory request
+        ) = __decodeLendCallArgs(_encodedCallArgs);
+
+        __balancerV2Lend(poolId, msg.sender, recipient, request);
+    }
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
     /// during redeem() calls
@@ -267,21 +296,6 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             incomingAssets_,
             minIncomingAssetAmounts_
         );
-    }
-
-    /// @dev Helper to decode callArgs for lend and redeem
-    function __decodeCallArgsForRedeem(bytes memory _encodedCallArgs)
-        private
-        pure
-        returns (
-            bytes32 balancerPoolId_,
-            uint256[] memory outgoingAssetAmounts_,
-            uint256[] memory minIncomingAssetAmounts_,
-            bytes memory userData_,
-            bool toInternalBalance_
-        )
-    {
-        return abi.decode(_encodedCallArgs, (bytes32, uint256[], uint256[], bytes, bool));
     }
 
     function balancerV2Redeem(bytes calldata _encodedCallArgs) external onlyIntegrationManager {
@@ -311,56 +325,6 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
 
     /////////////////////////Redeem/////////////////////
 
-    /// @dev Helper function to parse spend and incoming assets from encoded call args
-    /// during redeem() calls
-    function __parseAssetsForRedeem(bytes calldata _encodedCallArgs)
-        private
-        view
-        returns (
-            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
-            address[] memory spendAssets_,
-            uint256[] memory spendAssetAmounts_,
-            address[] memory incomingAssets_,
-            uint256[] memory minIncomingAssetAmounts_
-        )
-    {
-        (
-            bytes32 balancerPoolId_,
-            uint256[] memory outgoingAssetAmounts_,
-            uint256[] memory minIncomingAssetAmounts,
-            ,
-
-        ) = __decodeCallArgsForRedeem(_encodedCallArgs);
-
-        (IERC20[] memory poolTokens, , ) = IBalancerV2Vault(BALANCER_V2_VAULT).getPoolTokens(
-            balancerPoolId_
-        );
-
-        // Check that the target pool was previously whitelisted
-        require(
-            address(poolTokens[0]) != address(0),
-            "__parseAssetsForRedeem: Unsupported derivative"
-        );
-
-        spendAssets_ = new address[](1);
-        spendAssets_[0] = address(bytes20(balancerPoolId_));
-        spendAssetAmounts_ = outgoingAssetAmounts_;
-
-        incomingAssets_ = new address[](2);
-        incomingAssets_[0] = address(poolTokens[0]);
-        incomingAssets_[1] = address(poolTokens[1]);
-
-        minIncomingAssetAmounts_ = minIncomingAssetAmounts;
-
-        return (
-            IIntegrationManager.SpendAssetsHandleType.Transfer,
-            spendAssets_,
-            spendAssetAmounts_,
-            incomingAssets_,
-            minIncomingAssetAmounts_
-        );
-    }
-
     /// @dev Helper to decode callArgs for lend and redeem
     function __decodeCallArgsForRedeem(bytes memory _encodedCallArgs)
         private
@@ -374,31 +338,6 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         )
     {
         return abi.decode(_encodedCallArgs, (bytes32, uint256[], uint256[], bytes, bool));
-    }
-
-    function balancerV2Redeem(bytes calldata _encodedCallArgs) external onlyIntegrationManager {
-        (
-            bytes32 balancerPoolId_,
-            uint256[] memory outgoingAssetAmounts_,
-            uint256[] memory minIncomingAssetAmounts_,
-            bytes memory userData_,
-            bool toInternalBalance_
-        ) = __decodeCallArgsForRedeem(_encodedCallArgs);
-
-        address[] memory assets = new address[](outgoingAssetAmounts_.length);
-        uint256[] memory minAmountsOut = new uint256[](minIncomingAssetAmounts_.length);
-
-        minAmountsOut = minIncomingAssetAmounts_;
-        assets[0] = address(bytes20(balancerPoolId_));
-
-        IBalancerV2Vault.ExitPoolRequest memory request = IBalancerV2Vault.ExitPoolRequest(
-            assets, //bpt address
-            minAmountsOut, //expect tokens in return
-            userData_, //(exitKind)
-            toInternalBalance_ //true to receive erc20, false to receive eth.
-        );
-        //(pool Id, sender, receiver, request data)
-        __balancerV2Redeem(balancerPoolId_, address(this), payable(address(this)), request);
     }
 
     ///////////////////
