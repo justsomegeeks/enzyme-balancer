@@ -9,13 +9,11 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import "@enzymefinance/contracts/release/infrastructure/price-feeds/derivatives/IDerivativePriceFeed.sol";
 import "@enzymefinance/contracts/release/infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "@enzymefinance/contracts/release/infrastructure/value-interpreter/ValueInterpreter.sol";
 import "@enzymefinance/contracts/release/extensions/utils/FundDeployerOwnerMixin.sol";
 import "@enzymefinance/contracts/release/utils/MathHelpers.sol";
-
 import "./interfaces/IBalancerV2Pool.sol";
 import "./interfaces/IBalancerV2Vault.sol";
 import "hardhat/console.sol";
@@ -107,6 +105,22 @@ contract BalancerV2PriceFeed is
         }
 
         return (underlyings_, underlyingAmounts_);
+    }
+
+    //baseAsset is the asset you want to get the value of
+    //baseAssetAmount is the amount of that asset you're quoting.
+    //quoteAsset is the asset you want to get the price in.
+    function getCurrentRate(
+        address _baseAsset,
+        uint256 _baseAssetAmount,
+        address _quoteAsset
+    ) public view returns (uint256 quoteAssetAmount_, bool isValid) {
+        IPrimitivePriceFeed priceFeed = IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED);
+        (quoteAssetAmount_, isValid) = priceFeed.calcCanonicalValue(
+            _baseAsset,
+            _baseAssetAmount,
+            _quoteAsset
+        );
     }
 
     /// @notice Checks if an asset is supported by the price feed
