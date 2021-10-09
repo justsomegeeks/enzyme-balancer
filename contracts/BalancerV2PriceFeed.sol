@@ -124,9 +124,9 @@ contract BalancerV2PriceFeed is
         uint256 precision
     ) internal pure returns (uint256 portionOfPool) {
         // caution, check safe-to-multiply here
-        uint256 _numberOfBPT = numberOfBPT * 10**(precision + 1);
+        uint256 _numberOfBPT = numberOfBPT.mul(10**(precision.add(1)));
         // with rounding of last digit
-        uint256 _portionOfPool = ((_numberOfBPT / totalBPT) + 5) / 10;
+        uint256 _portionOfPool = ((_numberOfBPT.div(totalBPT)).add(5)).div(10);
         return (_portionOfPool);
     }
 
@@ -135,7 +135,7 @@ contract BalancerV2PriceFeed is
         uint256 BPTPortion,
         uint256 precision
     ) internal pure returns (uint256 underlyingAmount) {
-        underlyingAmount = ((balance * BPTPortion).div(10**precision));
+        underlyingAmount = ((balance.mul(BPTPortion)).div(10**precision));
     }
 
     /// @dev Calculates the trusted rate of two assets based on our price feeds.

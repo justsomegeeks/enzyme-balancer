@@ -145,33 +145,11 @@ describe('BalancerV2PriceFeed', function () {
       //   8,
       //   18,
       // );
-      const aPrice = await balancerV2PriceFeed.callStatic.getLatestPrice(networkDescriptor.tokens.WBTC.address);
-      console.log(aPrice);
-      expect(aPrice);
+      // const aPrice = await balancerV2PriceFeed.callStatic.getLatestPrice(networkDescriptor.tokens.WBTC.address);
+      // console.log(aPrice);
+      // expect(aPrice);
     });
     xit('returns rate for non-18 decimals underlying assets', function () {
-      return;
-    });
-  });
-
-  describe('addPoolTokens', function () {
-    xit('does not allow a random caller', function () {
-      return;
-    });
-
-    xit('does not allow an empty _poolTokens param', function () {
-      return;
-    });
-
-    xit('does not allow an already-set poolToken', function () {
-      return;
-    });
-
-    xit('does not allow unsupportable pool tokens', function () {
-      return;
-    });
-
-    xit('adds pool tokens and emits an event per added pool token', function () {
       return;
     });
   });
