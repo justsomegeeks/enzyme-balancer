@@ -137,14 +137,13 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
                 poolId,
                 IERC20(spendAssets_[i])
             );
-            console.log("Total BPT");
-            console.log(totalBPT);
-            console.log("Total Token");
-            console.log(totalToken);
-
-            uint256 expectedBPT = (totalBPT / totalToken) * request.maxAmountsIn[i];
-            console.log("Expected BPT");
-            console.log(expectedBPT);
+            console.log("Total BPT:", totalBPT);
+            console.log("Total Token:", totalToken);
+            uint256 calculationPrecision = 18;
+            uint256 BPTPortion = calcPortionOfPool(totalToken, totalBPT, calculationPrecision) *
+                request.maxAmountsIn[i];
+            uint256 expectedBPT = calcUnderlyingAmount();
+            console.log("Expected BPT:", expectedBPT);
             minIncomingAssetAmounts_[0] += expectedBPT;
         }
         minIncomingAssetAmounts_[0] = 7425457989251114227;
@@ -161,6 +160,28 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             incomingAssets_,
             minIncomingAssetAmounts_
         );
+    }
+
+    //@dev Calculates percentages
+    function calcPortionOfPool(
+        uint256 numberOfBPT,
+        uint256 totalBPT,
+        uint256 precision
+    ) internal pure returns (uint256 portionOfPool) {
+        // caution, check safe-to-multiply here
+        uint256 _numberOfBPT = numberOfBPT * 10**(precision + 1);
+        // with rounding of last digit
+        uint256 _portionOfPool = ((_numberOfBPT / totalBPT) + 5) / 10;
+        return (_portionOfPool);
+    }
+
+    //takes the amount received from calcPortionOfPool and returns and amount based on that portion.
+    function calcUnderlyingAmount(
+        uint256 balance,
+        uint256 BPTPortion,
+        uint256 precision
+    ) internal pure returns (uint256 underlyingAmount) {
+        underlyingAmount = ((balance * BPTPortion).div(10**precision));
     }
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
