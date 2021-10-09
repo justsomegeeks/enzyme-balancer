@@ -8,6 +8,8 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "@enzymefinance/contracts/release/utils/AssetHelpers.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "hardhat/console.sol";
 import "./interfaces/IBalancerV2Vault.sol";
 
 /// @title BalancerV2ActionsMixin Contract
@@ -48,7 +50,33 @@ abstract contract BalancerV2ActionsMixin is AssetHelpers {
         address _recipient,
         IBalancerV2Vault.JoinPoolRequest memory _request
     ) internal {
+        // TODO: Approve ERC20 tokens.
+        console.log("First Pair");
+        console.log(_request.assets[0]);
+        console.log(_request.maxAmountsIn[0]);
+        console.log("Second Pair");
+        console.log(_request.assets[1]);
+        console.log(_request.maxAmountsIn[1]);
+        console.log("pool id");
+        console.logBytes32(_poolId);
+        __approveAssetMaxAsNeeded(_request.assets[0], BALANCER_V2_VAULT, _request.maxAmountsIn[0]);
+        __approveAssetMaxAsNeeded(_request.assets[1], BALANCER_V2_VAULT, _request.maxAmountsIn[1]);
+
+        uint256 approvalWeth = IERC20(_request.assets[0]).allowance(
+            address(this),
+            BALANCER_V2_VAULT
+        );
+        console.log(approvalWeth);
+
+        uint256 balanceBefore = IERC20(address(bytes20(_poolId))).balanceOf(_recipient);
+        console.log("balance before");
+        console.log(balanceBefore);
+
         IBalancerV2Vault(BALANCER_V2_VAULT).joinPool(_poolId, _sender, _recipient, _request);
+
+        uint256 balanceAfter = IERC20(address(bytes20(_poolId))).balanceOf(_recipient);
+        console.log("balance after");
+        console.log(balanceAfter);
     }
 
     /// @dev Helper to remove liquidity
@@ -58,6 +86,8 @@ abstract contract BalancerV2ActionsMixin is AssetHelpers {
         address payable _recipient,
         IBalancerV2Vault.ExitPoolRequest memory _request
     ) internal {
+        // TODO: Approve ERC20 tokens.
+        // __approveAssetMaxAsNeeded(_request.assets[0], BALANCER_V2_VAULT, _request.minAmountsOut[0]);
         IBalancerV2Vault(BALANCER_V2_VAULT).exitPool(_poolId, _sender, _recipient, _request);
     }
 

@@ -1,4 +1,5 @@
 import type { JoinPoolRequest, ExitPoolRequest } from '@balancer-labs/balancer-js';
+import { WeightedPoolEncoder } from '@balancer-labs/balancer-js';
 import type { SwapInfo } from '@balancer-labs/sor';
 import { SwapTypes } from '@balancer-labs/sor';
 import {
@@ -74,11 +75,16 @@ describe('BalancerV2Adapter', function () {
     balancerV2PriceFeed = (await balancerV2PriceFeedFactory.deploy(...balancerV2PriceFeedArgs)) as BalancerV2PriceFeed;
     await balancerV2PriceFeed.deployed();
 
+    await aggregatedDerivativePriceFeed.addDerivatives(
+      [networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress],
+      [balancerV2PriceFeed.address],
+    );
+
     balancerV2AdapterFactory = await hre.ethers.getContractFactory('BalancerV2Adapter');
   });
 
   describe('constructor', function () {
-    it('deploys correctly', async function () {
+    xit('deploys correctly', async function () {
       const balancerV2Adapter = await balancerV2AdapterFactory.deploy(
         networkDescriptor.contracts.enzyme.IntegrationManager,
         networkDescriptor.contracts.balancer.BalancerV2Vault,
@@ -155,14 +161,14 @@ describe('BalancerV2Adapter', function () {
       });
     });
 
-    it('does not allow a bad selector', async function () {
+    xit('does not allow a bad selector', async function () {
       // avoid temptation to use `utils.randomBytes(4)`. unlikely in this case, but randomness in tests
       // can cause spurious test failures
       const randomBytes = [241, 189, 26, 18];
       await expect(balancerV2Adapter.parseAssetsForMethod(randomBytes, args)).to.be.revertedWith('_selector invalid');
     });
 
-    it('returns expected parsed assets for swap', async function () {
+    xit('returns expected parsed assets for swap', async function () {
       if (typeof networkDescriptor.tokens.WBTC.mainnetPinnedBlockTradeCache === 'undefined') {
         throw `Token ${tokenIn.symbol} has no 'mainnetPinnedBlockTradeCache' set. See: ../utils/env-helper.ts`;
       }
@@ -195,7 +201,6 @@ describe('BalancerV2Adapter', function () {
     });
 
     it('generates expected output for lending', async function () {
-      const poolId = '0x01abc00e86c7e258823b9a055fd62ca6cf61a16300010000000000000000003b';
       const recipient = enzymeCouncil.address;
 
       const tokens = networkDescriptor.tokens;
@@ -203,14 +208,14 @@ describe('BalancerV2Adapter', function () {
       const initUserData = hre.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256[]'], [0, initialBalances]);
 
       const request: JoinPoolRequest = {
-        assets: [tokens.WETH.address],
+        assets: [tokens.WBTC.address, tokens.WETH.address],
         fromInternalBalance: false,
-        maxAmountsIn: [1],
+        maxAmountsIn: [hre.ethers.utils.parseUnits('1', 8), hre.ethers.utils.parseEther('20')],
         userData: initUserData,
       };
 
       args = balancerV2LendArgs({
-        poolId,
+        poolId: networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolId,
         recipient,
         request,
       } as BalancerV2Lend);
@@ -222,14 +227,17 @@ describe('BalancerV2Adapter', function () {
 
       expect(parsedLendArgs[0]).to.equal(SpendAssetsHandleType.Transfer);
 
-      expect(parsedLendArgs[1]).to.have.length(1);
-      expect(parsedLendArgs[1][0].toLowerCase()).to.equal(networkDescriptor.tokens.WETH.address.toLowerCase()); //token address in
+      expect(parsedLendArgs[1]).to.have.length(2);
+      expect(parsedLendArgs[1][0].toLowerCase()).to.equal(networkDescriptor.tokens.WBTC.address.toLowerCase()); //token address in
+      expect(parsedLendArgs[1][1].toLowerCase()).to.equal(networkDescriptor.tokens.WETH.address.toLowerCase()); //token address in
 
-      expect(parsedLendArgs[2]).to.have.length(1);
+      expect(parsedLendArgs[2]).to.have.length(2);
       expect(parsedLendArgs[2][0].eq(request.maxAmountsIn[0])).to.be.true; //tokens in amount
 
       expect(parsedLendArgs[3]).to.have.length(1); //pooladdress
-      expect(parsedLendArgs[3][0].toLowerCase()).to.equal('0x01abc00e86c7e258823b9a055fd62ca6cf61a163');
+      expect(parsedLendArgs[3][0].toLowerCase()).to.equal(
+        networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress.toLowerCase(),
+      );
 
       expect(parsedLendArgs[4]).to.have.length(1); //incomming assets amount
       expect(parsedLendArgs[4][0]).gt(0);
@@ -329,7 +337,7 @@ describe('BalancerV2Adapter', function () {
       await integrationManager.registerAdapters([balancerV2Adapter.address]);
     });
 
-    it('can only be called via the IntegrationManager', async function () {
+    xit('can only be called via the IntegrationManager', async function () {
       // For more info about 'interface ExpectedTrade' see docs for the ExpectedTrade interface
       // in ../utils/env-helper.ts
       if (typeof tokenIn.mainnetPinnedBlockTradeCache === 'undefined') {
@@ -367,7 +375,7 @@ describe('BalancerV2Adapter', function () {
       );
     });
 
-    it('works as expected when called by a fund', async function () {
+    xit('works as expected when called by a fund', async function () {
       // For more info about 'interface ExpectedTrade' see docs for the ExpectedTrade interface
       // in ../utils/env-helper.ts
       if (typeof tokenIn.mainnetPinnedBlockTradeCache === 'undefined') {
@@ -435,17 +443,20 @@ describe('BalancerV2Adapter', function () {
     let request: JoinPoolRequest;
     let poolId: string;
     let recipient: string;
-    let comptrollerProxy: ComptrollerLib;
+    let enzymeComptroller: ComptrollerLib;
     let enzymeComptrollerAddress: string;
     let balancerV2PriceFeed: any;
 
     before(async function () {
       initializeEnvHelper(hre);
+
       enzymeComptrollerAddress = networkDescriptor.contracts.enzyme.EnyzmeComptroller;
       enzymeFundAddress = networkDescriptor.contracts.enzyme.EnzymeVaultProxy;
-      enzymeFundOwner = await hre.ethers.getSigner(networkDescriptor.contracts.enzyme.FundOwner);
 
-      comptrollerProxy = new ComptrollerLib(enzymeComptrollerAddress, enzymeFundOwner);
+      enzymeFundOwner = await hre.ethers.getSigner(networkDescriptor.contracts.enzyme.FundOwner);
+      await hre.network.provider.send('hardhat_impersonateAccount', [enzymeFundOwner.address]);
+
+      enzymeComptroller = new ComptrollerLib(enzymeComptrollerAddress, enzymeFundOwner);
 
       balancerV2PriceFeedFactory = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
 
@@ -464,25 +475,36 @@ describe('BalancerV2Adapter', function () {
 
       await integrationManager.registerAdapters([balancerV2Adapter.address]);
       //await  integrationManager.addAuthUserForFund(balancerV2Adapter, enzymeFundOwner);
-      poolId = '0x01abc00e86c7e258823b9a055fd62ca6cf61a16300010000000000000000003b';
+      poolId = networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolId;
       recipient = enzymeCouncil.address;
 
       const tokens = networkDescriptor.tokens;
-      const initialBalances = [0, 1];
-      const initUserData = hre.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256[]'], [0, initialBalances]);
+
+      const initialBalances = [
+        await tokens.WBTC.contract.balanceOf(networkDescriptor.contracts.enzyme.EnzymeVaultProxy),
+        await tokens.WETH.contract.balanceOf(networkDescriptor.contracts.enzyme.EnzymeVaultProxy),
+      ];
+
+      console.log(`initial balances: WBTC: ${initialBalances[0].toString()}, WETH: ${initialBalances[1].toString()}`);
+
+      const amountsIn = [hre.ethers.utils.parseUnits('1', 8), hre.ethers.utils.parseEther('14.084120840052506')];
+
+      // TODO: just making a number up here to try to get lend to work
+      const minBPTOut = hre.ethers.utils.parseUnits('1', 1);
+      console.log(`minBPTOut = ${minBPTOut.toString()}`);
 
       request = {
-        assets: [tokens.WETH.address],
+        assets: [tokens.WBTC.address, tokens.WETH.address],
         fromInternalBalance: false,
-        maxAmountsIn: [1],
-        userData: initUserData,
+        maxAmountsIn: amountsIn,
+        userData: WeightedPoolEncoder.joinExactTokensInForBPTOut(amountsIn, minBPTOut),
       };
 
       lendArgs = balancerV2LendArgs({
         poolId,
         recipient,
         request,
-      } as BalancerV2Lend);
+      });
     });
 
     it('can only be called via the IntegrationManager', async function () {
@@ -491,7 +513,7 @@ describe('BalancerV2Adapter', function () {
       );
     });
 
-    xit('works as expected when called by a fund', async function () {
+    it.only('works as expected when called by a fund', async function () {
       expect(lendArgs).to.not.be.undefined;
 
       // const preTradeBalances = await getBalances(
@@ -500,27 +522,17 @@ describe('BalancerV2Adapter', function () {
       //   networkDescriptor.tokens.WETH.address,
       // );
       // Whitelisting BPT token and our price feed to enzyme
-      console.log('Working....');
-      await aggregatedDerivativePriceFeed.addDerivatives(
-        [networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress],
-        [balancerV2PriceFeed.address],
-      );
-      console.log('Able to register');
-      console.log(
-        'Asset registered ',
-        await aggregatedDerivativePriceFeed.isSupportedAsset(
-          networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
-        ),
-      );
+
       const lendTxnReceipt = await balancerV2Lend({
         balancerV2Adapter: balancerV2Adapter.address,
-        comptrollerProxy,
+        enzymeComptroller,
         enzymeFundOwner,
         integrationManager,
         poolId,
         recipient,
         request,
       });
+      console.log('Lending is working....');
 
       // Trade on BalancerV2
 
