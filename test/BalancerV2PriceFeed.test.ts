@@ -142,9 +142,10 @@ describe('BalancerV2PriceFeed', function () {
       const bptValue = await balancerV2PriceFeed.callStatic.getCurrentRate(
         networkDescriptor.tokens.WBTC.address,
         hre.ethers.utils.parseUnits('1', 8),
+        // '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
         networkDescriptor.tokens.WETH.address,
       );
-      console.log(hre.ethers.utils.formatEther(bptValue[0]._hex));
+      console.log(hre.ethers.utils.formatUnits(bptValue[0]._hex), 'ether');
       expect(parseInt(hre.ethers.utils.formatEther(bptValue[0]._hex)) > 0);
     });
     xit('returns rate for non-18 decimals underlying assets', function () {
