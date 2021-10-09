@@ -51,10 +51,10 @@ abstract contract BalancerV2ActionsMixin is AssetHelpers {
         IBalancerV2Vault.JoinPoolRequest memory _request
     ) internal {
         // TODO: Approve ERC20 tokens.
-        console.log("First Pair"); 
+        console.log("First Pair");
         console.log(_request.assets[0]);
         console.log(_request.maxAmountsIn[0]);
-        console.log("Second Pair"); 
+        console.log("Second Pair");
         console.log(_request.assets[1]);
         console.log(_request.maxAmountsIn[1]);
         console.log("pool id");
@@ -62,10 +62,21 @@ abstract contract BalancerV2ActionsMixin is AssetHelpers {
         __approveAssetMaxAsNeeded(_request.assets[0], BALANCER_V2_VAULT, _request.maxAmountsIn[0]);
         __approveAssetMaxAsNeeded(_request.assets[1], BALANCER_V2_VAULT, _request.maxAmountsIn[1]);
 
-        uint approvalWeth = IERC20(_request.assets[0]).allowance(address(this), BALANCER_V2_VAULT);
+        uint256 approvalWeth = IERC20(_request.assets[0]).allowance(
+            address(this),
+            BALANCER_V2_VAULT
+        );
         console.log(approvalWeth);
 
+        uint256 balanceBefore = IERC20(address(bytes20(_poolId))).balanceOf(_recipient);
+        console.log("balance before");
+        console.log(balanceBefore);
+
         IBalancerV2Vault(BALANCER_V2_VAULT).joinPool(_poolId, _sender, _recipient, _request);
+
+        uint256 balanceAfter = IERC20(address(bytes20(_poolId))).balanceOf(_recipient);
+        console.log("balance after");
+        console.log(balanceAfter);
     }
 
     /// @dev Helper to remove liquidity

@@ -481,7 +481,6 @@ describe('BalancerV2Adapter', function () {
       //   networkDescriptor.tokens.WETH.address,
       // );
       // Whitelisting BPT token and our price feed to enzyme
-      console.log('Lending....');
 
       const lendTxnReceipt = await balancerV2Lend({
         balancerV2Adapter: balancerV2Adapter.address,
@@ -492,6 +491,7 @@ describe('BalancerV2Adapter', function () {
         recipient,
         request,
       });
+      console.log('Lending is working....');
 
       // Trade on BalancerV2
 
