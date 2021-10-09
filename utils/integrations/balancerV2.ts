@@ -95,7 +95,7 @@ export function balancerV2TakeOrderArgs({
 }
 
 export function balancerV2RedeemRequest({ assets, minAmountsOut, userData, toInternalBalance }: BalancerV2ExitRequest) {
-  const _minAmountsOut = BigNumber.from(minAmountsOut.toString());
+  // const _minAmountsOut = BigNumber.from(minAmountsOut.toString());
 }
 const lendV2JoinPoolRequest = utils.ParamType.fromString(
   'tuple(address[] assets, uint256[] maxAmountsIn, bytes userData, bool fromInternalBalance)',
@@ -184,7 +184,7 @@ export function calcMinTokensOut(exitInfo: poolExit): BigNumber[] {
   return minTokensOut;
 }
 
-export async function balancerV2Redeem(poolId: Address, _sentBPT: Number) {
+export async function balancerV2Redeem(poolId: string, _sentBPT: Number) {
   //TODO:  calcMinTokensOut, encode call args, make call.
 }
 //

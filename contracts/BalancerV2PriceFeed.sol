@@ -338,10 +338,13 @@ contract BalancerV2PriceFeed is
     ////////////////////////////////////////////////////////
     //////////////////old pricefeed functions///////////////////////
     //////////////////////////////////////////
+    /*
     function getLatestPrice(address _token) public view returns (uint256) {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(_token);
-        (, int256 price, , , ) = priceFeed.latestRoundData();
-        return uint256(price);
+        console.log("...getting Price");
+        (, int256 answer, , , ) = priceFeed.latestRoundData();
+       /// console.log(answer);
+        return uint256(answer);
     }
 
     function getAllPrices(IERC20[] memory tokens) internal view returns (uint256[] memory result) {
@@ -426,4 +429,5 @@ contract BalancerV2PriceFeed is
     function getAddress(bytes32 data) public pure returns (address) {
         return address(bytes20(data));
     }
+    */
 }
