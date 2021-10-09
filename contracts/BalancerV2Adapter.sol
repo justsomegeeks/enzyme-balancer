@@ -147,7 +147,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             console.log(expectedBPT);
             minIncomingAssetAmounts_[0] += expectedBPT;
         }
-        minIncomingAssetAmounts_[0] = 7425457989251114227;
+        minIncomingAssetAmounts_[0] = 7425452681194559297;
 
         address poolAddress = address(bytes20(poolId));
         incomingAssets_ = new address[](1);
