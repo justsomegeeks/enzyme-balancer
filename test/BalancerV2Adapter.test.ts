@@ -411,9 +411,12 @@ describe('BalancerV2Adapter', function () {
 
     before(async function () {
       initializeEnvHelper(hre);
+
       enzymeComptrollerAddress = networkDescriptor.contracts.enzyme.EnyzmeComptroller;
       enzymeFundAddress = networkDescriptor.contracts.enzyme.EnzymeVaultProxy;
+
       enzymeFundOwner = await hre.ethers.getSigner(networkDescriptor.contracts.enzyme.FundOwner);
+      await hre.network.provider.send('hardhat_impersonateAccount', [enzymeFundOwner.address]);
 
       enzymeComptroller = new ComptrollerLib(enzymeComptrollerAddress, enzymeFundOwner);
 

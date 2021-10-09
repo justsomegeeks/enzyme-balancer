@@ -260,15 +260,16 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
     {
         (
             bytes32 poolId,
-            address recipient,
+            ,
             IBalancerV2Vault.JoinPoolRequest memory request
         ) = __decodeLendCallArgs(_encodedCallArgs);
-        console.log("From the world of lend");
+        console.log("Vault Proxy");
+        console.logAddress(_vaultProxy);
 
         console.log("request.assets[0] = ", request.assets[0]);
         console.log("request.assets[1] = ", request.assets[1]);
 
-        __balancerV2Lend(poolId, address(this), recipient, request);
+        __balancerV2Lend(poolId, address(this), payable(_vaultProxy), request);
     }
 
     ///////////////////
