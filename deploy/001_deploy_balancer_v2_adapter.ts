@@ -1,4 +1,4 @@
-import { AggregatedDerivativePriceFeed } from '@enzymefinance/protocol';
+import { AggregatedDerivativePriceFeed, IntegrationManager } from '@enzymefinance/protocol';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 import type { DeployFunction } from 'hardhat-deploy/types';
 
@@ -54,7 +54,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     );
   }
 
-  await deploy('BalancerV2Adapter', {
+  const balancerV2Adapter = await deploy('BalancerV2Adapter', {
     args: [
       networkDescriptor.contracts.enzyme.IntegrationManager,
       networkDescriptor.contracts.balancer.BalancerV2Vault,
@@ -63,6 +63,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     from: deployer,
     log: true,
   });
+
+  const integrationManager = new IntegrationManager(
+    networkDescriptor.contracts.enzyme.IntegrationManager,
+    enzymeCouncil,
+  );
+
+  await integrationManager.registerAdapters([balancerV2Adapter.address]);
 };
 
 export default func;
