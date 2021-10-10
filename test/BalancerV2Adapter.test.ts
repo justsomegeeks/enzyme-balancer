@@ -68,6 +68,7 @@ describe('BalancerV2Adapter', function () {
     await hre.network.provider.send('hardhat_impersonateAccount', [enzymeCouncil.address]);
 
     integrationManager = new IntegrationManager(networkDescriptor.contracts.enzyme.IntegrationManager, enzymeCouncil);
+
     aggregatedDerivativePriceFeed = new AggregatedDerivativePriceFeed(
       networkDescriptor.contracts.enzyme.AggregatedDerivativePriceFeed,
       enzymeCouncil,
@@ -113,6 +114,8 @@ describe('BalancerV2Adapter', function () {
       // Check that the adapter is registered on the integration manager.
       expect(await integrationManager.getRegisteredAdapters()).to.include(balancerV2Adapter.address);
     });
+
+    // it('registers WBTC/WETH BPT token aggregated derivative price feed', async function () {    }
   });
 
   describe('parseAssetsForMethod', function () {
@@ -223,7 +226,6 @@ describe('BalancerV2Adapter', function () {
 
       const parsedLendArgs = await balancerV2Adapter.parseAssetsForMethod(lendSelector, args);
 
-      // TODO: verify return value of parseAssetsForMethod to be equal to what was sent
       expect(parsedLendArgs).to.have.length(5);
 
       expect(parsedLendArgs[0]).to.equal(SpendAssetsHandleType.Transfer);

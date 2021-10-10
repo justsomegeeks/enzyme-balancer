@@ -29,12 +29,9 @@ contract BalancerV2PriceFeed is
     MathHelpers
     /*BalancerV2PoolTokenValueCalculator*/
 {
-    event PoolTokenAdded(
-        address indexed poolToken,
-        /* bytes32 poolId,     TODO: useful to add? or does it need to conform to specific Enzyme PoolTokenAdded event?*/
-        address token0,
-        address token1
-    );
+    using SafeMath for uint256;
+
+    event PoolTokenAdded(address indexed poolToken, address token0, address token1);
 
     struct PoolTokenDescriptor {
         address token0;
@@ -171,17 +168,6 @@ contract BalancerV2PriceFeed is
     // POOL TOKENS REGISTRY //
     //////////////////////////
 
-    /// @notice Adds Balancer V2 pool tokens to the price feed
-    /// @param _poolIds Balancer pool ids to add BPT tokens for
-    function addPoolTokens(address _vault, bytes32[] calldata _poolIds)
-        external
-        onlyFundDeployerOwner
-    {
-        require(_poolIds.length > 0, "addPoolTokens: Empty _poolsIds");
-
-        __addPoolTokens(_vault, _poolIds, DERIVATIVE_PRICE_FEED, PRIMITIVE_PRICE_FEED);
-    }
-
     /// @dev Helper to add Balancer V2 pool BPT tokens
     function __addPoolTokens(
         address _vault,
@@ -228,7 +214,6 @@ contract BalancerV2PriceFeed is
             });
 
             emit PoolTokenAdded(poolAddress, token0, token1);
-            // emit PoolTokenAdded(poolAddress, _poolIds[i], token0, token1);
         }
     }
 
