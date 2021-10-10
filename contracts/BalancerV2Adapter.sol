@@ -86,6 +86,23 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         __balancerV2Lend(poolId, address(this), payable(_vaultProxy), request);
     }
 
+    function redeem(
+        address _vaultProxy,
+        bytes calldata _encodedCallArgs,
+        bytes calldata _encodedAssetTransferArgs
+    )
+        external
+        onlyIntegrationManager
+        fundAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
+    {
+        (
+            bytes32 balancerPoolId_,
+            IBalancerV2Vault.ExitPoolRequest memory request_
+        ) = __decodeRedeemCallArgs(_encodedCallArgs);
+
+        __balancerV2Redeem(balancerPoolId_, address(this), payable(_vaultProxy), request_);
+    }
+
     /// @notice Parses the expected assets to receive from a call on integration
     /// @param _selector The function selector for the callOnIntegration
     /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
@@ -114,6 +131,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         } else if (_selector == REDEEM_SELECTOR) {
             return __parseAssetsForRedeem(_encodedCallArgs);
         }
+
         revert("parseAssetsForMethod: _selector invalid");
     }
 
@@ -215,8 +233,6 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         );
     }
 
-
-
     /// @dev Helper function to parse spend and incoming assets from encoded call args
     /// during redeem() calls
     function __parseAssetsForRedeem(bytes calldata _encodedCallArgs)
@@ -246,16 +262,15 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
 
         spendAssets_ = new address[](1);
         spendAssets_[0] = address(bytes20(_poolId));
-        spendAssetAmounts_ = new uint[](1);
+        spendAssetAmounts_ = new uint256[](1);
         spendAssetAmounts_[0] = request_.minAmountsOut[0];
 
         incomingAssets_ = new address[](2);
         incomingAssets_[0] = address(poolTokens[0]);
         incomingAssets_[1] = address(poolTokens[1]);
 
-
         // TODO: How to calculate minIncomingAssetAmounts?
-        minIncomingAssetAmounts_ = new uint[](2);
+        minIncomingAssetAmounts_ = new uint256[](2);
         minIncomingAssetAmounts_[0] = 100;
         minIncomingAssetAmounts_[1] = 100;
 
@@ -267,26 +282,6 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             minIncomingAssetAmounts_
         );
     }
-
-    function redeem(
-        address _vaultProxy,
-        bytes calldata _encodedCallArgs,
-        bytes calldata _encodedAssetTransferArgs
-    )
-        external
-        onlyIntegrationManager
-        fundAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
-    {
-        (
-            bytes32 balancerPoolId_,
-            IBalancerV2Vault.ExitPoolRequest memory request_
-        ) = __decodeRedeemCallArgs(_encodedCallArgs);
-
-
-        __balancerV2Redeem(balancerPoolId_, address(this), payable(_vaultProxy), request_);
-    }
-
-    /////////////////////////Redeem/////////////////////
 
     /// @dev Helper to decode the encoded callOnIntegration call arguments
     function __decodeTakeOrderCallArgs(bytes memory _encodedCallArgs)
@@ -315,18 +310,6 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             );
     }
 
-    /// @dev Helper to decode callArgs for lend and redeem
-    function __decodeRedeemCallArgs(bytes memory _encodedCallArgs)
-        private
-        pure
-        returns (
-            bytes32 balancerPoolId_,
-            IBalancerV2Vault.ExitPoolRequest memory request_
-        )
-    {
-        return abi.decode(_encodedCallArgs, (bytes32, IBalancerV2Vault.ExitPoolRequest));
-    }
-
     /// @dev Helper to decode the lend encoded call arguments
     function __decodeLendCallArgs(bytes memory _encodedCallArgs)
         private
@@ -336,6 +319,14 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         return abi.decode(_encodedCallArgs, (bytes32, IBalancerV2Vault.JoinPoolRequest));
     }
 
+    /// @dev Helper to decode callArgs for lend and redeem
+    function __decodeRedeemCallArgs(bytes memory _encodedCallArgs)
+        private
+        pure
+        returns (bytes32 balancerPoolId_, IBalancerV2Vault.ExitPoolRequest memory request_)
+    {
+        return abi.decode(_encodedCallArgs, (bytes32, IBalancerV2Vault.ExitPoolRequest));
+    }
 
     ///////////////////
     // STATE GETTERS //

@@ -136,8 +136,6 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
           FundOwner: '0x978cc856357946f980fba68db3b7f0d72e570da8', // Rhino Fund Manager
           IntegrationManager: '0x965ca477106476B4600562a2eBe13536581883A6',
           PrimitivePriceFeedAddress: '0x1fad8faf11e027f8630f394599830dbeb97004ee',
-          // valueInterpreter: https://github.com/enzymefinance/protocol/blob/current/packages/testutils/src/deployment.ts#L102
-          // import from @enzymefinance/protocol
           ValueInterpreter: '0x10a5624840Ac07287f756777DF1DEC34d2C2d654',
         },
       },
