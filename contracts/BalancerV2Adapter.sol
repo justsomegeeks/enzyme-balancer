@@ -321,7 +321,14 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         );
     }
 
-    function redeem(bytes calldata _encodedCallArgs) external onlyIntegrationManager {
+    function redeem( address _vaultProxy,
+        bytes calldata _encodedCallArgs,
+        bytes calldata _encodedAssetTransferArgs
+    )
+        external
+        onlyIntegrationManager
+        fundAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
+    {
         (
             bytes32 balancerPoolId_,
             uint256[] memory outgoingAssetAmounts_,
