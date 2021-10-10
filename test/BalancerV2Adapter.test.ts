@@ -88,15 +88,19 @@ describe('BalancerV2Adapter', function () {
     balancerV2AdapterFactory = await hre.ethers.getContractFactory('BalancerV2Adapter');
   });
 
+  after(async function name() {
+    await aggregatedDerivativePriceFeed.removeDerivatives([
+      networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
+    ]);
+  });
+
   describe('constructor', function () {
-    it('deploys correctly', async function () {
-      const balancerV2Adapter = await balancerV2AdapterFactory.deploy(
+    it('deploys correctly and registers adapter with IntegrationManager', async function () {
+      const balancerV2Adapter = (await balancerV2AdapterFactory.deploy(
         networkDescriptor.contracts.enzyme.IntegrationManager,
         networkDescriptor.contracts.balancer.BalancerV2Vault,
         balancerV2PriceFeed.address,
-      );
-
-      await integrationManager.registerAdapters([balancerV2Adapter.address]);
+      )) as BalancerV2Adapter;
 
       // AdapterBase2
       expect(await balancerV2Adapter.getIntegrationManager()).to.equal(
@@ -111,11 +115,18 @@ describe('BalancerV2Adapter', function () {
       // BalancerV2PriceFeed is set correctly
       expect(await balancerV2Adapter.getBalancerPriceFeed()).to.equal(balancerV2PriceFeed.address);
 
-      // Check that the adapter is registered on the integration manager.
-      expect(await integrationManager.getRegisteredAdapters()).to.include(balancerV2Adapter.address);
-    });
+      const registerAdapterTxnReceipt = await integrationManager.registerAdapters([balancerV2Adapter.address]);
 
-    // it('registers WBTC/WETH BPT token aggregated derivative price feed', async function () {    }
+      const adapterRegisteredEvent = integrationManager.abi.getEvent('AdapterRegistered');
+      assertEvent(registerAdapterTxnReceipt, adapterRegisteredEvent);
+
+      expect(await integrationManager.getRegisteredAdapters()).to.include(balancerV2Adapter.address);
+
+      console.log(`Balancer V2 Adapter deployed at address: ${balancerV2Adapter.address}`);
+      console.log(
+        `Balancer V2 Adapter has been registered with IntegrationManager via transaction: ${registerAdapterTxnReceipt.transactionHash}`,
+      );
+    });
   });
 
   describe('parseAssetsForMethod', function () {
@@ -621,13 +632,13 @@ describe('BalancerV2Adapter', function () {
       });
     });
 
-    it.only('can only be called via the IntegrationManager', async function () {
+    it('can only be called via the IntegrationManager', async function () {
       await expect(balancerV2Adapter.redeem(enzymeFundAddress, redeemSelector, redeemArgs)).to.be.revertedWith(
         'Only the IntegrationManager can call this function',
       );
     });
 
-    it.only('works as expected when called by a fund', async function () {
+    it('works as expected when called by a fund', async function () {
       // TODO: lend first
       expect(redeemArgs).to.not.be.undefined;
 

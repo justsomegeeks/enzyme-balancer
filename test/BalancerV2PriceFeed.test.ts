@@ -46,6 +46,12 @@ describe('BalancerV2PriceFeed', function () {
     );
   });
 
+  after(async function name() {
+    await aggregatedDerivativePriceFeed.removeDerivatives([
+      networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
+    ]);
+  });
+
   describe('constructor', function () {
     it('deploys correctly', async function () {
       balancerV2PriceFeedArgs = priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor);
@@ -94,7 +100,7 @@ describe('BalancerV2PriceFeed', function () {
 
       expect(poolDescriptor.poolTokenDescriptor.token1Decimals).to.equal(networkDescriptor.tokens.WETH.decimals);
 
-      console.log(`Balancer V2 Provider deployed at address: ${balancerV2PriceFeed.address}`);
+      console.log(`Balancer V2 Price Feed deployed at address: ${balancerV2PriceFeed.address}`);
     });
 
     it('registers WBTC/WETH BPT token aggregated derivative price feed', async function () {
@@ -114,7 +120,9 @@ describe('BalancerV2PriceFeed', function () {
 
       const event = extractEvent(addDerivativeTxnReceipt, derivativeAddedEvent);
 
-      console.log(`Derivative price feed for Balancer WBTC/WETH BPT token '${event[0].args[0]}' has been added.`);
+      console.log(
+        `Derivative price feed for Balancer WBTC/WETH BPT token '${event[0].args[0]}' has been added via transaction: ${addDerivativeTxnReceipt.transactionHash}`,
+      );
     });
   });
 
