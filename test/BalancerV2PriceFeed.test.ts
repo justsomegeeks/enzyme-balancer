@@ -182,7 +182,7 @@ describe('BalancerV2PriceFeed', function () {
         hre.ethers.utils.parseUnits('1', 8),
         networkDescriptor.tokens.WETH.address,
       );
-      expect(parseInt(hre.ethers.utils.formatEther(bptValue[0]._hex)) > 14.20093745);
+      expect(parseInt(hre.ethers.utils.formatEther(bptValue[0]._hex)) === 14.20093745);
     });
   });
 });
