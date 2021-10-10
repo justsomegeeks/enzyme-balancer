@@ -91,8 +91,6 @@ contract BalancerV2PriceFeed is
         uint256 totalBPT = getPoolTotalSupply(_derivative);
         uint256 _precision = 18;
         uint256 BPTPortion = calcPortionOfPool(_derivativeAmount, totalBPT, _precision);
-        console.log("Total BPT");
-        console.log(totalBPT);
 
         (IERC20[] memory tokens, uint256[] memory balances, ) = getPoolData(_derivative);
 

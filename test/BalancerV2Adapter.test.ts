@@ -501,7 +501,6 @@ describe('BalancerV2Adapter', function () {
 
       // TODO: just making a number up here to try to get lend to work
       const minBPTOut = hre.ethers.utils.parseUnits('1', 1);
-      console.log(`minBPTOut = ${minBPTOut.toString()}`);
 
       request = {
         assets: [tokens.WBTC.address, tokens.WETH.address],
@@ -540,7 +539,6 @@ describe('BalancerV2Adapter', function () {
         poolId,
         request,
       });
-      console.log('Lending is working....');
 
       // Trade on BalancerV2
 
@@ -612,7 +610,6 @@ describe('BalancerV2Adapter', function () {
 
       // TODO: just making a number up here to try to get lend to work
       const minBPTIn = hre.ethers.utils.parseUnits('1', 18);
-      console.log(`minBPTIn = ${minBPTIn.toString()}`);
       // const minBPTOut = hre.ethers.utils.parseUnits('1', 18);
 
       exitPoolRequest = {
@@ -644,12 +641,6 @@ describe('BalancerV2Adapter', function () {
       // TODO: lend first
       expect(redeemArgs).to.not.be.undefined;
 
-      console.log(
-        'Asset registered ',
-        await aggregatedDerivativePriceFeed.isSupportedAsset(
-          networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
-        ),
-      );
       // console.log('Lending to a pool...');
       // await balancerV2Lend({
       //   balancerV2Adapter: balancerV2Adapter.address,
@@ -660,7 +651,6 @@ describe('BalancerV2Adapter', function () {
       //   request: joinPoolRequest,
       // });
 
-      console.log('Redeeming from a pool...');
       const redeemTxnReceipt = await balancerV2Redeem({
         balancerV2Adapter: balancerV2Adapter.address,
         enzymeController,

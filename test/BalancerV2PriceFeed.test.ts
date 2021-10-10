@@ -141,12 +141,9 @@ describe('BalancerV2PriceFeed', function () {
         networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
         hre.ethers.utils.parseEther('100'),
       );
-      console.log(underLyingValues);
-      console.log(underLyingValues[1][0].toString());
-      console.log(underLyingValues[1][1].toString());
+
       expect(underLyingValues[0][0].toLowerCase()).to.equal(networkDescriptor.tokens.WBTC.address);
       expect(underLyingValues[0][1].toLowerCase()).to.equal(networkDescriptor.tokens.WETH.address);
-      console.log(underLyingValues[1][0].toString());
     });
 
     // it('returns rate for non-18 decimals underlying assets', function () {
