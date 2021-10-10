@@ -107,7 +107,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        (bytes32 poolId, , IBalancerV2Vault.JoinPoolRequest memory request) = __decodeLendCallArgs(
+        (bytes32 poolId,  IBalancerV2Vault.JoinPoolRequest memory request) = __decodeLendCallArgs(
             _encodedCallArgs
         );
         console.logBytes(_encodedCallArgs);
@@ -238,11 +238,10 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         pure
         returns (
             bytes32 poolId_,
-            address recipient_,
             IBalancerV2Vault.JoinPoolRequest memory request_
         )
     {
-        return abi.decode(_encodedCallArgs, (bytes32, address, IBalancerV2Vault.JoinPoolRequest));
+        return abi.decode(_encodedCallArgs, (bytes32,  IBalancerV2Vault.JoinPoolRequest));
     }
 
     /// @notice Deposits an amount of an underlying asset into a pool
@@ -259,7 +258,6 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
     {
         (
             bytes32 poolId,
-            ,
             IBalancerV2Vault.JoinPoolRequest memory request
         ) = __decodeLendCallArgs(_encodedCallArgs);
         console.log("Vault Proxy");

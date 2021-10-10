@@ -5,7 +5,7 @@
     https://github.com/enzymefinance/protocol/blob/current/packages/testutils/src/scaffolding/extensions/integrations/uniswapV2.ts#L131-L171
 */
 
-import type { JoinPoolRequest, ExitPoolRequest } from '@balancer-labs/balancer-js';
+import type { ExitPoolRequest, JoinPoolRequest } from '@balancer-labs/balancer-js';
 import type { SwapInfo, SwapTypes } from '@balancer-labs/sor';
 import type { AddressLike } from '@enzymefinance/ethers';
 import type { ComptrollerLib, IntegrationManager } from '@enzymefinance/protocol';
@@ -20,7 +20,7 @@ import type { BigNumber } from '@ethersproject/bignumber';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 import type { BalancerV2Redeem } from '../balancerV2';
-import { balancerV2LendArgs, balancerV2TakeOrderArgs, calculateLimits, balancerV2RedeemArgs } from '../balancerV2';
+import { balancerV2LendArgs, balancerV2RedeemArgs, balancerV2TakeOrderArgs, calculateLimits } from '../balancerV2';
 
 export async function balancerV2TakeOrder({
   enzymeController,
@@ -66,7 +66,6 @@ export async function balancerV2Lend({
   enzymeFundOwner,
   balancerV2Adapter,
   poolId,
-  recipient,
   request,
 }: {
   enzymeController: ComptrollerLib;
@@ -74,12 +73,10 @@ export async function balancerV2Lend({
   enzymeFundOwner: SignerWithAddress;
   balancerV2Adapter: AddressLike;
   poolId: string;
-  recipient: string;
   request: JoinPoolRequest;
 }) {
   const lendArgs = balancerV2LendArgs({
     poolId,
-    recipient,
     request,
   });
   const callArgs = callOnIntegrationArgs({
@@ -121,7 +118,6 @@ export async function balancerV2Redeem({
     selector: redeemSelector,
   });
 
-  
   return enzymeController
     .connect(enzymeFundOwner)
     .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
