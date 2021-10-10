@@ -513,7 +513,7 @@ describe('BalancerV2Adapter', function () {
       );
     });
 
-    it.only('works as expected when called by a fund', async function () {
+    it('works as expected when called by a fund', async function () {
       expect(lendArgs).to.not.be.undefined;
 
       // const preTradeBalances = await getBalances(
@@ -626,14 +626,11 @@ describe('BalancerV2Adapter', function () {
       );
     });
 
-    it('works as expected when called by a fund', async function () {
+    it.only('works as expected when called by a fund', async function () {
       expect(redeemArgs).to.not.be.undefined;
 
       console.log('Working....');
-      await aggregatedDerivativePriceFeed.addDerivatives(
-        [networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress],
-        [balancerV2PriceFeed.address],
-      );
+      
       console.log('Able to register');
       console.log(
         'Asset registered ',

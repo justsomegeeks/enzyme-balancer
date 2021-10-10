@@ -114,12 +114,14 @@ export async function balancerV2Redeem({
     recipient,
     request,
   } as BalancerV2Redeem);
+
   const callArgs = callOnIntegrationArgs({
     adapter: balancerV2Adapter,
     encodedCallArgs: redeemArgs,
     selector: redeemSelector,
   });
 
+  
   return enzymeController
     .connect(enzymeFundOwner)
     .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
