@@ -29,12 +29,9 @@ contract BalancerV2PriceFeed is
     MathHelpers
     /*BalancerV2PoolTokenValueCalculator*/
 {
-    event PoolTokenAdded(
-        address indexed poolToken,
-        /* bytes32 poolId,     TODO: useful to add? or does it need to conform to specific Enzyme PoolTokenAdded event?*/
-        address token0,
-        address token1
-    );
+    using SafeMath for uint256;
+
+    event PoolTokenAdded(address indexed poolToken, address token0, address token1);
 
     struct PoolTokenDescriptor {
         address token0;
@@ -91,24 +88,20 @@ contract BalancerV2PriceFeed is
         override
         returns (address[] memory underlyings_, uint256[] memory underlyingAmounts_)
     {
-        console.log("Calling....");
-
         uint256 totalBPT = getPoolTotalSupply(_derivative);
-        uint256 BPTPercentage = _derivativeAmount / totalBPT;
-        console.log(totalBPT, BPTPercentage);
+        uint256 _precision = 18;
+        uint256 BPTPortion = calcPortionOfPool(_derivativeAmount, totalBPT, _precision);
+
         (IERC20[] memory tokens, uint256[] memory balances, ) = getPoolData(_derivative);
 
         underlyingAmounts_ = new uint256[](tokens.length);
         underlyings_ = new address[](tokens.length);
 
         for (uint256 i = 0; i < tokens.length; i++) {
-            underlyingAmounts_[i] = balances[i] * BPTPercentage;
+            underlyingAmounts_[i] = calcUnderlyingAmount(balances[i], BPTPortion, _precision);
+
             underlyings_[i] = address(tokens[i]);
         }
-
-        underlyingAmounts_ = new uint256[](2);
-        underlyingAmounts_[0] = _derivativeAmount.div(POOL_TOKEN_UNIT);
-        underlyingAmounts_[1] = _derivativeAmount.div(POOL_TOKEN_UNIT);
 
         return (underlyings_, underlyingAmounts_);
     }
@@ -121,6 +114,26 @@ contract BalancerV2PriceFeed is
     }
 
     // PRIVATE FUNCTIONS
+    //@dev Calculates percentages
+    function calcPortionOfPool(
+        uint256 numberOfBPT,
+        uint256 totalBPT,
+        uint256 precision
+    ) internal pure returns (uint256 portionOfPool) {
+        // caution, check safe-to-multiply here
+        uint256 _numberOfBPT = numberOfBPT * 10**(precision + 1);
+        // with rounding of last digit
+        uint256 _portionOfPool = ((_numberOfBPT / totalBPT) + 5) / 10;
+        return (_portionOfPool);
+    }
+
+    function calcUnderlyingAmount(
+        uint256 balance,
+        uint256 BPTPortion,
+        uint256 precision
+    ) internal pure returns (uint256 underlyingAmount) {
+        underlyingAmount = ((balance * BPTPortion).div(10**precision));
+    }
 
     /// @dev Calculates the trusted rate of two assets based on our price feeds.
     /// Uses the decimals-derived unit for whichever asset is used as the quote asset.
@@ -129,7 +142,7 @@ contract BalancerV2PriceFeed is
         address _token1,
         uint256 _token0Decimals,
         uint256 _token1Decimals
-    ) private returns (uint256 token0RateAmount_, uint256 token1RateAmount_) {
+    ) public returns (uint256 token0RateAmount_, uint256 token1RateAmount_) {
         bool rateIsValid;
         // The quote asset of the value lookup must be a supported primitive asset,
         // so we cycle through the tokens until reaching a primitive.
@@ -152,17 +165,6 @@ contract BalancerV2PriceFeed is
     //////////////////////////
     // POOL TOKENS REGISTRY //
     //////////////////////////
-
-    /// @notice Adds Balancer V2 pool tokens to the price feed
-    /// @param _poolIds Balancer pool ids to add BPT tokens for
-    function addPoolTokens(address _vault, bytes32[] calldata _poolIds)
-        external
-        onlyFundDeployerOwner
-    {
-        require(_poolIds.length > 0, "addPoolTokens: Empty _poolsIds");
-
-        __addPoolTokens(_vault, _poolIds, DERIVATIVE_PRICE_FEED, PRIMITIVE_PRICE_FEED);
-    }
 
     /// @dev Helper to add Balancer V2 pool BPT tokens
     function __addPoolTokens(
@@ -210,7 +212,6 @@ contract BalancerV2PriceFeed is
             });
 
             emit PoolTokenAdded(poolAddress, token0, token1);
-            // emit PoolTokenAdded(poolAddress, _poolIds[i], token0, token1);
         }
     }
 
