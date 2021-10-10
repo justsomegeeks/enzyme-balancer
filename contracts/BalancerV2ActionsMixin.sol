@@ -50,7 +50,6 @@ abstract contract BalancerV2ActionsMixin is AssetHelpers {
         address _recipient,
         IBalancerV2Vault.JoinPoolRequest memory _request
     ) internal {
-
         __approveAssetMaxAsNeeded(_request.assets[0], BALANCER_V2_VAULT, _request.maxAmountsIn[0]);
         __approveAssetMaxAsNeeded(_request.assets[1], BALANCER_V2_VAULT, _request.maxAmountsIn[1]);
 
@@ -64,7 +63,6 @@ abstract contract BalancerV2ActionsMixin is AssetHelpers {
         address payable _recipient,
         IBalancerV2Vault.ExitPoolRequest memory _request
     ) internal {
-
         __approveAssetMaxAsNeeded(
             _request.assets[0],
             BALANCER_V2_VAULT,

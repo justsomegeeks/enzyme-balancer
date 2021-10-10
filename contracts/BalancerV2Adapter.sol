@@ -205,8 +205,8 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             address(bytes20(poolId))
         );
         uint256[] memory assetAmounts = new uint256[](assetsLength);
-        // INFO: How are we calculating minimum incoming BPT amounts?
-        // TODO: Add slippage to minimum incoming amount so that you don't need to hardcode things
+
+        // TODO: Add slippage to minimum incoming amount
         for (uint256 i = 0; i < assetsLength; i++) {
             spendAssetAmounts_[i] = request.maxAmountsIn[i];
             spendAssets_[i] = request.assets[i];
@@ -222,13 +222,13 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
                 totalToken
             );
             console.log("Total BPT: ", totalBPT);
-            uint256 calculationPrecision = 50;
-            uint256 BPTPortion = calcPortionOfPool(
+            uint256 calculationPrecision = 18;
+            uint256 BPTPortion = __calcPortionOfPool(
                 request.maxAmountsIn[i],
                 totalToken,
                 calculationPrecision
             );
-            uint256 expectedBPT = calcBPTAmount(totalBPT, BPTPortion, calculationPrecision);
+            uint256 expectedBPT = __calcBPTAmount(totalBPT, BPTPortion, calculationPrecision);
             console.log("BPTs Per TotalTokens:", BPTPortion, "Expected BPT:", expectedBPT);
             assetAmounts[i] = expectedBPT;
         }
@@ -251,7 +251,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         );
     }
 
-    function calcPortionOfPool(
+    function __calcPortionOfPool(
         uint256 tokensIn,
         uint256 totalTokens,
         uint256 precision
@@ -263,7 +263,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         return (_portionOfPool);
     }
 
-    function calcBPTAmount(
+    function __calcBPTAmount(
         uint256 balance,
         uint256 tokenPortion,
         uint256 precision
