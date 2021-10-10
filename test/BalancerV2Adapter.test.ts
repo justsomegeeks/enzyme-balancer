@@ -84,7 +84,7 @@ describe('BalancerV2Adapter', function () {
   });
 
   describe('constructor', function () {
-    xit('deploys correctly', async function () {
+    it('deploys correctly', async function () {
       const balancerV2Adapter = await balancerV2AdapterFactory.deploy(
         networkDescriptor.contracts.enzyme.IntegrationManager,
         networkDescriptor.contracts.balancer.BalancerV2Vault,
@@ -161,14 +161,14 @@ describe('BalancerV2Adapter', function () {
       });
     });
 
-    xit('does not allow a bad selector', async function () {
+    it('does not allow a bad selector', async function () {
       // avoid temptation to use `utils.randomBytes(4)`. unlikely in this case, but randomness in tests
       // can cause spurious test failures
       const randomBytes = [241, 189, 26, 18];
       await expect(balancerV2Adapter.parseAssetsForMethod(randomBytes, args)).to.be.revertedWith('_selector invalid');
     });
 
-    xit('returns expected parsed assets for swap', async function () {
+    it('returns expected parsed assets for swap', async function () {
       if (typeof networkDescriptor.tokens.WBTC.mainnetPinnedBlockTradeCache === 'undefined') {
         throw `Token ${tokenIn.symbol} has no 'mainnetPinnedBlockTradeCache' set. See: ../utils/env-helper.ts`;
       }
@@ -337,7 +337,7 @@ describe('BalancerV2Adapter', function () {
       await integrationManager.registerAdapters([balancerV2Adapter.address]);
     });
 
-    xit('can only be called via the IntegrationManager', async function () {
+    it('can only be called via the IntegrationManager', async function () {
       // For more info about 'interface ExpectedTrade' see docs for the ExpectedTrade interface
       // in ../utils/env-helper.ts
       if (typeof tokenIn.mainnetPinnedBlockTradeCache === 'undefined') {
@@ -375,7 +375,7 @@ describe('BalancerV2Adapter', function () {
       );
     });
 
-    xit('works as expected when called by a fund', async function () {
+    it('works as expected when called by a fund', async function () {
       // For more info about 'interface ExpectedTrade' see docs for the ExpectedTrade interface
       // in ../utils/env-helper.ts
       if (typeof tokenIn.mainnetPinnedBlockTradeCache === 'undefined') {
