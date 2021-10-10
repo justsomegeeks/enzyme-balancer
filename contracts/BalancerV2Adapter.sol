@@ -321,7 +321,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         );
     }
 
-    function balancerV2Redeem(bytes calldata _encodedCallArgs) external onlyIntegrationManager {
+    function redeem(bytes calldata _encodedCallArgs) external onlyIntegrationManager {
         (
             bytes32 balancerPoolId_,
             uint256[] memory outgoingAssetAmounts_,

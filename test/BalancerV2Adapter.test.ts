@@ -243,7 +243,7 @@ describe('BalancerV2Adapter', function () {
       expect(parsedLendArgs[4][0]).gt(0);
     });
 
-    it('generates expected output for redeeming', async function () {
+    it.only('generates expected output for redeeming', async function () {
       const poolId = '0x01abc00e86c7e258823b9a055fd62ca6cf61a16300010000000000000000003b';
       const recipient = enzymeCouncil.address;
 
@@ -620,7 +620,7 @@ describe('BalancerV2Adapter', function () {
       });
     });
 
-    it('can only be called via the IntegrationManager', async function () {
+    it.only('can only be called via the IntegrationManager', async function () {
       await expect(balancerV2Adapter.redeem(enzymeFundAddress, redeemSelector, redeemArgs)).to.be.revertedWith(
         'Only the IntegrationManager can call this function',
       );
