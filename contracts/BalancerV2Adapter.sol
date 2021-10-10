@@ -204,7 +204,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         uint256 totalBPT = BalancerV2PriceFeed(BALANCER_V2_PRICE_FEED).getPoolTotalSupply(
             address(bytes20(poolId))
         );
-
+        uint256[] memory assetAmounts = new uint256[](assetsLength);
         // INFO: How are we calculating minimum incoming BPT amounts?
         // TODO: Add slippage to minimum incoming amount so that you don't need to hardcode things
         for (uint256 i = 0; i < assetsLength; i++) {
@@ -214,12 +214,30 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
                 poolId,
                 IERC20(spendAssets_[i])
             );
-
-            uint256 expectedBPT = (totalBPT / totalToken) * request.maxAmountsIn[i];
-            minIncomingAssetAmounts_[0] += expectedBPT;
+            console.log("asset ", request.assets[i]);
+            console.log(
+                "tokens in ",
+                request.maxAmountsIn[i],
+                "Total Tokens in pool: ",
+                totalToken
+            );
+            console.log("Total BPT: ", totalBPT);
+            uint256 calculationPrecision = 50;
+            uint256 BPTPortion = calcPortionOfPool(
+                request.maxAmountsIn[i],
+                totalToken,
+                calculationPrecision
+            );
+            uint256 expectedBPT = calcBPTAmount(totalBPT, BPTPortion, calculationPrecision);
+            console.log("BPTs Per TotalTokens:", BPTPortion, "Expected BPT:", expectedBPT);
+            assetAmounts[i] = expectedBPT;
         }
-        minIncomingAssetAmounts_[0] = 7425452681194559297;
 
+        //minIncomingAssetAmounts_[0] = 7425452681194559297;
+
+        minIncomingAssetAmounts_[0] = assetAmounts[0];
+
+        console.log("total expected bpt:", minIncomingAssetAmounts_[0]);
         address poolAddress = address(bytes20(poolId));
         incomingAssets_ = new address[](1);
         incomingAssets_[0] = poolAddress;
@@ -231,6 +249,27 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
             incomingAssets_,
             minIncomingAssetAmounts_
         );
+    }
+
+    function calcPortionOfPool(
+        uint256 tokensIn,
+        uint256 totalTokens,
+        uint256 precision
+    ) internal pure returns (uint256 portionOfPool) {
+        // caution, check safe-to-multiply here
+        uint256 _tokensIn = tokensIn.mul(10**(precision.add(1)));
+        // with rounding of last digit
+        uint256 _portionOfPool = (_tokensIn.div(totalTokens)).add(5).div(10);
+        return (_portionOfPool);
+    }
+
+    function calcBPTAmount(
+        uint256 balance,
+        uint256 tokenPortion,
+        uint256 precision
+    ) internal pure returns (uint256 underlyingAmount) {
+        //console.log("precision", precision);
+        underlyingAmount = (balance.mul(tokenPortion)).div(10**(precision));
     }
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
