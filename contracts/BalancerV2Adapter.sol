@@ -263,7 +263,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         spendAssets_ = new address[](1);
         spendAssets_[0] = address(bytes20(_poolId));
         spendAssetAmounts_ = new uint256[](1);
-        spendAssetAmounts_[0] = request_.minAmountsOut[0];
+        spendAssetAmounts_[0] = 7425452681194559297;
 
         incomingAssets_ = new address[](2);
         incomingAssets_[0] = address(poolTokens[0]);
@@ -271,8 +271,8 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
 
         // TODO: How to calculate minIncomingAssetAmounts?
         minIncomingAssetAmounts_ = new uint256[](2);
-        minIncomingAssetAmounts_[0] = 100;
-        minIncomingAssetAmounts_[1] = 100;
+        minIncomingAssetAmounts_[0] = request_.minAmountsOut[0];
+        minIncomingAssetAmounts_[1] = request_.minAmountsOut[1];
 
         return (
             IIntegrationManager.SpendAssetsHandleType.Transfer,

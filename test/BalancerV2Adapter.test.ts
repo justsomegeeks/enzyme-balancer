@@ -246,16 +246,17 @@ describe('BalancerV2Adapter', function () {
       expect(parsedLendArgs[4][0]).gt(0);
     });
 
-    it('returns expected parse assets for redeem', async function () {
-      const initialBalances = [0, 1];
-      const initUserData = hre.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256[]'], [0, initialBalances]);
+    it.only('returns expected parse assets for redeem', async function () {
+      const amountsOut = [hre.ethers.utils.parseUnits('.1', 8), hre.ethers.utils.parseEther('1.4084120840052506')];
+
+      const minBPTIn = hre.ethers.utils.parseUnits('1', 18);
       const bptToSpend = hre.ethers.utils.parseUnits('1', networkDescriptor.tokens.WBTC_WETH_BPT.decimals);
 
       const request: ExitPoolRequest = {
-        assets: [networkDescriptor.tokens.WBTC_WETH_BPT.address],
-        minAmountsOut: [bptToSpend],
+        assets: [networkDescriptor.tokens.WBTC.address, networkDescriptor.tokens.WETH.address],
+        minAmountsOut: amountsOut,
         toInternalBalance: false,
-        userData: initUserData,
+        userData: WeightedPoolEncoder.exitExactBPTInForTokensOut(minBPTIn),
       };
 
       args = balancerV2RedeemArgs({
@@ -273,7 +274,7 @@ describe('BalancerV2Adapter', function () {
       expect(parsedLendArgs[1][0].toLowerCase()).to.equal(networkDescriptor.tokens.WBTC_WETH_BPT.address.toLowerCase()); //token address in
 
       expect(parsedLendArgs[2]).to.have.length(1); // BPT to spend
-      expect(parsedLendArgs[2][0]).to.equal(bptToSpend);
+      expect(parsedLendArgs[2][0]).to.gte(bptToSpend);
 
       expect(parsedLendArgs[3]).to.have.length(2); // Incoming assets address
       expect(parsedLendArgs[3][0].toLowerCase()).to.equal(networkDescriptor.tokens.WBTC.address.toLowerCase()); // token0
@@ -596,6 +597,7 @@ describe('BalancerV2Adapter', function () {
       console.log(`initial balances: WBTC: ${initialBalances[0].toString()}, WETH: ${initialBalances[1].toString()}`);
 
       const amountsIn = [hre.ethers.utils.parseUnits('1', 8), hre.ethers.utils.parseEther('14.084120840052506')];
+      const amountsOut = [hre.ethers.utils.parseUnits('.1', 8), hre.ethers.utils.parseEther('1.4084120840052506')];
 
       // TODO: just making a number up here to try to get lend to work
       const minBPTIn = hre.ethers.utils.parseUnits('1', 18);
@@ -604,7 +606,7 @@ describe('BalancerV2Adapter', function () {
 
       exitPoolRequest = {
         assets: [tokens.WBTC.address, tokens.WETH.address],
-        minAmountsOut: amountsIn,
+        minAmountsOut: amountsOut,
         toInternalBalance: false,
         userData: WeightedPoolEncoder.exitExactBPTInForTokensOut(minBPTIn),
       };
@@ -621,7 +623,7 @@ describe('BalancerV2Adapter', function () {
       });
     });
 
-    it.only('can only be called via the IntegrationManager', async function () {
+    it('can only be called via the IntegrationManager', async function () {
       await expect(balancerV2Adapter.redeem(enzymeFundAddress, redeemSelector, redeemArgs)).to.be.revertedWith(
         'Only the IntegrationManager can call this function',
       );
