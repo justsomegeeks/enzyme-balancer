@@ -136,7 +136,7 @@ describe('BalancerV2PriceFeed', function () {
       await balancerV2PriceFeed.deployed();
     });
 
-    xit('returns rate for 18 decimals underlying assets', async function () {
+    it('returns rate for 18 decimals underlying assets', async function () {
       const underLyingValues = await balancerV2PriceFeed.callStatic.calcUnderlyingValues(
         networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
         hre.ethers.utils.parseEther('100'),
@@ -149,8 +149,8 @@ describe('BalancerV2PriceFeed', function () {
       console.log(underLyingValues[1][0].toString());
     });
 
-    xit('returns rate for non-18 decimals underlying assets', function () {
-      return;
-    });
+    // it('returns rate for non-18 decimals underlying assets', function () {
+    //   return;
+    // });
   });
 });

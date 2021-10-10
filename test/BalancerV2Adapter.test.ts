@@ -257,7 +257,7 @@ describe('BalancerV2Adapter', function () {
       expect(parsedLendArgs[4][0]).gt(0);
     });
 
-    it.only('returns expected parse assets for redeem', async function () {
+    it('returns expected parse assets for redeem', async function () {
       const amountsOut = [hre.ethers.utils.parseUnits('.1', 8), hre.ethers.utils.parseEther('1.4084120840052506')];
 
       const minBPTIn = hre.ethers.utils.parseUnits('1', 18);
@@ -561,7 +561,7 @@ describe('BalancerV2Adapter', function () {
     let redeemArgs: any;
     let enzymeFundAddress: string;
     let enzymeFundOwner: SignerWithAddress;
-    let joinPoolRequest: JoinPoolRequest;
+    // let joinPoolRequest: JoinPoolRequest;
     let exitPoolRequest: ExitPoolRequest;
     let poolId: string;
     let enzymeController: ComptrollerLib;
@@ -607,13 +607,13 @@ describe('BalancerV2Adapter', function () {
 
       console.log(`initial balances: WBTC: ${initialBalances[0].toString()}, WETH: ${initialBalances[1].toString()}`);
 
-      const amountsIn = [hre.ethers.utils.parseUnits('1', 8), hre.ethers.utils.parseEther('14.084120840052506')];
+      // const amountsIn = [hre.ethers.utils.parseUnits('1', 8), hre.ethers.utils.parseEther('14.084120840052506')];
       const amountsOut = [hre.ethers.utils.parseUnits('.1', 8), hre.ethers.utils.parseEther('1.4084120840052506')];
 
       // TODO: just making a number up here to try to get lend to work
       const minBPTIn = hre.ethers.utils.parseUnits('1', 18);
       console.log(`minBPTIn = ${minBPTIn.toString()}`);
-      const minBPTOut = hre.ethers.utils.parseUnits('1', 18);
+      // const minBPTOut = hre.ethers.utils.parseUnits('1', 18);
 
       exitPoolRequest = {
         assets: [tokens.WBTC.address, tokens.WETH.address],
@@ -621,12 +621,12 @@ describe('BalancerV2Adapter', function () {
         toInternalBalance: false,
         userData: WeightedPoolEncoder.exitExactBPTInForTokensOut(minBPTIn),
       };
-      joinPoolRequest = {
-        assets: [tokens.WBTC.address, tokens.WETH.address],
-        fromInternalBalance: false,
-        maxAmountsIn: amountsIn,
-        userData: WeightedPoolEncoder.joinExactTokensInForBPTOut(amountsIn, minBPTOut),
-      };
+      // joinPoolRequest = {
+      //   assets: [tokens.WBTC.address, tokens.WETH.address],
+      //   fromInternalBalance: false,
+      //   maxAmountsIn: amountsIn,
+      //   userData: WeightedPoolEncoder.joinExactTokensInForBPTOut(amountsIn, minBPTOut),
+      // };
 
       redeemArgs = balancerV2RedeemArgs({
         poolId,
@@ -650,15 +650,15 @@ describe('BalancerV2Adapter', function () {
           networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
         ),
       );
-      console.log('Lending to a pool...');
-      await balancerV2Lend({
-        balancerV2Adapter: balancerV2Adapter.address,
-        enzymeController,
-        enzymeFundOwner,
-        integrationManager,
-        poolId,
-        request: joinPoolRequest,
-      });
+      // console.log('Lending to a pool...');
+      // await balancerV2Lend({
+      //   balancerV2Adapter: balancerV2Adapter.address,
+      //   enzymeController,
+      //   enzymeFundOwner,
+      //   integrationManager,
+      //   poolId,
+      //   request: joinPoolRequest,
+      // });
 
       console.log('Redeeming from a pool...');
       const redeemTxnReceipt = await balancerV2Redeem({
