@@ -9,79 +9,13 @@ import { BigNumber as BN } from 'bignumber.js';
 import { BigNumber } from 'ethers';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-const SUPPORTED_TOKENS = ['WBTC', 'WETH'] as const;
+const SUPPORTED_TOKENS = ['WBTC', 'WETH', 'WBTC_WETH_BPT'] as const;
 export type SupportedTokens = typeof SUPPORTED_TOKENS[number];
 
 const SUPPORTED_NETWORKS = ['mainnet'] as const;
 type SupportedNetworks = typeof SUPPORTED_NETWORKS[number];
 
 let hre: HardhatRuntimeEnvironment;
-
-//
-//
-// MAINNET config: https://github.com/enzymefinance/protocol/blob/current/deploy/scripts/config/Mainnet.ts
-// WETH is not included as it is auto-included in the chainlink price feed
-//
-// const primitives = {
-//   ...
-//   wbtc: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
-//   ...
-// }
-//
-// const weth = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
-//
-// const aggregators = {
-//   ...
-//   wbtc: ['0xdeb288f737066589598e9214e782fa5a8ed689e8', ChainlinkRateAsset.ETH],     <-- ChainLinkRateAsset
-//   ...
-// }
-//
-// ChainLinkRateAsset: https://github.com/enzymefinance/protocol/blob/987ed191ecd6e0ca9c4a89569754b3ea562c75cb/packages/protocol/src/types.ts
-//
-// ChainLinkPriceFeed: https://github.com/enzymefinance/protocol/blob/current/contracts/release/infrastructure/price-feeds/primitives/ChainlinkPriceFeed.sol
-//
-// derivatives: UniswapV2PoolPriceFeed.sol: https://github.com/enzymefinance/protocol/blob/987ed191ecd6e0ca9c4a89569754b3ea562c75cb/contracts/release/infrastructure/price-feeds/derivatives/feeds/UniswapV2PoolPriceFeed.sol
-//
-//
-// UniswapV2PoolTokenCalculator: https://github.com/enzymefinance/protocol/blob/987ed191ecd6e0ca9c4a89569754b3ea562c75cb/contracts/release/infrastructure/price-feeds/utils/UniswapV2PoolTokenValueCalculator.sol  MDC: wow.  that's a hell of a thing!
-//
-//
-// https://github.com/enzymefinance/protocol/blob/current/deploy/utils/config.ts
-//
-// export interface DeploymentConfig {
-//   weth: string;
-//   primitives: Record<string, string>;
-//   chainlink: {
-//     ethusd: string;
-//     aggregators: Record<string, readonly [string, ChainlinkRateAsset]>;
-//   },
-//   ...
-//   idle: Record<string, string>;
-//   ...
-//   paraSwapV4: {
-//     augustusSwapper: string;
-//     tokenTransferProxy: string;
-//   };
-//   stakehound: {
-//     steth: string;
-//   };
-//   unsupportedAssets: Record<string, string>;
-//   uniswap: {
-//     factory: string;
-//     router: string;
-//     pools: Record<string, string>;
-//   };
-//   uniswapV3: {
-//     router: string;
-//   };
-// };
-//
-
-//
-//
-// KOVAN config: github.com/enzymefinance/protocol/blob/current/deploy/scripts/config/Kovan.ts
-//
-//
 
 // temporary hack to get around testing on pinned mainnet, while using 'live' mainnet chainlink feeds and
 // mainnet subgrah
@@ -173,6 +107,7 @@ export function initializeEnvHelper(_hre: HardhatRuntimeEnvironment) {
 //     totalToken: '39837.089914397634606231',
 //   },
 // };
+
 export const lendAmounts = () => ({
   ETH: hre.ethers.utils.parseEther('14.084120840052506'),
   WBTC: hre.ethers.utils.parseUnits('1', 8),
@@ -196,15 +131,12 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
           DerivativePriceFeedAddress: '0x2e45f9b3fd5871ccaf4eb415dfccbdd126f57c4f',
           EnyzmeComptroller: '0xe0dcf68b0b2fd1097442f2134e57339404a00639',
           EnzymeCouncil: '0xb270fe91e8e4b80452fbf1b4704208792a350f53',
-          EnzymeDeployer: '0x7e6d3b1161df9c9c7527f68d651b297d2fdb820b',
-          // Rhino Fund Deployer
-          EnzymeVaultProxy: '0x24f3b37934D1AB26B7bda7F86781c90949aE3a79',
-          // Rhino Fund
-          FundOwner: '0x978cc856357946f980fba68db3b7f0d72e570da8',
-          // Rhino Fund Manager
+          EnzymeDeployer: '0x7e6d3b1161df9c9c7527f68d651b297d2fdb820b', // Rhino Fund Deployer
+          EnzymeVaultProxy: '0x24f3b37934D1AB26B7bda7F86781c90949aE3a79', // Rhino Fund
+          FundOwner: '0x978cc856357946f980fba68db3b7f0d72e570da8', // Rhino Fund Manager
           IntegrationManager: '0x965ca477106476B4600562a2eBe13536581883A6',
           PrimitivePriceFeedAddress: '0x1fad8faf11e027f8630f394599830dbeb97004ee',
-          // TODO valueInterpreter: https://github.com/enzymefinance/protocol/blob/current/packages/testutils/src/deployment.ts#L102
+          // valueInterpreter: https://github.com/enzymefinance/protocol/blob/current/packages/testutils/src/deployment.ts#L102
           // import from @enzymefinance/protocol
           ValueInterpreter: '0x10a5624840Ac07287f756777DF1DEC34d2C2d654',
         },
@@ -228,6 +160,13 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
           symbol: 'WBTC',
           whaleAddress: '0xe08A8b19e5722a201EaF20A6BC595eF655397bd5',
         },
+        WBTC_WETH_BPT: {
+          address: '0xa6f548df93de924d73be7d25dc02554c6bd66db5',
+          contract: await hre.ethers.getContractAt(IERC20Artifact.abi, '0xa6f548df93de924d73be7d25dc02554c6bd66db5'),
+          decimals: BigNumber.from(18),
+          symbol: 'WBTC_WETH_BPT',
+          whaleAddress: '0xe08A8b19e5722a201EaF20A6BC595eF655397bd5',
+        },
         WETH: {
           address: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
           contract: await hre.ethers.getContractAt(IERC20Artifact.abi, '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'),
@@ -237,10 +176,6 @@ export async function getNetworkDescriptors(): Promise<NetworkDescriptors> {
             tokenOut: 'WBTC',
             tokenOutAmount: new BN('1'),
           },
-          // priceAggregatorDescriptor: {
-          //   address: '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419',
-          //   rateAsset: ChainlinkRateAsset.ETH,
-          // },
           symbol: 'WETH',
           whaleAddress: '0x56178a0d5F301bAf6CF3e1Cd53d9863437345Bf9',
         },
@@ -283,6 +218,10 @@ export interface Balances {
     tokenDescriptor: TokenDescriptor;
   };
   tokenOut: {
+    balance: BigNumber;
+    tokenDescriptor: TokenDescriptor;
+  };
+  bptToken?: {
     balance: BigNumber;
     tokenDescriptor: TokenDescriptor;
   };
@@ -343,18 +282,30 @@ export async function getBalances(
   address: string,
   tokenIn: TokenDescriptor,
   tokenOut: TokenDescriptor,
+  bptToken?: TokenDescriptor,
 ): Promise<Balances> {
+  const tokenInBalance = await getBalance(address, tokenIn);
+  const tokenOutBalance = await getBalance(address, tokenOut);
+  const bptTokenBalance = bptToken ? await getBalance(address, bptToken) : undefined;
+
   const balances = {
     address,
     tokenIn: {
-      balance: await getBalance(address, tokenIn),
+      balance: tokenInBalance,
       tokenDescriptor: tokenIn,
     },
     tokenOut: {
-      balance: await getBalance(address, tokenOut),
+      balance: tokenOutBalance,
       tokenDescriptor: tokenOut,
     },
   } as Balances;
+
+  if (bptToken && bptTokenBalance) {
+    balances.bptToken = {
+      balance: bptTokenBalance,
+      tokenDescriptor: bptToken,
+    };
+  }
 
   return balances;
 }

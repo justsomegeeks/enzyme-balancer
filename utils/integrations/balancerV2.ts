@@ -109,12 +109,12 @@ export interface BalancerV2Lend {
   poolId: string;
   request: JoinPoolRequest;
 }
-export function balancerV2RedeemArgs({ poolId, recipient, request }: BalancerV2Redeem) {
-  return encodeArgs(['bytes32', 'address', redeemV2JoinPoolRequest], [poolId, recipient, request]);
+
+export function balancerV2RedeemArgs({ poolId, request }: BalancerV2Redeem) {
+  return encodeArgs(['bytes32', redeemV2JoinPoolRequest], [poolId, request]);
 }
 export interface BalancerV2Redeem {
   poolId: string;
-  recipient: string;
   request: ExitPoolRequest;
 }
 

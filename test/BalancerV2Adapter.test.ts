@@ -204,7 +204,7 @@ describe('BalancerV2Adapter', function () {
       expect(parsedArgs[4][0].eq(returnAmountBigNumber)).to.be.true;
     });
 
-    it('generates expected output for lending', async function () {
+    it('returns expected parse assets for lend', async function () {
       const tokens = networkDescriptor.tokens;
       const initialBalances = [0, 1];
       const initUserData = hre.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256[]'], [0, initialBalances]);
@@ -244,8 +244,41 @@ describe('BalancerV2Adapter', function () {
       expect(parsedLendArgs[4][0]).gt(0);
     });
 
-    xit('generates expected output for redeeming', async function () {
-      console.log('Work on this');
+    it('returns expected parse assets for redeem', async function () {
+      const initialBalances = [0, 1];
+      const initUserData = hre.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256[]'], [0, initialBalances]);
+      const bptToSpend = hre.ethers.utils.parseUnits('1', networkDescriptor.tokens.WBTC_WETH_BPT.decimals);
+
+      const request: ExitPoolRequest = {
+        assets: [networkDescriptor.tokens.WBTC_WETH_BPT.address],
+        minAmountsOut: [bptToSpend],
+        toInternalBalance: false,
+        userData: initUserData,
+      };
+
+      args = balancerV2RedeemArgs({
+        poolId: networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolId,
+        request,
+      });
+
+      const parsedLendArgs = await balancerV2Adapter.parseAssetsForMethod(redeemSelector, args);
+
+      expect(parsedLendArgs).to.have.length(5);
+
+      expect(parsedLendArgs[0]).to.equal(SpendAssetsHandleType.Transfer);
+
+      expect(parsedLendArgs[1]).to.have.length(1); // Address of BPT
+      expect(parsedLendArgs[1][0].toLowerCase()).to.equal(networkDescriptor.tokens.WBTC_WETH_BPT.address.toLowerCase()); //token address in
+
+      expect(parsedLendArgs[2]).to.have.length(1); // BPT to spend
+      expect(parsedLendArgs[2][0]).to.equal(bptToSpend);
+
+      expect(parsedLendArgs[3]).to.have.length(2); // Incoming assets address
+      expect(parsedLendArgs[3][0].toLowerCase()).to.equal(networkDescriptor.tokens.WBTC.address.toLowerCase()); // token0
+      expect(parsedLendArgs[3][1].toLowerCase()).to.equal(networkDescriptor.tokens.WETH.address.toLowerCase()); //token1
+
+      // TODO: Check and verify minimum incoming asset amounts
+      expect(parsedLendArgs[4]).to.have.length(2); // minimum incoming assets
     });
   });
 
@@ -516,7 +549,6 @@ describe('BalancerV2Adapter', function () {
     let enzymeFundOwner: SignerWithAddress;
     let request: ExitPoolRequest;
     let poolId: string;
-    let recipient: string;
     let enzymeController: ComptrollerLib;
     let enzymeControllerAddress: string;
     let balancerV2PriceFeed: any;
@@ -550,7 +582,6 @@ describe('BalancerV2Adapter', function () {
       await integrationManager.registerAdapters([balancerV2Adapter.address]);
       //await  integrationManager.addAuthUserForFund(balancerV2Adapter, enzymeFundOwner);
       poolId = networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolId;
-      recipient = enzymeCouncil.address;
 
       const tokens = networkDescriptor.tokens;
 
@@ -576,7 +607,6 @@ describe('BalancerV2Adapter', function () {
 
       redeemArgs = balancerV2RedeemArgs({
         poolId,
-        recipient,
         request,
       });
     });
@@ -605,7 +635,6 @@ describe('BalancerV2Adapter', function () {
         enzymeFundOwner,
         integrationManager,
         poolId,
-        recipient,
         request,
       });
 

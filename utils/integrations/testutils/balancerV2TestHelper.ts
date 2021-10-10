@@ -95,7 +95,6 @@ export async function balancerV2Redeem({
   enzymeFundOwner,
   balancerV2Adapter,
   poolId,
-  recipient,
   request,
 }: {
   enzymeController: ComptrollerLib;
@@ -103,12 +102,10 @@ export async function balancerV2Redeem({
   enzymeFundOwner: SignerWithAddress;
   balancerV2Adapter: AddressLike;
   poolId: string;
-  recipient: string;
   request: ExitPoolRequest;
 }) {
   const redeemArgs = balancerV2RedeemArgs({
     poolId,
-    recipient,
     request,
   } as BalancerV2Redeem);
 

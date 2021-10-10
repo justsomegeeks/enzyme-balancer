@@ -87,7 +87,7 @@ abstract contract BalancerV2ActionsMixin is AssetHelpers {
         IBalancerV2Vault.ExitPoolRequest memory _request
     ) internal {
         // TODO: Approve ERC20 tokens.
-        // __approveAssetMaxAsNeeded(_request.assets[0], BALANCER_V2_VAULT, _request.minAmountsOut[0]);
+        __approveAssetMaxAsNeeded(_request.assets[0], BALANCER_V2_VAULT, _request.minAmountsOut[0]);
         IBalancerV2Vault(BALANCER_V2_VAULT).exitPool(_poolId, _sender, _recipient, _request);
     }
 
