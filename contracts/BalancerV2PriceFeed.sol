@@ -135,6 +135,22 @@ contract BalancerV2PriceFeed is
         underlyingAmount = ((balance * BPTPortion).div(10**precision));
     }
 
+    //baseAsset is the asset you want to get the value of
+    //baseAssetAmount is the amount of that asset you're quoting.
+    //quoteAsset is the asset you want to get the price in.
+    function getCurrentRate(
+        address _baseAsset,
+        uint256 _baseAssetAmount,
+        address _quoteAsset
+    ) public view returns (uint256 quoteAssetAmount_, bool isValid) {
+        IPrimitivePriceFeed priceFeed = IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED);
+        (quoteAssetAmount_, isValid) = priceFeed.calcCanonicalValue(
+            _baseAsset,
+            _baseAssetAmount,
+            _quoteAsset
+        );
+    }
+
     /// @dev Calculates the trusted rate of two assets based on our price feeds.
     /// Uses the decimals-derived unit for whichever asset is used as the quote asset.
     function __calcTrustedRate(
