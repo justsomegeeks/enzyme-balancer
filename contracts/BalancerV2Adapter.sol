@@ -8,7 +8,6 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "@enzymefinance/contracts/release/extensions/integration-manager/integrations/utils/AdapterBase2.sol";
-import "hardhat/console.sol";
 import "./BalancerV2ActionsMixin.sol";
 import "./interfaces/IBalancerV2Vault.sol";
 import "./BalancerV2PriceFeed.sol";
@@ -214,14 +213,7 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
                 poolId,
                 IERC20(spendAssets_[i])
             );
-            console.log("asset ", request.assets[i]);
-            console.log(
-                "tokens in ",
-                request.maxAmountsIn[i],
-                "Total Tokens in pool: ",
-                totalToken
-            );
-            console.log("Total BPT: ", totalBPT);
+
             uint256 calculationPrecision = 18;
             uint256 BPTPortion = __calcPortionOfPool(
                 request.maxAmountsIn[i],
@@ -229,15 +221,11 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
                 calculationPrecision
             );
             uint256 expectedBPT = __calcBPTAmount(totalBPT, BPTPortion, calculationPrecision);
-            console.log("BPTs Per TotalTokens:", BPTPortion, "Expected BPT:", expectedBPT);
             assetAmounts[i] = expectedBPT;
         }
 
-        //minIncomingAssetAmounts_[0] = 7425452681194559297;
-
         minIncomingAssetAmounts_[0] = assetAmounts[0];
 
-        console.log("total expected bpt:", minIncomingAssetAmounts_[0]);
         address poolAddress = address(bytes20(poolId));
         incomingAssets_ = new address[](1);
         incomingAssets_[0] = poolAddress;
@@ -268,7 +256,6 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         uint256 tokenPortion,
         uint256 precision
     ) internal pure returns (uint256 underlyingAmount) {
-        //console.log("precision", precision);
         underlyingAmount = (balance.mul(tokenPortion)).div(10**(precision));
     }
 
@@ -308,7 +295,6 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         incomingAssets_[0] = address(poolTokens[0]);
         incomingAssets_[1] = address(poolTokens[1]);
 
-        // TODO: How to calculate minIncomingAssetAmounts?
         minIncomingAssetAmounts_ = new uint256[](2);
         minIncomingAssetAmounts_[0] = request_.minAmountsOut[0];
         minIncomingAssetAmounts_[1] = request_.minAmountsOut[1];

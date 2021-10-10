@@ -122,10 +122,12 @@ describe('BalancerV2Adapter', function () {
 
       expect(await integrationManager.getRegisteredAdapters()).to.include(balancerV2Adapter.address);
 
+      console.log(`\n\n==============================\n`);
       console.log(`Balancer V2 Adapter deployed at address: ${balancerV2Adapter.address}`);
       console.log(
         `Balancer V2 Adapter has been registered with IntegrationManager via transaction: ${registerAdapterTxnReceipt.transactionHash}`,
       );
+      console.log(`\n==============================\n\n`);
     });
   });
 
@@ -145,7 +147,6 @@ describe('BalancerV2Adapter', function () {
     let tokenOut: TokenDescriptor;
 
     before(async function () {
-      initializeEnvHelper(hre);
       tokenIn = networkDescriptor.tokens.WBTC;
       tokenOut = networkDescriptor.tokens.WETH;
 
@@ -319,7 +320,6 @@ describe('BalancerV2Adapter', function () {
     let balancerV2PriceFeed: any;
 
     before(async function () {
-      initializeEnvHelper(hre);
       enzymeControllerAddress = networkDescriptor.contracts.enzyme.EnyzmeComptroller;
       enzymeFundAddress = networkDescriptor.contracts.enzyme.EnzymeVaultProxy;
 
@@ -342,7 +342,7 @@ describe('BalancerV2Adapter', function () {
         networkDescriptor.contracts.enzyme.IntegrationManager,
         networkDescriptor.contracts.balancer.BalancerV2Vault,
         balancerV2PriceFeed.address,
-      )) as any;
+      )) as BalancerV2Adapter;
 
       await balancerV2Adapter.deployed();
 
@@ -425,6 +425,23 @@ describe('BalancerV2Adapter', function () {
       swapInfo.returnAmount = tokenIn.mainnetPinnedBlockTradeCache.tokenOutAmount;
       const returnAmountBigNumber = bnToBigNumber(swapInfo.returnAmount);
 
+      console.log(`\n\n==============================\n`);
+      console.log('Balances before takeOrder (batchSwap):');
+      console.log(
+        `  ${preTradeBalances.token0.tokenDescriptor.symbol}: ${hre.ethers.utils.formatUnits(
+          preTradeBalances.token0.balance,
+          preTradeBalances.token0.tokenDescriptor.decimals,
+        )}`,
+      );
+      console.log(
+        `  ${preTradeBalances.token1.tokenDescriptor.symbol}: ${hre.ethers.utils.formatUnits(
+          preTradeBalances.token1.balance,
+          preTradeBalances.token1.tokenDescriptor.decimals,
+        )}`,
+      );
+
+      console.log(`\nSwapping tokens on Balancer...\n`);
+
       const takeOrderTxnReceipt = await balancerV2TakeOrder({
         balancerV2Adapter: balancerV2Adapter.address,
         deadline,
@@ -435,20 +452,39 @@ describe('BalancerV2Adapter', function () {
         swapType,
       });
 
+      console.log(`Tokens swapped via transaction: ${takeOrderTxnReceipt.transactionHash}\n`);
+
       const postTradeBalances = await getBalances(enzymeFundAddress, tokenIn, tokenOut);
 
-      expect(preTradeBalances.tokenIn.balance.sub(tokenInAmountBigNumber).eq(postTradeBalances.tokenIn.balance)).to.be
+      expect(preTradeBalances.token0.balance.sub(tokenInAmountBigNumber).eq(postTradeBalances.token0.balance)).to.be
         .true;
-      expect(postTradeBalances.tokenOut.balance.gte(preTradeBalances.tokenOut.balance.add(returnAmountBigNumber))).to.be
+      expect(postTradeBalances.token1.balance.gte(preTradeBalances.token1.balance.add(returnAmountBigNumber))).to.be
         .true;
 
       const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
       assertEvent(takeOrderTxnReceipt, CallOnIntegrationExecutedForFundEvent);
+
+      console.log('Balances after takeOrder (batchSwap):');
+      console.log(
+        `  ${postTradeBalances.token0.tokenDescriptor.symbol}: ${hre.ethers.utils.formatUnits(
+          postTradeBalances.token0.balance,
+          postTradeBalances.token0.tokenDescriptor.decimals,
+        )}`,
+      );
+
+      console.log(
+        `  ${postTradeBalances.token1.tokenDescriptor.symbol}: ${hre.ethers.utils.formatUnits(
+          postTradeBalances.token1.balance,
+          postTradeBalances.token1.tokenDescriptor.decimals,
+        )}`,
+      );
+
+      console.log(`\n==============================\n\n`);
     });
   });
 
   describe('lend', function () {
-    let balancerV2Adapter: any;
+    let balancerV2Adapter: BalancerV2Adapter;
     let lendArgs: any;
     let enzymeFundAddress: string;
     let enzymeFundOwner: SignerWithAddress;
@@ -456,11 +492,13 @@ describe('BalancerV2Adapter', function () {
     let poolId: string;
     let enzymeController: ComptrollerLib;
     let enzymeControllerAddress: string;
-    let balancerV2PriceFeed: any;
+    let balancerV2PriceFeed: BalancerV2PriceFeed;
+
+    let tokenIn0: TokenDescriptor;
+    let tokenIn1: TokenDescriptor;
+    let tokenBPT: TokenDescriptor;
 
     before(async function () {
-      initializeEnvHelper(hre);
-
       enzymeControllerAddress = networkDescriptor.contracts.enzyme.EnyzmeComptroller;
       enzymeFundAddress = networkDescriptor.contracts.enzyme.EnzymeVaultProxy;
 
@@ -468,6 +506,10 @@ describe('BalancerV2Adapter', function () {
       await hre.network.provider.send('hardhat_impersonateAccount', [enzymeFundOwner.address]);
 
       enzymeController = new ComptrollerLib(enzymeControllerAddress, enzymeFundOwner);
+
+      tokenIn0 = networkDescriptor.tokens.WBTC;
+      tokenIn1 = networkDescriptor.tokens.WETH;
+      tokenBPT = networkDescriptor.tokens.WBTC_WETH_BPT;
 
       balancerV2PriceFeedFactory = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
 
@@ -480,22 +522,15 @@ describe('BalancerV2Adapter', function () {
         networkDescriptor.contracts.enzyme.IntegrationManager,
         networkDescriptor.contracts.balancer.BalancerV2Vault,
         balancerV2PriceFeed.address,
-      )) as any;
+      )) as BalancerV2Adapter;
 
       await balancerV2Adapter.deployed();
 
       await integrationManager.registerAdapters([balancerV2Adapter.address]);
-      //await  integrationManager.addAuthUserForFund(balancerV2Adapter, enzymeFundOwner);
+
       poolId = networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolId;
 
       const tokens = networkDescriptor.tokens;
-
-      const initialBalances = [
-        await tokens.WBTC.contract.balanceOf(networkDescriptor.contracts.enzyme.EnzymeVaultProxy),
-        await tokens.WETH.contract.balanceOf(networkDescriptor.contracts.enzyme.EnzymeVaultProxy),
-      ];
-
-      console.log(`initial balances: WBTC: ${initialBalances[0].toString()}, WETH: ${initialBalances[1].toString()}`);
 
       const amountsIn = [hre.ethers.utils.parseUnits('1', 8), hre.ethers.utils.parseEther('14.084120840052506')];
 
@@ -524,12 +559,33 @@ describe('BalancerV2Adapter', function () {
     it('works as expected when called by a fund', async function () {
       expect(lendArgs).to.not.be.undefined;
 
-      // const preTradeBalances = await getBalances(
-      //   enzymeFundAddress,
-      //   networkDescriptor.tokens.WBTC.address,
-      //   networkDescriptor.tokens.WETH.address,
-      // );
-      // Whitelisting BPT token and our price feed to enzyme
+      const preTradeBalances = await getBalances(enzymeFundAddress, tokenIn0, tokenIn1, tokenBPT);
+
+      console.log(`\n\n==============================\n`);
+      console.log('Balances before lending (joinPool):');
+      console.log(
+        `  ${preTradeBalances.token0.tokenDescriptor.symbol}: ${hre.ethers.utils.formatUnits(
+          preTradeBalances.token0.balance,
+          preTradeBalances.token0.tokenDescriptor.decimals,
+        )}`,
+      );
+      console.log(
+        `  ${preTradeBalances.token1.tokenDescriptor.symbol}: ${hre.ethers.utils.formatUnits(
+          preTradeBalances.token1.balance,
+          preTradeBalances.token1.tokenDescriptor.decimals,
+        )}`,
+      );
+
+      if (typeof preTradeBalances.bptToken !== 'undefined') {
+        console.log(
+          `  ${preTradeBalances.bptToken.tokenDescriptor.symbol}: ${hre.ethers.utils.formatUnits(
+            preTradeBalances.bptToken.balance,
+            preTradeBalances.bptToken.tokenDescriptor.decimals,
+          )}`,
+        );
+      }
+
+      console.log(`\nLending (joinPool) on Balancer...\n`);
 
       const lendTxnReceipt = await balancerV2Lend({
         balancerV2Adapter: balancerV2Adapter.address,
@@ -539,6 +595,35 @@ describe('BalancerV2Adapter', function () {
         poolId,
         request,
       });
+
+      console.log(`Tokens lended via transaction: ${lendTxnReceipt.transactionHash}\n`);
+
+      const postTradeBalances = await getBalances(enzymeFundAddress, tokenIn0, tokenIn1, tokenBPT);
+
+      console.log('Balances before lending (joinPool):');
+      console.log(
+        `  ${postTradeBalances.token0.tokenDescriptor.symbol}: ${hre.ethers.utils.formatUnits(
+          postTradeBalances.token0.balance,
+          postTradeBalances.token0.tokenDescriptor.decimals,
+        )}`,
+      );
+      console.log(
+        `  ${postTradeBalances.token1.tokenDescriptor.symbol}: ${hre.ethers.utils.formatUnits(
+          postTradeBalances.token1.balance,
+          postTradeBalances.token1.tokenDescriptor.decimals,
+        )}`,
+      );
+
+      if (typeof postTradeBalances.bptToken !== 'undefined') {
+        console.log(
+          `  ${postTradeBalances.bptToken.tokenDescriptor.symbol}: ${hre.ethers.utils.formatUnits(
+            postTradeBalances.bptToken.balance,
+            postTradeBalances.bptToken.tokenDescriptor.decimals,
+          )}`,
+        );
+      }
+
+      console.log(`\n==============================\n\n`);
 
       // Trade on BalancerV2
 
@@ -559,16 +644,17 @@ describe('BalancerV2Adapter', function () {
     let redeemArgs: any;
     let enzymeFundAddress: string;
     let enzymeFundOwner: SignerWithAddress;
-    // let joinPoolRequest: JoinPoolRequest;
     let exitPoolRequest: ExitPoolRequest;
     let poolId: string;
     let enzymeController: ComptrollerLib;
     let enzymeControllerAddress: string;
     let balancerV2PriceFeed: any;
 
-    before(async function () {
-      initializeEnvHelper(hre);
+    let tokenIn0: TokenDescriptor;
+    let tokenIn1: TokenDescriptor;
+    let tokenBPT: TokenDescriptor;
 
+    before(async function () {
       enzymeControllerAddress = networkDescriptor.contracts.enzyme.EnyzmeComptroller;
       enzymeFundAddress = networkDescriptor.contracts.enzyme.EnzymeVaultProxy;
 
@@ -576,6 +662,10 @@ describe('BalancerV2Adapter', function () {
       await hre.network.provider.send('hardhat_impersonateAccount', [enzymeFundOwner.address]);
 
       enzymeController = new ComptrollerLib(enzymeControllerAddress, enzymeFundOwner);
+
+      tokenIn0 = networkDescriptor.tokens.WBTC;
+      tokenIn1 = networkDescriptor.tokens.WETH;
+      tokenBPT = networkDescriptor.tokens.WBTC_WETH_BPT;
 
       balancerV2PriceFeedFactory = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
 
@@ -588,22 +678,15 @@ describe('BalancerV2Adapter', function () {
         networkDescriptor.contracts.enzyme.IntegrationManager,
         networkDescriptor.contracts.balancer.BalancerV2Vault,
         balancerV2PriceFeed.address,
-      )) as any;
+      )) as BalancerV2Adapter;
 
       await balancerV2Adapter.deployed();
 
       await integrationManager.registerAdapters([balancerV2Adapter.address]);
-      //await  integrationManager.addAuthUserForFund(balancerV2Adapter, enzymeFundOwner);
+
       poolId = networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolId;
 
       const tokens = networkDescriptor.tokens;
-
-      const initialBalances = [
-        await tokens.WBTC.contract.balanceOf(networkDescriptor.contracts.enzyme.EnzymeVaultProxy),
-        await tokens.WETH.contract.balanceOf(networkDescriptor.contracts.enzyme.EnzymeVaultProxy),
-      ];
-
-      console.log(`initial balances: WBTC: ${initialBalances[0].toString()}, WETH: ${initialBalances[1].toString()}`);
 
       // const amountsIn = [hre.ethers.utils.parseUnits('1', 8), hre.ethers.utils.parseEther('14.084120840052506')];
       const amountsOut = [hre.ethers.utils.parseUnits('.1', 8), hre.ethers.utils.parseEther('1.4084120840052506')];
@@ -618,12 +701,6 @@ describe('BalancerV2Adapter', function () {
         toInternalBalance: false,
         userData: WeightedPoolEncoder.exitExactBPTInForTokensOut(minBPTIn),
       };
-      // joinPoolRequest = {
-      //   assets: [tokens.WBTC.address, tokens.WETH.address],
-      //   fromInternalBalance: false,
-      //   maxAmountsIn: amountsIn,
-      //   userData: WeightedPoolEncoder.joinExactTokensInForBPTOut(amountsIn, minBPTOut),
-      // };
 
       redeemArgs = balancerV2RedeemArgs({
         poolId,
@@ -638,18 +715,35 @@ describe('BalancerV2Adapter', function () {
     });
 
     it('works as expected when called by a fund', async function () {
-      // TODO: lend first
       expect(redeemArgs).to.not.be.undefined;
 
-      // console.log('Lending to a pool...');
-      // await balancerV2Lend({
-      //   balancerV2Adapter: balancerV2Adapter.address,
-      //   enzymeController,
-      //   enzymeFundOwner,
-      //   integrationManager,
-      //   poolId,
-      //   request: joinPoolRequest,
-      // });
+      const preTradeBalances = await getBalances(enzymeFundAddress, tokenIn0, tokenIn1, tokenBPT);
+
+      console.log(`\n\n==============================\n`);
+      console.log('Balances before redeeming (exitPool):');
+      console.log(
+        `  ${preTradeBalances.token0.tokenDescriptor.symbol}: ${hre.ethers.utils.formatUnits(
+          preTradeBalances.token0.balance,
+          preTradeBalances.token0.tokenDescriptor.decimals,
+        )}`,
+      );
+      console.log(
+        `  ${preTradeBalances.token1.tokenDescriptor.symbol}: ${hre.ethers.utils.formatUnits(
+          preTradeBalances.token1.balance,
+          preTradeBalances.token1.tokenDescriptor.decimals,
+        )}`,
+      );
+
+      if (typeof preTradeBalances.bptToken !== 'undefined') {
+        console.log(
+          `  ${preTradeBalances.bptToken.tokenDescriptor.symbol}: ${hre.ethers.utils.formatUnits(
+            preTradeBalances.bptToken.balance,
+            preTradeBalances.bptToken.tokenDescriptor.decimals,
+          )}`,
+        );
+      }
+
+      console.log(`\Redeeming (exitPool) on Balancer...\n`);
 
       const redeemTxnReceipt = await balancerV2Redeem({
         balancerV2Adapter: balancerV2Adapter.address,
@@ -659,6 +753,35 @@ describe('BalancerV2Adapter', function () {
         poolId,
         request: exitPoolRequest,
       });
+
+      console.log(`Tokens redeemed via transaction: ${redeemTxnReceipt.transactionHash}\n`);
+
+      const postTradeBalances = await getBalances(enzymeFundAddress, tokenIn0, tokenIn1, tokenBPT);
+
+      console.log('Balances after redeeming (exitPool):');
+      console.log(
+        `  ${postTradeBalances.token0.tokenDescriptor.symbol}: ${hre.ethers.utils.formatUnits(
+          postTradeBalances.token0.balance,
+          postTradeBalances.token0.tokenDescriptor.decimals,
+        )}`,
+      );
+      console.log(
+        `  ${postTradeBalances.token1.tokenDescriptor.symbol}: ${hre.ethers.utils.formatUnits(
+          postTradeBalances.token1.balance,
+          postTradeBalances.token1.tokenDescriptor.decimals,
+        )}`,
+      );
+
+      if (typeof postTradeBalances.bptToken !== 'undefined') {
+        console.log(
+          `  ${postTradeBalances.bptToken.tokenDescriptor.symbol}: ${hre.ethers.utils.formatUnits(
+            postTradeBalances.bptToken.balance,
+            postTradeBalances.bptToken.tokenDescriptor.decimals,
+          )}`,
+        );
+      }
+
+      console.log(`\n==============================\n\n`);
 
       // Trade on BalancerV2
 

@@ -10,7 +10,7 @@
 
 import type { ExitPoolRequest, JoinPoolRequest } from '@balancer-labs/balancer-js';
 import type { SwapInfo, SwapV2 } from '@balancer-labs/sor';
-import { scale, SOR, SwapTypes } from '@balancer-labs/sor';
+import { SOR, SwapTypes } from '@balancer-labs/sor';
 import { encodeArgs } from '@enzymefinance/protocol';
 import type { BaseProvider } from '@ethersproject/providers';
 import { BigNumber as BN } from 'bignumber.js';
@@ -18,7 +18,7 @@ import type { Bytes, BytesLike } from 'ethers';
 import { BigNumber, utils } from 'ethers';
 
 import type { BalancerV2Adapter } from '../../typechain';
-import type { Balances, SupportedTokens, TokenDescriptor } from '../env-helper';
+import type { SupportedTokens, TokenDescriptor } from '../env-helper';
 import { getNetworkDescriptor } from '../env-helper';
 
 export interface SorSwapArgs {
@@ -217,46 +217,46 @@ export async function assetTransferArgs({
   );
 }
 
-export function printSwapDetails(
-  swapType: SwapTypes,
-  swapInfo: SwapInfo,
-  funds: FundManagement,
-  limits: string[],
-  tokenIn: TokenDescriptor,
-  tokenOut: TokenDescriptor,
-  swapAmount: BN,
-  cost: string,
-  preSwapBalances: Balances,
-  postSwapBalances: Balances,
-) {
-  const amtInScaled =
-    swapType === SwapTypes.SwapExactIn
-      ? swapAmount.toString()
-      : scale(swapInfo.returnAmount, -tokenIn.decimals).toString();
-  const amtOutScaled =
-    swapType === SwapTypes.SwapExactIn
-      ? scale(swapInfo.returnAmount, -tokenOut.decimals).toString()
-      : swapAmount.toString();
-  const swapTypeStr = swapType === SwapTypes.SwapExactIn ? 'SwapExactIn' : 'SwapExactOut';
+// export function printSwapDetails(
+//   swapType: SwapTypes,
+//   swapInfo: SwapInfo,
+//   funds: FundManagement,
+//   limits: string[],
+//   tokenIn: TokenDescriptor,
+//   tokenOut: TokenDescriptor,
+//   swapAmount: BN,
+//   cost: string,
+//   preSwapBalances: Balances,
+//   postSwapBalances: Balances,
+// ) {
+//   const amtInScaled =
+//     swapType === SwapTypes.SwapExactIn
+//       ? swapAmount.toString()
+//       : scale(swapInfo.returnAmount, -tokenIn.decimals).toString();
+//   const amtOutScaled =
+//     swapType === SwapTypes.SwapExactIn
+//       ? scale(swapInfo.returnAmount, -tokenOut.decimals).toString()
+//       : swapAmount.toString();
+//   const swapTypeStr = swapType === SwapTypes.SwapExactIn ? 'SwapExactIn' : 'SwapExactOut';
 
-  console.log(`\n================================================`);
+//   console.log(`\n================================================`);
 
-  console.log(`Funds: ${JSON.stringify(funds, undefined, 2)}`);
-  console.log(`Swap addresses: ${JSON.stringify(swapInfo.tokenAddresses, undefined, 2)}`);
-  console.log(`Limits: ${JSON.stringify(limits, undefined, 2)}`);
+//   console.log(`Funds: ${JSON.stringify(funds, undefined, 2)}`);
+//   console.log(`Swap addresses: ${JSON.stringify(swapInfo.tokenAddresses, undefined, 2)}`);
+//   console.log(`Limits: ${JSON.stringify(limits, undefined, 2)}`);
 
-  console.log(`Swap type: ${swapTypeStr}`);
-  console.log(`Token In: ${tokenIn.symbol}, Amt: ${amtInScaled}`);
-  console.log(`Token Out: ${tokenOut.symbol}, Amt: ${amtOutScaled.toString()}`);
-  console.log(`Cost to swap in ${tokenIn.symbol}: ${cost} ${tokenIn.symbol}`);
+//   console.log(`Swap type: ${swapTypeStr}`);
+//   console.log(`Token In: ${tokenIn.symbol}, Amt: ${amtInScaled}`);
+//   console.log(`Token Out: ${tokenOut.symbol}, Amt: ${amtOutScaled.toString()}`);
+//   console.log(`Cost to swap in ${tokenIn.symbol}: ${cost} ${tokenIn.symbol}`);
 
-  console.log(`Balances before swap:`);
-  console.log(`  ${tokenIn.symbol}: ${preSwapBalances.tokenIn.balance}`);
-  console.log(`  ${tokenOut.symbol}: ${preSwapBalances.tokenOut.balance}`);
+//   console.log(`Balances before swap:`);
+//   console.log(`  ${tokenIn.symbol}: ${preSwapBalances.tokenIn.balance}`);
+//   console.log(`  ${tokenOut.symbol}: ${preSwapBalances.tokenOut.balance}`);
 
-  console.log(`Balances after swap:`);
-  console.log(`  ${tokenIn.symbol}: ${postSwapBalances.tokenIn.balance}`);
-  console.log(`  ${tokenOut.symbol}: ${postSwapBalances.tokenOut.balance}`);
+//   console.log(`Balances after swap:`);
+//   console.log(`  ${tokenIn.symbol}: ${postSwapBalances.tokenIn.balance}`);
+//   console.log(`  ${tokenOut.symbol}: ${postSwapBalances.tokenOut.balance}`);
 
-  console.log(`================================================\n`);
-}
+//   console.log(`================================================\n`);
+// }

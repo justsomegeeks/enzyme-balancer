@@ -211,11 +211,11 @@ export function isSupportedToken(token: SupportedTokens) {
 
 export interface Balances {
   address: string;
-  tokenIn: {
+  token0: {
     balance: BigNumber;
     tokenDescriptor: TokenDescriptor;
   };
-  tokenOut: {
+  token1: {
     balance: BigNumber;
     tokenDescriptor: TokenDescriptor;
   };
@@ -278,23 +278,23 @@ export async function getBalance(address: string, token: TokenDescriptor): Promi
 
 export async function getBalances(
   address: string,
-  tokenIn: TokenDescriptor,
-  tokenOut: TokenDescriptor,
+  token0: TokenDescriptor,
+  token1: TokenDescriptor,
   bptToken?: TokenDescriptor,
 ): Promise<Balances> {
-  const tokenInBalance = await getBalance(address, tokenIn);
-  const tokenOutBalance = await getBalance(address, tokenOut);
+  const tokenInBalance = await getBalance(address, token0);
+  const tokenOutBalance = await getBalance(address, token1);
   const bptTokenBalance = bptToken ? await getBalance(address, bptToken) : undefined;
 
   const balances = {
     address,
-    tokenIn: {
+    token0: {
       balance: tokenInBalance,
-      tokenDescriptor: tokenIn,
+      tokenDescriptor: token0,
     },
-    tokenOut: {
+    token1: {
       balance: tokenOutBalance,
-      tokenDescriptor: tokenOut,
+      tokenDescriptor: token1,
     },
   } as Balances;
 
