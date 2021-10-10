@@ -19,11 +19,11 @@ import {
 import type { BigNumber } from '@ethersproject/bignumber';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
-import type { BalancerV2Lend, BalancerV2Redeem } from '../balancerV2';
+import type { BalancerV2Redeem } from '../balancerV2';
 import { balancerV2LendArgs, balancerV2TakeOrderArgs, calculateLimits, balancerV2RedeemArgs } from '../balancerV2';
 
 export async function balancerV2TakeOrder({
-  enzymeComptroller,
+  enzymeController,
   integrationManager,
   enzymeFundOwner,
   balancerV2Adapter,
@@ -31,7 +31,7 @@ export async function balancerV2TakeOrder({
   swapInfo,
   deadline,
 }: {
-  enzymeComptroller: ComptrollerLib;
+  enzymeController: ComptrollerLib;
   integrationManager: IntegrationManager;
   enzymeFundOwner: SignerWithAddress;
   balancerV2Adapter: AddressLike;
@@ -56,12 +56,12 @@ export async function balancerV2TakeOrder({
     selector: takeOrderSelector,
   });
 
-  return enzymeComptroller
+  return enzymeController
     .connect(enzymeFundOwner)
     .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 }
 export async function balancerV2Lend({
-  enzymeComptroller,
+  enzymeController,
   integrationManager,
   enzymeFundOwner,
   balancerV2Adapter,
@@ -69,7 +69,7 @@ export async function balancerV2Lend({
   recipient,
   request,
 }: {
-  enzymeComptroller: ComptrollerLib;
+  enzymeController: ComptrollerLib;
   integrationManager: IntegrationManager;
   enzymeFundOwner: SignerWithAddress;
   balancerV2Adapter: AddressLike;
@@ -88,12 +88,12 @@ export async function balancerV2Lend({
     selector: lendSelector,
   });
 
-  return enzymeComptroller
+  return enzymeController
     .connect(enzymeFundOwner)
     .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 }
 export async function balancerV2Redeem({
-  comptrollerProxy,
+  enzymeController,
   integrationManager,
   enzymeFundOwner,
   balancerV2Adapter,
@@ -101,7 +101,7 @@ export async function balancerV2Redeem({
   recipient,
   request,
 }: {
-  comptrollerProxy: ComptrollerLib;
+  enzymeController: ComptrollerLib;
   integrationManager: IntegrationManager;
   enzymeFundOwner: SignerWithAddress;
   balancerV2Adapter: AddressLike;
@@ -120,7 +120,7 @@ export async function balancerV2Redeem({
     selector: redeemSelector,
   });
 
-  return comptrollerProxy
+  return enzymeController
     .connect(enzymeFundOwner)
     .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 }

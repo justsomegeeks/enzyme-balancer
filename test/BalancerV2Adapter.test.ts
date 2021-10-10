@@ -290,11 +290,11 @@ describe('BalancerV2Adapter', function () {
 
     const deadline = hre.ethers.constants.MaxUint256;
 
-    let enzymeComptrollerAddress: string;
+    let enzymeControllerAddress: string;
     let enzymeFundAddress: string;
     let enzymeFundOwner: SignerWithAddress;
 
-    let enzymeComptroller: ComptrollerLib;
+    let enzymeController: ComptrollerLib;
 
     let balancerV2Adapter: any;
     let swapInfo: SwapInfo;
@@ -308,13 +308,13 @@ describe('BalancerV2Adapter', function () {
 
     before(async function () {
       initializeEnvHelper(hre);
-      enzymeComptrollerAddress = networkDescriptor.contracts.enzyme.EnyzmeComptroller;
+      enzymeControllerAddress = networkDescriptor.contracts.enzyme.EnyzmeComptroller;
       enzymeFundAddress = networkDescriptor.contracts.enzyme.EnzymeVaultProxy;
 
       enzymeFundOwner = await hre.ethers.getSigner(networkDescriptor.contracts.enzyme.FundOwner);
       await hre.network.provider.send('hardhat_impersonateAccount', [enzymeFundOwner.address]);
 
-      enzymeComptroller = new ComptrollerLib(enzymeComptrollerAddress, enzymeFundOwner);
+      enzymeController = new ComptrollerLib(enzymeControllerAddress, enzymeFundOwner);
 
       tokenIn = networkDescriptor.tokens.WBTC;
       tokenOut = networkDescriptor.tokens.WETH;
@@ -416,7 +416,7 @@ describe('BalancerV2Adapter', function () {
       const takeOrderTxnReceipt = await balancerV2TakeOrder({
         balancerV2Adapter: balancerV2Adapter.address,
         deadline,
-        enzymeComptroller,
+        enzymeController,
         enzymeFundOwner,
         integrationManager,
         swapInfo,
@@ -443,20 +443,20 @@ describe('BalancerV2Adapter', function () {
     let request: JoinPoolRequest;
     let poolId: string;
     let recipient: string;
-    let enzymeComptroller: ComptrollerLib;
-    let enzymeComptrollerAddress: string;
+    let enzymeController: ComptrollerLib;
+    let enzymeControllerAddress: string;
     let balancerV2PriceFeed: any;
 
     before(async function () {
       initializeEnvHelper(hre);
 
-      enzymeComptrollerAddress = networkDescriptor.contracts.enzyme.EnyzmeComptroller;
+      enzymeControllerAddress = networkDescriptor.contracts.enzyme.EnyzmeComptroller;
       enzymeFundAddress = networkDescriptor.contracts.enzyme.EnzymeVaultProxy;
 
       enzymeFundOwner = await hre.ethers.getSigner(networkDescriptor.contracts.enzyme.FundOwner);
       await hre.network.provider.send('hardhat_impersonateAccount', [enzymeFundOwner.address]);
 
-      enzymeComptroller = new ComptrollerLib(enzymeComptrollerAddress, enzymeFundOwner);
+      enzymeController = new ComptrollerLib(enzymeControllerAddress, enzymeFundOwner);
 
       balancerV2PriceFeedFactory = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
 
@@ -525,7 +525,7 @@ describe('BalancerV2Adapter', function () {
 
       const lendTxnReceipt = await balancerV2Lend({
         balancerV2Adapter: balancerV2Adapter.address,
-        enzymeComptroller,
+        enzymeController,
         enzymeFundOwner,
         integrationManager,
         poolId,
@@ -556,17 +556,20 @@ describe('BalancerV2Adapter', function () {
     let request: ExitPoolRequest;
     let poolId: string;
     let recipient: string;
-    let comptrollerProxy: ComptrollerLib;
-    let enzymeComptrollerAddress: string;
+    let enzymeController: ComptrollerLib;
+    let enzymeControllerAddress: string;
     let balancerV2PriceFeed: any;
 
     before(async function () {
       initializeEnvHelper(hre);
-      enzymeComptrollerAddress = networkDescriptor.contracts.enzyme.EnyzmeComptroller;
-      enzymeFundAddress = networkDescriptor.contracts.enzyme.EnzymeVaultProxy;
-      enzymeFundOwner = await hre.ethers.getSigner(networkDescriptor.contracts.enzyme.FundOwner);
 
-      comptrollerProxy = new ComptrollerLib(enzymeComptrollerAddress, enzymeFundOwner);
+      enzymeControllerAddress = networkDescriptor.contracts.enzyme.EnyzmeComptroller;
+      enzymeFundAddress = networkDescriptor.contracts.enzyme.EnzymeVaultProxy;
+
+      enzymeFundOwner = await hre.ethers.getSigner(networkDescriptor.contracts.enzyme.FundOwner);
+      await hre.network.provider.send('hardhat_impersonateAccount', [enzymeFundOwner.address]);
+
+      enzymeController = new ComptrollerLib(enzymeControllerAddress, enzymeFundOwner);
 
       balancerV2PriceFeedFactory = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
 
@@ -585,25 +588,36 @@ describe('BalancerV2Adapter', function () {
 
       await integrationManager.registerAdapters([balancerV2Adapter.address]);
       //await  integrationManager.addAuthUserForFund(balancerV2Adapter, enzymeFundOwner);
-      poolId = '0x01abc00e86c7e258823b9a055fd62ca6cf61a16300010000000000000000003b';
+      poolId = networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolId;
       recipient = enzymeCouncil.address;
 
       const tokens = networkDescriptor.tokens;
-      const initialBalances = [0, 1];
-      const initUserData = hre.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256[]'], [0, initialBalances]);
+
+      const initialBalances = [
+        await tokens.WBTC.contract.balanceOf(networkDescriptor.contracts.enzyme.EnzymeVaultProxy),
+        await tokens.WETH.contract.balanceOf(networkDescriptor.contracts.enzyme.EnzymeVaultProxy),
+      ];
+
+      console.log(`initial balances: WBTC: ${initialBalances[0].toString()}, WETH: ${initialBalances[1].toString()}`);
+
+      const amountsIn = [hre.ethers.utils.parseUnits('1', 8), hre.ethers.utils.parseEther('14.084120840052506')];
+
+      // TODO: just making a number up here to try to get lend to work
+      const minBPTIn = hre.ethers.utils.parseUnits('1', 1);
+      console.log(`minBPTIn = ${minBPTIn.toString()}`);
 
       request = {
-        assets: [tokens.WETH.address],
+        assets: [tokens.WBTC.address, tokens.WETH.address],
         toInternalBalance: false,
-        minAmountsOut: [1],
-        userData: initUserData,
+        minAmountsOut: amountsIn,
+        userData: WeightedPoolEncoder.exitExactBPTInForTokensOut(minBPTIn),
       };
 
       redeemArgs = balancerV2RedeemArgs({
         poolId,
         recipient,
         request,
-      } as BalancerV2Redeem);
+      });
     });
 
     it('can only be called via the IntegrationManager', async function () {
@@ -612,15 +626,9 @@ describe('BalancerV2Adapter', function () {
       );
     });
 
-    xit('works as expected when called by a fund', async function () {
+    it('works as expected when called by a fund', async function () {
       expect(redeemArgs).to.not.be.undefined;
 
-      // const preTradeBalances = await getBalances(
-      //   enzymeFundAddress,
-      //   networkDescriptor.tokens.WBTC.address,
-      //   networkDescriptor.tokens.WETH.address,
-      // );
-      // Whitelisting BPT token and our price feed to enzyme
       console.log('Working....');
       await aggregatedDerivativePriceFeed.addDerivatives(
         [networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress],
@@ -635,7 +643,7 @@ describe('BalancerV2Adapter', function () {
       );
       const redeemTxnReceipt = await balancerV2Redeem({
         balancerV2Adapter: balancerV2Adapter.address,
-        comptrollerProxy,
+        enzymeController,
         enzymeFundOwner,
         integrationManager,
         poolId,
