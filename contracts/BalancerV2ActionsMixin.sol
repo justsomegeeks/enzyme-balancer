@@ -90,7 +90,11 @@ abstract contract BalancerV2ActionsMixin is AssetHelpers {
         uint256 balanceBefore = IERC20(address(bytes20(_poolId))).balanceOf(_recipient);
         console.log("balance before redeem");
         console.log(balanceBefore);
-        __approveAssetMaxAsNeeded(_request.assets[0], BALANCER_V2_VAULT, _request.minAmountsOut[0]);
+        __approveAssetMaxAsNeeded(
+            _request.assets[0],
+            BALANCER_V2_VAULT,
+            _request.minAmountsOut[0]
+        );
         IBalancerV2Vault(BALANCER_V2_VAULT).exitPool(_poolId, _sender, _recipient, _request);
         uint256 balanceAfter = IERC20(address(bytes20(_poolId))).balanceOf(_recipient);
         console.log("balance after redeem");
