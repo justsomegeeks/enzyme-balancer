@@ -547,7 +547,8 @@ describe('BalancerV2Adapter', function () {
     let redeemArgs: any;
     let enzymeFundAddress: string;
     let enzymeFundOwner: SignerWithAddress;
-    let request: ExitPoolRequest;
+    let joinPoolRequest: JoinPoolRequest;
+    let exitPoolRequest: ExitPoolRequest;
     let poolId: string;
     let enzymeController: ComptrollerLib;
     let enzymeControllerAddress: string;
@@ -595,47 +596,63 @@ describe('BalancerV2Adapter', function () {
       const amountsIn = [hre.ethers.utils.parseUnits('1', 8), hre.ethers.utils.parseEther('14.084120840052506')];
 
       // TODO: just making a number up here to try to get lend to work
-      const minBPTIn = hre.ethers.utils.parseUnits('1', 1);
+      const minBPTIn = hre.ethers.utils.parseUnits('1', 18);
       console.log(`minBPTIn = ${minBPTIn.toString()}`);
+      const minBPTOut = hre.ethers.utils.parseUnits('1', 18);
 
-      request = {
+      exitPoolRequest = {
         assets: [tokens.WBTC.address, tokens.WETH.address],
         minAmountsOut: amountsIn,
         toInternalBalance: false,
         userData: WeightedPoolEncoder.exitExactBPTInForTokensOut(minBPTIn),
       };
+      joinPoolRequest = {
+        assets: [tokens.WBTC.address, tokens.WETH.address],
+        fromInternalBalance: false,
+        maxAmountsIn: amountsIn,
+        userData: WeightedPoolEncoder.joinExactTokensInForBPTOut(amountsIn, minBPTOut),
+      };
 
       redeemArgs = balancerV2RedeemArgs({
         poolId,
-        request,
+        request: exitPoolRequest,
       });
     });
 
-    xit('can only be called via the IntegrationManager', async function () {
+    it.only('can only be called via the IntegrationManager', async function () {
       await expect(balancerV2Adapter.redeem(enzymeFundAddress, redeemSelector, redeemArgs)).to.be.revertedWith(
         'Only the IntegrationManager can call this function',
       );
     });
 
-    xit('works as expected when called by a fund', async function () {
+    it.only('works as expected when called by a fund', async function () {
+      // TODO: lend first
       expect(redeemArgs).to.not.be.undefined;
 
-      console.log('Working....');
-
-      console.log('Able to register');
       console.log(
         'Asset registered ',
         await aggregatedDerivativePriceFeed.isSupportedAsset(
           networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
         ),
       );
+      console.log('Lending to a pool...');
+      await balancerV2Lend({
+        balancerV2Adapter: balancerV2Adapter.address,
+        enzymeController,
+        enzymeFundOwner,
+        integrationManager,
+        poolId,
+        request: joinPoolRequest,
+      });
+
+      console.log('Redeeming from a pool...');
       const redeemTxnReceipt = await balancerV2Redeem({
         balancerV2Adapter: balancerV2Adapter.address,
         enzymeController,
         enzymeFundOwner,
         integrationManager,
         poolId,
-        request,
+        request: exitPoolRequest,
       });
 
       // Trade on BalancerV2
