@@ -289,7 +289,9 @@ contract BalancerV2Adapter is AdapterBase2, BalancerV2ActionsMixin {
         spendAssets_ = new address[](1);
         spendAssets_[0] = address(bytes20(_poolId));
         spendAssetAmounts_ = new uint256[](1);
-        spendAssetAmounts_[0] = 7425452681194559297;
+        (, uint256 bptToSpend) = abi.decode(request_.userData, (uint256, uint256));
+
+        spendAssetAmounts_[0] = bptToSpend;
 
         incomingAssets_ = new address[](2);
         incomingAssets_[0] = address(poolTokens[0]);

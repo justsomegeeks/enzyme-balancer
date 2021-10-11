@@ -692,7 +692,7 @@ describe('BalancerV2Adapter', function () {
       const amountsOut = [hre.ethers.utils.parseUnits('.1', 8), hre.ethers.utils.parseEther('1.4084120840052506')];
 
       // TODO: just making a number up here to try to get lend to work
-      const minBPTIn = hre.ethers.utils.parseUnits('1', 18);
+      const minBPTIn = hre.ethers.utils.parseUnits('7', 18);
       // const minBPTOut = hre.ethers.utils.parseUnits('1', 18);
 
       exitPoolRequest = {
