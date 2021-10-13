@@ -18,7 +18,6 @@ import "@enzymefinance/contracts/release/utils/MathHelpers.sol";
 
 import "./interfaces/IBalancerV2Pool.sol";
 import "./interfaces/IBalancerV2Vault.sol";
-import "hardhat/console.sol";
 
 /// @title BalancerV2PoolPriceFeed Contract
 /// @author JustSomeGeeks Hackathon Team <https://github.com/justsomegeeks>
@@ -45,8 +44,8 @@ contract BalancerV2PriceFeed is
         PoolTokenDescriptor poolTokenDescriptor;
     }
 
-    // BPT tokens have 18 decimals
-    uint256 private constant POOL_TOKEN_UNIT = 10**18;
+    // TODO: check the assumptions that all BPT ERC20s have 18 decimals
+    uint256 private constant BPT_DECIMALS = 18;
 
     address private immutable DERIVATIVE_PRICE_FEED;
     address private immutable PRIMITIVE_PRICE_FEED;
@@ -88,9 +87,9 @@ contract BalancerV2PriceFeed is
         override
         returns (address[] memory underlyings_, uint256[] memory underlyingAmounts_)
     {
-        uint256 totalBPT = getPoolTotalSupply(_derivative);
-        uint256 _precision = 18;
-        uint256 BPTPortion = calcPortionOfPool(_derivativeAmount, totalBPT, _precision);
+        uint256 poolTotalTokenSupply = getPoolTotalSupply(_derivative);
+
+        uint256 percentOfBPTPool = calcPercentOfPool(_derivativeAmount, poolTotalTokenSupply);
 
         (IERC20[] memory tokens, uint256[] memory balances, ) = getPoolData(_derivative);
 
@@ -98,9 +97,14 @@ contract BalancerV2PriceFeed is
         underlyings_ = new address[](tokens.length);
 
         for (uint256 i = 0; i < tokens.length; i++) {
-            underlyingAmounts_[i] = calcUnderlyingAmount(balances[i], BPTPortion, _precision);
-
             underlyings_[i] = address(tokens[i]);
+            ERC20 token = ERC20(underlyings_[i]);
+
+            underlyingAmounts_[i] = calcUnderlyingAmount(
+                balances[i],
+                percentOfBPTPool,
+                token.decimals()
+            );
         }
 
         return (underlyings_, underlyingAmounts_);
@@ -113,26 +117,22 @@ contract BalancerV2PriceFeed is
         return poolTokenToPoolDescriptor[_asset].poolTokenDescriptor.token0 != address(0);
     }
 
-    // PRIVATE FUNCTIONS
-    //@dev Calculates percentages
-    function calcPortionOfPool(
-        uint256 numberOfBPT,
-        uint256 totalBPT,
-        uint256 precision
-    ) internal pure returns (uint256 portionOfPool) {
-        // caution, check safe-to-multiply here
-        uint256 _numberOfBPT = numberOfBPT * 10**(precision + 1);
-        // with rounding of last digit
-        uint256 _portionOfPool = ((_numberOfBPT / totalBPT) + 5) / 10;
-        return (_portionOfPool);
+    /// PRIVATE FUNCTIONS
+    /// @dev Calculates poolTokenAmount percentage of total token, scaled by decimals
+    function calcPercentOfPool(uint256 poolTokenAmount, uint256 poolTokenTotal)
+        private
+        pure
+        returns (uint256)
+    {
+        return poolTokenAmount.mul(10**BPT_DECIMALS).div((poolTokenTotal));
     }
 
     function calcUnderlyingAmount(
         uint256 balance,
-        uint256 BPTPortion,
-        uint256 precision
+        uint256 percentOfBPTPool,
+        uint8 decimals
     ) internal pure returns (uint256 underlyingAmount) {
-        underlyingAmount = ((balance * BPTPortion).div(10**precision));
+        underlyingAmount = (balance * percentOfBPTPool).div(10**uint256(decimals));
     }
 
     //baseAsset is the asset you want to get the value of
@@ -299,9 +299,11 @@ contract BalancerV2PriceFeed is
         )
     {
         IBalancerV2Vault vault = IBalancerV2Vault(VAULT);
+
         (tokens, balances, lastChangeBlock) = vault.getPoolTokens(
             poolTokenToPoolDescriptor[_poolAddress].poolId
         );
+
         return (tokens, balances, lastChangeBlock);
     }
 
