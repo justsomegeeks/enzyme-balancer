@@ -88,7 +88,7 @@ describe('BalancerV2Adapter', function () {
     balancerV2AdapterFactory = await hre.ethers.getContractFactory('BalancerV2Adapter');
   });
 
-  after(async function name() {
+  after(async function () {
     await aggregatedDerivativePriceFeed.removeDerivatives([
       networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
     ]);

@@ -46,7 +46,7 @@ describe('BalancerV2PriceFeed', function () {
     );
   });
 
-  after(async function name() {
+  after(async function () {
     await aggregatedDerivativePriceFeed.removeDerivatives([
       networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
     ]);
@@ -132,21 +132,10 @@ describe('BalancerV2PriceFeed', function () {
 
   describe('calcUnderlyingValues', function () {
     before(async function () {
-      initializeEnvHelper(hre);
-
-      provider = hre.ethers.getDefaultProvider();
-
-      networkDescriptor = await getNetworkDescriptor(provider);
-      balancerV2PriceFeedArgs = priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor);
-
-      balancerV2PriceFeedFactory = await hre.ethers.getContractFactory('BalancerV2PriceFeed');
-
-      enzymeCouncil = await hre.ethers.getSigner(networkDescriptor.contracts.enzyme.EnzymeCouncil);
-      await hre.network.provider.send('hardhat_impersonateAccount', [enzymeCouncil.address]);
-      balancerV2PriceFeedArgs = priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor);
       balancerV2PriceFeed = (await balancerV2PriceFeedFactory.deploy(
         ...balancerV2PriceFeedArgs,
       )) as BalancerV2PriceFeed;
+
       await balancerV2PriceFeed.deployed();
     });
 
@@ -155,11 +144,13 @@ describe('BalancerV2PriceFeed', function () {
         networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
         hre.ethers.utils.parseEther('100'),
       );
+
       expect(underLyingValues[0][0].toLowerCase()).to.equal(networkDescriptor.tokens.WBTC.address);
       expect(underLyingValues[0][1].toLowerCase()).to.equal(networkDescriptor.tokens.WETH.address);
       expect(parseInt(hre.ethers.utils.formatUnits(underLyingValues[1][0], 8)) === 13471944);
       expect(underLyingValues[1][1] === hre.ethers.BigNumber.from('1896065431266855305'));
     });
+
     it('should return the value of one bpt in weth', async function () {
       const underLyingValues = await balancerV2PriceFeed.callStatic.calcUnderlyingValues(
         networkDescriptor.contracts.balancer.BalancerV2WBTCWETHPoolAddress,
@@ -176,6 +167,7 @@ describe('BalancerV2PriceFeed', function () {
           3.809207772005883305,
       );
     });
+
     it('returns rate for non-18 decimals underlying assets', async function () {
       const bptValue = await balancerV2PriceFeed.callStatic.getCurrentRate(
         networkDescriptor.tokens.WBTC.address,
@@ -185,4 +177,30 @@ describe('BalancerV2PriceFeed', function () {
       expect(parseInt(hre.ethers.utils.formatEther(bptValue[0]._hex)) === 14.20093745);
     });
   });
+
+  // describe('calcPercentOfPool', async function () {
+  //   before(async function () {
+  //     balancerV2PriceFeedArgs = priceFeedDeployArgsFromNetworkDescriptor(networkDescriptor);
+
+  //     balancerV2PriceFeed = (await balancerV2PriceFeedFactory.deploy(
+  //       ...balancerV2PriceFeedArgs,
+  //     )) as BalancerV2PriceFeed;
+
+  //     await balancerV2PriceFeed.deployed();
+  //   });
+
+  //   it('returns correct percentage of pool', async function () {
+  //     const decimals = 18;
+
+  //     const poolTotal = ethers.BigNumber.from(4).mul(ethers.BigNumber.from(10).pow(decimals));
+  //     const myTotal = ethers.BigNumber.from(1).mul(ethers.BigNumber.from(10).pow(decimals));
+
+  //     const ratio = await balancerV2PriceFeed.calcPercentOfPool(myTotal, poolTotal);
+  //     const expectedRatio = ethers.BigNumber.from('250000000000000000');
+
+  //     console.log({ expectedRatio: expectedRatio.toString(), ratio: ratio.toString() });
+
+  //     expect(ratio.eq(expectedRatio)).to.be.true;
+  //   });
+  // });
 });
